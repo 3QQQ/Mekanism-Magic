@@ -9,6 +9,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.DeferredRegister;
@@ -46,6 +47,10 @@ public final class MekanismMagic {
                         output.accept(NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.getSecondary());
                         output.accept(NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.getSecondary());
                         output.accept(NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.getSecondary());
+                        acceptOptional(output, "absolute_spirit_factory");
+                        acceptOptional(output, "supreme_spirit_factory");
+                        acceptOptional(output, "cosmic_spirit_factory");
+                        acceptOptional(output, "infinite_spirit_factory");
                         output.accept(NativeMekanismRegistries.RITUAL_BLOCK.getSecondary());
                         output.accept(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.getSecondary());
                         output.accept(ULTIMATE_MINI_RITUAL.get());
@@ -57,5 +62,30 @@ public final class MekanismMagic {
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
         NativeMekanismRegistries.register(modBus);
+        registerMekanismExtrasIntegration(modBus);
+    }
+
+    private static void acceptOptional(CreativeModeTab.Output output, String path) {
+        Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                new net.minecraft.resources.ResourceLocation(MOD_ID, path));
+        if (item != net.minecraft.world.item.Items.AIR) {
+            output.accept(item);
+        }
+    }
+
+    private static void registerMekanismExtrasIntegration(IEventBus modBus) {
+        if (!ModList.get().isLoaded("mekanism_extras")) {
+            return;
+        }
+        try {
+            Class.forName("com.example.mekanismmagic.integration.mekextras."
+                            + "MekanismExtrasSpiritFactories")
+                    .getMethod("register", IEventBus.class)
+                    .invoke(null, modBus);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException(
+                    "Failed to initialize Mekanism Extras spirit factories",
+                    failure);
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.example.mekanismmagic.blockentity.NativeSpiritProcessorBlockEntity;
 import com.example.mekanismmagic.container.NativeSpiritFactoryContainer;
 import mekanism.api.Upgrade;
 import mekanism.common.MekanismLang;
+import mekanism.common.block.attribute.Attribute;
 import mekanism.common.block.attribute.AttributeTier;
 import mekanism.common.block.attribute.AttributeUpgradeable;
 import mekanism.common.content.blocktype.Machine;
@@ -25,8 +26,12 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Native Mekanism registration layer. It is kept separate while the legacy
@@ -137,16 +142,7 @@ public final class NativeMekanismRegistries {
                     .build();
     public static final Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
             ULTIMATE_SPIRIT_FACTORY_TYPE =
-            Machine.MachineBuilder.createFactoryMachine(
-                            NativeMekanismRegistries::ultimateSpiritFactoryTile,
-                            MekanismLang.DESCRIPTION_FACTORY,
-                            FactoryType.CRUSHING)
-                    .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(3_600),
-                            () -> mekanism.api.math.FloatingLong.create(9_000_000))
-                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
-                    .with(new AttributeTier<>(FactoryTier.ULTIMATE))
-                    .build();
+            createUltimateSpiritFactoryType();
 
     public static final BlockRegistryObject<NativeMachineBlock<NativeSpiritProcessorBlockEntity>, BlockItem>
             SPIRIT_BLOCK = BLOCKS.register("spirit_processor",
@@ -254,6 +250,57 @@ public final class NativeMekanismRegistries {
     private static TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
     ultimateSpiritFactoryTile() {
         return ULTIMATE_SPIRIT_FACTORY_TILE;
+    }
+
+    private static Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
+    createUltimateSpiritFactoryType() {
+        Machine.MachineBuilder<
+                Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>,
+                NativeSpiritFactoryBlockEntity, ?> builder =
+                Machine.MachineBuilder.createFactoryMachine(
+                                NativeMekanismRegistries::ultimateSpiritFactoryTile,
+                                MekanismLang.DESCRIPTION_FACTORY,
+                                FactoryType.CRUSHING)
+                        .withGui(() -> SPIRIT_FACTORY_CONTAINER)
+                        .withEnergyConfig(
+                                () -> mekanism.api.math.FloatingLong.create(3_600),
+                                () -> mekanism.api.math.FloatingLong.create(9_000_000))
+                        .withSupportedUpgrades(
+                                Set.of(Upgrade.SPEED, Upgrade.ENERGY))
+                        .with(new AttributeTier<>(FactoryTier.ULTIMATE));
+        Attribute extraUpgrade = optionalExtraFactoryUpgrade();
+        if (extraUpgrade != null) {
+            builder.with(extraUpgrade);
+        }
+        return builder.build();
+    }
+
+    private static Attribute optionalExtraFactoryUpgrade() {
+        if (!ModList.get().isLoaded("mekanism_extras")) {
+            return null;
+        }
+        try {
+            Class<?> attributeClass = Class.forName(
+                    "com.jerry.mekanism_extras.common.block.attribute."
+                            + "ExtraAttributeUpgradeable");
+            Constructor<?> constructor = attributeClass.getConstructor(
+                    Supplier.class);
+            Supplier<BlockRegistryObject<?, ?>> target = () -> {
+                try {
+                    Class<?> integration = Class.forName(
+                            "com.example.mekanismmagic.integration.mekextras."
+                                    + "MekanismExtrasSpiritFactories");
+                    Field field = integration.getField("ABSOLUTE_BLOCK");
+                    return (BlockRegistryObject<?, ?>) field.get(null);
+                } catch (ReflectiveOperationException failure) {
+                    throw new IllegalStateException(failure);
+                }
+            };
+            return (Attribute) constructor.newInstance(target);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException(
+                    "Unable to attach Mekanism Extras factory upgrade", failure);
+        }
     }
 
 }

@@ -50,3 +50,17 @@ mandatory=false
 versionRange="[4.0.0,)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="mekanism_extras"
+mandatory=false
+versionRange="[1.5.0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="mekmm"
+mandatory=false
+versionRange="[1.2.1,)"
+ordering="AFTER"
+side="BOTH"

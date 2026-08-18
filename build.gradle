@@ -71,11 +71,15 @@ obfuscation {
 dependencies {
     add("modCompileOnly", "local:Mekanism-1.20.1:${mekanism_version}")
     add("modCompileOnly", "local:jei-1.20.1-forge:${jei_version}")
+    add("modCompileOnly", "local:mekanism_extras-1.20.1:${mekanism_extras_version}")
 
     add("modLocalRuntime", "local:Mekanism-1.20.1:${mekanism_version}")
+    add("modLocalRuntime", "local:MekanismGenerators-1.20.1:${mekanism_version}")
     add("modLocalRuntime", "local:occultism-1.20.1:${occultism_version}")
     add("modLocalRuntime", "local:jei-1.20.1-forge:${jei_version}")
     add("modLocalRuntime", "local:ars_nouveau-1.20.1:${ars_nouveau_version}-all")
+    add("modLocalRuntime", "local:mekanism_extras-1.20.1:${mekanism_extras_version}")
+    add("modLocalRuntime", "local:mekmm-1.20.1:${mekmm_version}")
     add("modLocalRuntime", 'local:modonomicon-1.20.1-forge:1.79.3')
     add("modLocalRuntime", 'local:curios-forge:5.13.0+1.20.1')
     add("modLocalRuntime", 'local:geckolib-forge-1.20.1:4.8.4')

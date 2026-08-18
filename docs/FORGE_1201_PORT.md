@@ -17,6 +17,9 @@
 * 粉笔模块与魔灵全典模块已用 Mekanism 10.4 的侧边标签组件恢复。
 * 通用机器界面已重新使用 Mekanism 原生背景与边框渲染。
 * Ars Nouveau 1.20.1 Mob Jar 已按 `BlockEntityTag.entityTag` NBT 格式恢复软兼容。
+* Mekanism Extras 1.5.0 的绝对、至尊、宇宙、无限魔灵工厂已恢复，分别提供 11/13/15/17 个处理槽。
+* 终极魔灵工厂已重新连接到 Extras 的绝对工厂升级链。
+* MoreMachine 1.2.1 已加入共存验证，并覆盖其四个错误使用 `neoforge:composite` 的绘制工厂模型。
 
 ## 已验证
 
@@ -25,11 +28,11 @@
 * `gradlew runClient` 能完成模组加载并进入主菜单，未产生新的崩溃报告。
 * 客户端日志中已无 Mekanism Magic 模型加载错误。
 * `gradlew runServer` 能完成专用服务端模组加载并到达 EULA 检查。
+* Mekanism、Generators、Extras、MoreMachine、Occultism、Ars Nouveau 和 JEI 全套开发环境可共同加载到主菜单。
 
 ## 尚未完成
 
 * 需要在实际世界中逐台放置机器，验证方块实体、容器、GUI、侧面配置、升级和配方处理。
-* Mekanism Extras / MoreMachine 的 1.20.1 高阶工厂适配尚未恢复；当前仅注册 Mekanism 原生四个工厂等级。
 * 需要在进入世界后验证 JEI 配方查看、仪式数据加载和维度矿工输出。
 
 因此当前版本已经达到“可构建、可启动到主菜单”的阶段，但还不能视为完成的 1.20.1 发布版。
