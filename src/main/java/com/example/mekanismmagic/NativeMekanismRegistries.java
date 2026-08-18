@@ -25,8 +25,8 @@ import mekanism.common.tier.FactoryTier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -325,3 +325,4 @@ public final class NativeMekanismRegistries {
         }
     }
 }
+

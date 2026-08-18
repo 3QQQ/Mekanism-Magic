@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.143'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.143'
     id 'idea'
 }
 
@@ -12,16 +12,19 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 repositories {
     maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
+    maven { name = 'MinecraftForge'; url = uri('https://maven.minecraftforge.net') }
     maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
     mavenCentral()
 }
 
-neoForge {
-    version = project.neo_version
+legacyForge {
+    enable {
+        forgeVersion = project.forge_version
+    }
     runs {
         client {
             client()
@@ -60,42 +63,20 @@ configurations {
     runtimeClasspath.extendsFrom(localRuntime)
 }
 
-def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
-def mekExtrasRuntimeEnabled = compatRuntimeEnabled ||
-        (project.findProperty('mekanism_magic.mekextras_runtime')?.toString()?.toBoolean() ?: false)
-def mekmmRuntimeEnabled = compatRuntimeEnabled ||
-        (project.findProperty('mekanism_magic.mekmm_runtime')?.toString()?.toBoolean() ?: false)
-def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
-
 dependencies {
-    compileOnly files("libs/Mekanism-1.21.1-${mekanism_version}.jar")
-    compileOnly files("run/mods/jei-1.21.1-neoforge-${jei_version}.jar")
     compileOnly files(
-            "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar",
-            'libs/mekanism_extras-1.21.1-1.4.0.jar',
-            'libs/mekmm-1.21.1-1.4.0.jar'
+            "libs/Mekanism-1.20.1-${mekanism_version}.jar",
+            "libs/jei-1.20.1-forge-${jei_version}.jar"
     )
-    // Recipe and mob-jar bridges use registry lookups/reflection so optional
-    // implementation classes are not hard-linked into the addon.
     localRuntime files(
-            "libs/Mekanism-1.21.1-${mekanism_version}.jar",
-            "libs/occultism-1.21.1-neoforge-${occultism_version}.jar"
+            "libs/Mekanism-1.20.1-${mekanism_version}.jar",
+            "libs/occultism-1.20.1-${occultism_version}.jar",
+            "libs/jei-1.20.1-forge-${jei_version}.jar",
+            'libs/modonomicon-1.20.1-forge-1.79.3.jar',
+            'libs/curios-forge-5.14.1+1.20.1.jar',
+            'libs/geckolib-forge-1.20.1-4.8.4.jar',
+            'libs/SmartBrainLib-forge-1.20.1-1.15.jar'
     )
-    if (arsRuntimeEnabled) {
-        localRuntime files(
-                "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar"
-        )
-    }
-    if (mekExtrasRuntimeEnabled) {
-        localRuntime files(
-                'libs/mekanism_extras-1.21.1-1.4.0.jar'
-        )
-    }
-    if (mekmmRuntimeEnabled) {
-        localRuntime files(
-                "libs/mekmm-1.21.1-${mekmm_runtime_version}.jar"
-        )
-    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -106,7 +87,7 @@ processResources {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
+            forge_version           : forge_version,
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -114,7 +95,7 @@ processResources {
             mod_version            : mod_version
     ]
     inputs.properties replaceProperties
-    filesMatching(['META-INF/neoforge.mods.toml']) {
+    filesMatching(['META-INF/mods.toml']) {
         expand replaceProperties
     }
 }

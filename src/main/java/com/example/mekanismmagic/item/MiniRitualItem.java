@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.item;
 
 import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -10,8 +9,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -59,22 +58,21 @@ public final class MiniRitualItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
                                 List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        if (data != null && !data.isEmpty()
-                && (data.copyTag().contains("ritual")
-                || data.copyTag().contains("pentacle"))) {
-            if (data.copyTag().contains("ritual")) {
-                tooltip.add(Component.literal(data.copyTag().getString("ritual")));
+        super.appendHoverText(stack, level, tooltip, flag);
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        if (data != null && (data.contains("ritual")
+                || data.contains("pentacle"))) {
+            if (data.contains("ritual")) {
+                tooltip.add(Component.literal(data.getString("ritual")));
             } else {
                 tooltip.add(Component.translatable(
                         "item.mekanism_magic.mini_ritual.pentacle_only"));
             }
-            if (data.copyTag().contains("pentacle")) {
+            if (data.contains("pentacle")) {
                 tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.pentacle",
-                        data.copyTag().getString("pentacle")));
+                        data.getString("pentacle")));
             }
             tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.project"));
         } else {
@@ -84,19 +82,19 @@ public final class MiniRitualItem extends Item {
     }
 
     private static ResourceLocation ritualId(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        if (data == null || data.isEmpty()) {
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        if (data == null) {
             return null;
         }
-        return ResourceLocation.tryParse(data.copyTag().getString("ritual"));
+        return ResourceLocation.tryParse(data.getString("ritual"));
     }
 
     private static ResourceLocation pentacleId(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        if (data == null || data.isEmpty()) {
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        if (data == null) {
             return null;
         }
-        return ResourceLocation.tryParse(data.copyTag().getString("pentacle"));
+        return ResourceLocation.tryParse(data.getString("pentacle"));
     }
 
     private static void showProjection(Object multiblock, Component name) {

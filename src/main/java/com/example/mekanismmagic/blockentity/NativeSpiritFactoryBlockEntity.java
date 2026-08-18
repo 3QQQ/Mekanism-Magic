@@ -69,8 +69,8 @@ public final class NativeSpiritFactoryBlockEntity
         if (input.isEmpty() || extra == null || extra.getStack().isEmpty()) {
             return null;
         }
-        net.neoforged.neoforge.items.ItemStackHandler inventory =
-                new net.neoforged.neoforge.items.ItemStackHandler(23);
+        net.minecraftforge.items.ItemStackHandler inventory =
+                new net.minecraftforge.items.ItemStackHandler(23);
         inventory.setStackInSlot(0, input.copy());
         inventory.setStackInSlot(NativeMagicMachineBlockEntity.CONTAINMENT_SLOT,
                 extra.getStack().copy());
@@ -200,3 +200,4 @@ public final class NativeSpiritFactoryBlockEntity
         super.recalculateUpgrades(upgrade);
     }
 }
+

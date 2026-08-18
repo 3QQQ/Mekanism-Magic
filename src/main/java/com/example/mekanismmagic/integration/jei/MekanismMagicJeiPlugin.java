@@ -31,7 +31,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public ResourceLocation getPluginUid() {
-        return ResourceLocation.fromNamespaceAndPath(
+        return new ResourceLocation(
                 MekanismMagic.MOD_ID, "jei_plugin");
     }
 
@@ -103,10 +103,11 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             IRecipeCatalystRegistration registration, String path) {
         net.minecraft.world.item.Item item =
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                        ResourceLocation.fromNamespaceAndPath(
+                        new ResourceLocation(
                                 MekanismMagic.MOD_ID, path));
         if (item != net.minecraft.world.item.Items.AIR) {
             registration.addRecipeCatalyst(item, SPIRIT_TYPE);
         }
     }
 }
+

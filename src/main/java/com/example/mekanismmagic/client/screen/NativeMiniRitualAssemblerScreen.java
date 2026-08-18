@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
-import com.example.mekanismmagic.client.gui.GuiChalkModuleTab;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.client.gui.GuiGraphics;
@@ -49,12 +48,6 @@ public final class NativeMiniRitualAssemblerScreen
     @Override
     protected mekanism.client.gui.element.progress.ProgressType progressType() {
         return mekanism.client.gui.element.progress.ProgressType.SMALL_RIGHT;
-    }
-
-    @Override
-    protected void addMachineGuiElements() {
-        addRenderableWidget(new GuiChalkModuleTab(this, getTileEntity(),
-                () -> chalkModuleOpen, this::toggleChalkModule));
     }
 
     @Override

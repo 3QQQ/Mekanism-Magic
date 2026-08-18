@@ -27,7 +27,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -48,7 +48,7 @@ public final class OccultismRecipeBridge {
     private static final String OCCULTISM = "occultism";
     private static final TagKey<net.minecraft.world.item.Item> MINER_ITEM_TAG =
             TagKey.create(net.minecraft.core.registries.Registries.ITEM,
-                    ResourceLocation.fromNamespaceAndPath(OCCULTISM, "miners"));
+                    new ResourceLocation(OCCULTISM, "miners"));
     private static final Set<String> OCCULTISM_CONTAINMENT_PATHS = Set.of(
             "soul_gem",
             "fragile_soul_gem",
@@ -747,7 +747,7 @@ public final class OccultismRecipeBridge {
     }
 
     private static ItemStack spiritSource(String entityPath, String job) {
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(OCCULTISM, entityPath);
+        ResourceLocation id = new ResourceLocation(OCCULTISM, entityPath);
         EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.get(id);
         SpawnEggItem egg = SpawnEggItem.byId(entity);
         if (egg == null) {
@@ -1128,7 +1128,7 @@ public final class OccultismRecipeBridge {
     }
 
     private static ItemStack commandResult(Level level, Object recipe) {
-        ResourceLocation flameAutomation = ResourceLocation.fromNamespaceAndPath(
+        ResourceLocation flameAutomation = new ResourceLocation(
                 OCCULTISM, "flame_automation");
         net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(flameAutomation);
         if (item != Items.AIR) {
@@ -1412,7 +1412,7 @@ public final class OccultismRecipeBridge {
     }
 
     private static RecipeType<?> recipeType(String path) {
-        return BuiltInRegistries.RECIPE_TYPE.get(ResourceLocation.fromNamespaceAndPath(OCCULTISM, path));
+        return BuiltInRegistries.RECIPE_TYPE.get(new ResourceLocation(OCCULTISM, path));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -1461,3 +1461,5 @@ public final class OccultismRecipeBridge {
     private record Match() {
     }
 }
+
+

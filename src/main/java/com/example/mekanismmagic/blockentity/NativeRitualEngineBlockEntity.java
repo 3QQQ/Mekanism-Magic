@@ -10,7 +10,7 @@ import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -108,3 +108,4 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
         }
     }
 }
+

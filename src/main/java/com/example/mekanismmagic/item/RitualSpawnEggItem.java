@@ -2,7 +2,6 @@ package com.example.mekanismmagic.item;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -13,7 +12,6 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.component.CustomData;
 
 import java.util.List;
 
@@ -35,7 +33,7 @@ public final class RitualSpawnEggItem extends Item {
         if (id != null) {
             tag.putString("id", id.toString());
         }
-        stack.set(DataComponents.ENTITY_DATA, CustomData.of(tag));
+        stack.getOrCreateTag().put("EntityTag", tag);
         return stack;
     }
 
@@ -43,23 +41,26 @@ public final class RitualSpawnEggItem extends Item {
         ItemStack stack = new ItemStack(com.example.mekanismmagic.MekanismMagic.RITUAL_SPAWN_EGG.get());
         CompoundTag tag = data == null ? new CompoundTag() : data.copy();
         tag.putString(ENTITY_TAG, entityTag.location().toString());
-        stack.set(DataComponents.ENTITY_DATA, CustomData.of(tag));
+        CompoundTag root = stack.getOrCreateTag();
+        root.put("EntityTag", tag);
+        root.putString(ENTITY_TAG, entityTag.location().toString());
         return stack;
     }
 
     public static ResourceLocation entityId(ItemStack stack) {
-        CompoundTag data = data(stack);
-        return ResourceLocation.tryParse(data.getString("id"));
+        return ResourceLocation.tryParse(data(stack).getString("id"));
     }
 
     public static ResourceLocation entityTag(ItemStack stack) {
-        CompoundTag data = data(stack);
-        return ResourceLocation.tryParse(data.getString(ENTITY_TAG));
+        CompoundTag root = stack.getTag();
+        return root == null ? null
+                : ResourceLocation.tryParse(root.getString(ENTITY_TAG));
     }
 
     private static CompoundTag data(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.ENTITY_DATA);
-        return data == null || data.isEmpty() ? new CompoundTag() : data.copyTag();
+        CompoundTag root = stack.getTag();
+        return root == null || !root.contains("EntityTag")
+                ? new CompoundTag() : root.getCompound("EntityTag").copy();
     }
 
     @Override

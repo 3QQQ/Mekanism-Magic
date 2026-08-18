@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="${loader_version_range}"
+loaderVersion="[47,)"
 license="${mod_license}"
 
 [[mods]]
@@ -10,57 +10,36 @@ authors="Mekanism Magic contributors"
 description='''Mekanism-style machines for Occultism rituals and spirit recipes.'''
 
 [[dependencies.${mod_id}]]
-modId="neoforge"
-type="required"
-versionRange="[21.1.194,)"
+modId="forge"
+mandatory=true
+versionRange="[47.4.0,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
-type="required"
+mandatory=true
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="mekanism"
-type="required"
-versionRange="[10.7.15,)"
+mandatory=true
+versionRange="[10.4.16,)"
 ordering="AFTER"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="occultism"
-type="required"
-versionRange="[1.222.0,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.${mod_id}]]
-modId="ars_nouveau"
-type="optional"
-versionRange="[5.13.0,)"
+mandatory=true
+versionRange="[1.158.0,)"
 ordering="AFTER"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="jei"
-type="optional"
-versionRange="[19.39.0,)"
+mandatory=false
+versionRange="[15.49.0,)"
 ordering="AFTER"
 side="CLIENT"
-
-[[dependencies.${mod_id}]]
-modId="mekanism_extras"
-type="optional"
-versionRange="[1.4.0,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.${mod_id}]]
-modId="mekmm"
-type="optional"
-versionRange="[1.3.3,)"
-ordering="AFTER"
-side="BOTH"

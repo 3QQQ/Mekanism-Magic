@@ -9,37 +9,39 @@ import com.example.mekanismmagic.client.screen.NativeSpiritFactoryScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritScreen;
 import com.example.mekanismmagic.client.screen.NativeDimensionMinerScreen;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @SuppressWarnings("removal")
-@EventBusSubscriber(modid = "mekanism_magic", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = "mekanism_magic",
+        bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class NativeMagicClient {
     private NativeMagicClient() {
     }
 
     @SubscribeEvent
-    public static void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(), NativeSpiritScreen::new);
-        event.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
-                NativeDimensionMinerScreen::new);
-        event.register(NativeMekanismRegistries.RITUAL_CONTAINER.get(), NativeRitualScreen::new);
-        event.register(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_CONTAINER.get(),
-                NativeMiniRitualAssemblerScreen::new);
-        event.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
-                NativeSpiritFactoryScreen::new);
-    }
-
-    @SubscribeEvent
     public static void registerItemProperties(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> ItemProperties.register(
-                MekanismMagic.MINI_RITUAL.get(),
-                ResourceLocation.fromNamespaceAndPath(MekanismMagic.MOD_ID, "ritual"),
-                (stack, level, entity, seed) ->
-                        OccultismRecipeBridge.miniRitualModelData(stack)));
+        event.enqueueWork(() -> {
+            MenuScreens.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(),
+                    NativeSpiritScreen::new);
+            MenuScreens.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
+                    NativeDimensionMinerScreen::new);
+            MenuScreens.register(NativeMekanismRegistries.RITUAL_CONTAINER.get(),
+                    NativeRitualScreen::new);
+            MenuScreens.register(
+                    NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_CONTAINER.get(),
+                    NativeMiniRitualAssemblerScreen::new);
+            MenuScreens.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
+                    NativeSpiritFactoryScreen::new);
+            ItemProperties.register(MekanismMagic.MINI_RITUAL.get(),
+                    new ResourceLocation(MekanismMagic.MOD_ID, "ritual"),
+                    (stack, level, entity, seed) ->
+                            OccultismRecipeBridge.miniRitualModelData(stack));
+        });
     }
 }
+

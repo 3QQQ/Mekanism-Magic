@@ -1,14 +1,12 @@
 package com.example.mekanismmagic.blockentity;
 
 import mekanism.api.recipes.ItemStackToItemStackRecipe;
-import mekanism.api.recipes.basic.BasicItemStackToItemStackRecipe;
-import mekanism.api.recipes.ingredients.ItemStackIngredient;
+import mekanism.api.recipes.ingredients.creator.IngredientCreatorAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.neoforged.neoforge.common.crafting.SizedIngredient;
 
 import java.util.List;
 
@@ -16,7 +14,7 @@ import java.util.List;
  * Adapter from the runtime Occultism recipe bridge to Mekanism's factory
  * cached-recipe pipeline.
  */
-public final class SpiritFactoryRecipe extends BasicItemStackToItemStackRecipe {
+public final class SpiritFactoryRecipe extends ItemStackToItemStackRecipe {
     private static final RecipeType<ItemStackToItemStackRecipe> TYPE = new RecipeType<>() {
     };
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -27,17 +25,20 @@ public final class SpiritFactoryRecipe extends BasicItemStackToItemStackRecipe {
     private final int duration;
     private final int inputCount;
     private final ItemStack source;
+    private final ItemStack output;
 
     public SpiritFactoryRecipe(ItemStack input, ItemStack source,
                                OccultismRecipeBridge.RecipeResult result) {
-        super(ItemStackIngredient.of(new SizedIngredient(
+        super(result.id(), IngredientCreatorAccess.item().from(
                         Ingredient.of(input.getItem()),
-                        result.inputs().isEmpty() ? 1 : result.inputs().getFirst().count())),
-                result.output(), TYPE);
+                        result.inputs().isEmpty() ? 1 : result.inputs().get(0).count()),
+                result.output());
         this.occultismId = result.id();
         this.duration = result.duration();
-        this.inputCount = result.inputs().isEmpty() ? 1 : result.inputs().getFirst().count();
-        this.source = source.copyWithCount(1);
+        this.inputCount = result.inputs().isEmpty() ? 1 : result.inputs().get(0).count();
+        this.source = source.copy();
+        this.source.setCount(1);
+        this.output = result.output().copy();
     }
 
     public ResourceLocation occultismId() {
@@ -53,16 +54,22 @@ public final class SpiritFactoryRecipe extends BasicItemStackToItemStackRecipe {
     }
 
     public boolean sameSource(ItemStack current) {
-        return ItemStack.isSameItemSameComponents(source, current);
+        return ItemStack.isSameItemSameTags(source, current);
     }
 
     @Override
     public List<ItemStack> getOutputDefinition() {
-        return List.of(getOutputRaw().copy());
+        return List.of(output.copy());
     }
 
     @Override
     public RecipeSerializer<?> getSerializer() {
         return SERIALIZER;
     }
+
+    @Override
+    public RecipeType<?> getType() {
+        return TYPE;
+    }
 }
+

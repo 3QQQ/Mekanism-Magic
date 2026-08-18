@@ -42,7 +42,7 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
                 && index < 16; index++) {
             String color = recipe.chalkColors().get(index);
             ItemStack chalk = new ItemStack(BuiltInRegistries.ITEM.get(
-                    ResourceLocation.fromNamespaceAndPath("occultism", "chalk_" + color)));
+                    new ResourceLocation("occultism", "chalk_" + color)));
             int row = index / 8;
             int column = index % 8;
             builder.addInputSlot(4 + column * SLOT_SPACING,
@@ -55,3 +55,4 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
                 .addItemStack(recipe.output());
     }
 }
+

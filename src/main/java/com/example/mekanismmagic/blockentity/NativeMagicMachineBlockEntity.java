@@ -29,7 +29,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -361,3 +361,4 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         activeRecipe = tag.getString("magic_active_recipe");
     }
 }
+
