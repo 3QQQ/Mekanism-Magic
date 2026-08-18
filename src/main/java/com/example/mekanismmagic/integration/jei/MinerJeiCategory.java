@@ -14,7 +14,7 @@ public final class MinerJeiCategory extends AbstractRecipeCategory<
         super(MekanismMagicJeiPlugin.MINER_TYPE,
                 Component.translatable("jei.mekanism_magic.miner"),
                 guiHelper.createDrawableItemLike(
-                        NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem()),
+                        NativeMekanismRegistries.DIMENSION_MINER_BLOCK.getSecondary()),
                 176, 70);
     }
 

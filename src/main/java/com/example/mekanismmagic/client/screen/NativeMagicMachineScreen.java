@@ -81,6 +81,14 @@ public abstract class NativeMagicMachineScreen<
     protected void drawForegroundText(net.minecraft.client.gui.GuiGraphics gui,
                                       int mouseX, int mouseY) {
         renderTitleText(gui);
-        renderInventoryText(gui);
+        gui.drawString(font, playerInventoryTitle, inventoryLabelX,
+                inventoryLabelY, titleTextColor(), false);
+    }
+
+    @Override
+    protected void renderBg(net.minecraft.client.gui.GuiGraphics gui,
+                            float partialTick, int mouseX, int mouseY) {
+        gui.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight,
+                0xFF20262D);
     }
 }

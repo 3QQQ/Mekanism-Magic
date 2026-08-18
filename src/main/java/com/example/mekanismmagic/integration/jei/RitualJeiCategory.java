@@ -14,7 +14,7 @@ public final class RitualJeiCategory extends AbstractRecipeCategory<
     public RitualJeiCategory(IGuiHelper guiHelper) {
         super(MekanismMagicJeiPlugin.RITUAL_TYPE,
                 Component.translatable("jei.mekanism_magic.ritual"),
-                guiHelper.createDrawableItemLike(NativeMekanismRegistries.RITUAL_BLOCK.asItem()),
+                guiHelper.createDrawableItemLike(NativeMekanismRegistries.RITUAL_BLOCK.getSecondary()),
                 176, 110);
     }
 

@@ -16,8 +16,8 @@ import mekanism.common.tile.factory.TileEntityItemToItemFactory;
 import mekanism.common.tile.factory.TileEntityFactory;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.upgrade.IUpgradeData;
+import mekanism.api.providers.IBlockProvider;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,7 +36,7 @@ public final class NativeSpiritFactoryBlockEntity
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
 
-    public NativeSpiritFactoryBlockEntity(Holder<Block> block, BlockPos pos,
+    public NativeSpiritFactoryBlockEntity(IBlockProvider block, BlockPos pos,
                                           BlockState state) {
         super(block, pos, state,
                 List.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_INPUT,
@@ -44,6 +44,12 @@ public final class NativeSpiritFactoryBlockEntity
                         CachedRecipe.OperationTracker.RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT),
                 Set.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_ENERGY));
         ensureProcessTickCapacity(tier.processes - 1);
+    }
+
+    @Override
+    public net.minecraft.network.chat.Component getName() {
+        return net.minecraft.network.chat.Component.translatable(
+                getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
@@ -111,7 +117,6 @@ public final class NativeSpiritFactoryBlockEntity
                 && cached.getRecipe().sameSource(spiritSlot.getStack());
     }
 
-    @Override
     public boolean isItemValidForSlot(ItemStack stack) {
         return !stack.isEmpty();
     }
@@ -121,7 +126,6 @@ public final class NativeSpiritFactoryBlockEntity
         return !stack.isEmpty();
     }
 
-    @Override
     public SpiritFactoryRecipe getRecipe(int process) {
         if (process < 0 || process >= inputSlots.size()) {
             return null;
@@ -141,12 +145,13 @@ public final class NativeSpiritFactoryBlockEntity
                         inputHandlers[process], outputHandlers[process])
                 .setActive(active -> setActiveState(active, process))
                 .setEnergyRequirements(
-                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this, 400),
+                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(
+                                this, mekanism.api.math.FloatingLong.create(400)),
                         energyContainer)
                 .setRequiredTicks(
                         () -> mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()))
                 .setOperatingTicksChanged(value -> progress[process] = value)
-                .setBaselineMaxOperations(this::getOperationsPerTick);
+                .setBaselineMaxOperations(() -> 1);
         return cached;
     }
 
@@ -170,8 +175,7 @@ public final class NativeSpiritFactoryBlockEntity
     }
 
     @Override
-    public SpiritMachineUpgradeData getUpgradeData(
-            net.minecraft.core.HolderLookup.Provider registries) {
+    public SpiritMachineUpgradeData getUpgradeData() {
         EnergyInventorySlot currentEnergySlot = null;
         for (IInventorySlot slot : getInventorySlots(null)) {
             if (slot instanceof EnergyInventorySlot energy) {
@@ -179,16 +183,15 @@ public final class NativeSpiritFactoryBlockEntity
                 break;
             }
         }
-        return new SpiritMachineUpgradeData(registries, redstone, getControlType(),
+        return new SpiritMachineUpgradeData(redstone, getControlType(),
                 energyContainer, progress, currentEnergySlot, inputSlots, outputSlots,
                 isSorting(), getComponents(),
                 spiritSlot == null ? ItemStack.EMPTY : spiritSlot.getStack());
     }
 
     @Override
-    public void parseUpgradeData(net.minecraft.core.HolderLookup.Provider registries,
-                                 IUpgradeData data) {
-        super.parseUpgradeData(registries, data);
+    public void parseUpgradeData(IUpgradeData data) {
+        super.parseUpgradeData(data);
         if (data instanceof SpiritMachineUpgradeData spiritUpgrade
                 && spiritSlot != null) {
             spiritSlot.setStack(spiritUpgrade.spiritSource.copy());

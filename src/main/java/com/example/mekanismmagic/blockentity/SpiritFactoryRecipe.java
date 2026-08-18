@@ -63,13 +63,28 @@ public final class SpiritFactoryRecipe extends ItemStackToItemStackRecipe {
     }
 
     @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return true;
+    }
+
+    @Override
     public RecipeSerializer<?> getSerializer() {
         return SERIALIZER;
     }
 
     @Override
+    public ResourceLocation getId() {
+        return occultismId;
+    }
+
+    @Override
     public RecipeType<?> getType() {
         return TYPE;
+    }
+
+    @Override
+    public ItemStack getResultItem(net.minecraft.core.RegistryAccess registries) {
+        return output.copy();
     }
 }
 

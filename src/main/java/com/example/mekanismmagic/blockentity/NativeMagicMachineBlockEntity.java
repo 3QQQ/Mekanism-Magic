@@ -4,6 +4,8 @@ import mekanism.api.IContentsListener;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.Upgrade;
+import mekanism.api.math.FloatingLong;
+import mekanism.api.providers.IBlockProvider;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.energy.IEnergyContainer;
 import mekanism.common.capabilities.energy.MachineEnergyContainer;
@@ -25,7 +27,6 @@ import mekanism.common.tile.interfaces.IUpgradeTile;
 import mekanism.common.upgrade.IUpgradeData;
 import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
@@ -67,15 +68,21 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected int progressRequired = 1;
     protected String activeRecipe = "";
 
-    protected NativeMagicMachineBlockEntity(Holder<Block> block, BlockPos pos, BlockState state) {
+    protected NativeMagicMachineBlockEntity(IBlockProvider block, BlockPos pos, BlockState state) {
         super(block, pos, state);
+    }
+
+    @Override
+    public net.minecraft.network.chat.Component getName() {
+        return net.minecraft.network.chat.Component.translatable(
+                getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
     protected void presetVariables() {
         super.presetVariables();
         configComponent = new TileComponentConfig(this,
-                EnumSet.of(TransmissionType.ITEM, TransmissionType.ENERGY));
+                TransmissionType.ITEM, TransmissionType.ENERGY);
         addComponent(configComponent);
         upgradeComponent = new TileComponentUpgrade(this);
         addComponent(upgradeComponent);
@@ -86,7 +93,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     @Override
     protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener) {
-        EnergyContainerHelper helper = EnergyContainerHelper.forSideWithConfig(this);
+        EnergyContainerHelper helper = EnergyContainerHelper.forSideWithConfig(
+                this::getDirection, () -> configComponent);
         energyContainer = MachineEnergyContainer.input(this, listener);
         helper.addContainer(energyContainer);
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
@@ -95,7 +103,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
-        InventorySlotHelper helper = InventorySlotHelper.forSideWithConfig(this);
+        InventorySlotHelper helper = InventorySlotHelper.forSideWithConfig(
+                this::getDirection, () -> configComponent);
         energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, () -> level,
                 listener, energySlotX(), energySlotY());
         helper.addSlot(energySlot);
@@ -136,8 +145,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      * different processing shape (for example multi-output miners) can use
      * this without invoking the default single-output recipe loop again.
      */
-    protected final boolean nativeBaseUpdate() {
-        return super.onUpdateServer();
+    protected final void nativeBaseUpdate() {
+        super.onUpdateServer();
     }
 
     protected ItemStack getSpiritSourceForUpgrade() {
@@ -189,47 +198,6 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         onNativeUpgradeChanged(upgrade);
     }
 
-    @Override
-    public mekanism.common.upgrade.IUpgradeData getUpgradeData(
-            net.minecraft.core.HolderLookup.Provider registries) {
-        return new SpiritMachineUpgradeData(registries, redstone, getControlType(),
-                energyContainer, new int[]{progress}, energySlot,
-                inputSlot == null ? List.of() : List.of(inputSlot),
-                outputSlot == null ? List.of() : List.of(outputSlot),
-                false, getComponents(), getSpiritSourceForUpgrade());
-    }
-
-    @Override
-    public void parseUpgradeData(net.minecraft.core.HolderLookup.Provider registries,
-                                 IUpgradeData data) {
-        if (!(data instanceof MachineUpgradeData upgrade)) {
-            super.parseUpgradeData(registries, data);
-            return;
-        }
-        redstone = upgrade.redstone;
-        setControlType(upgrade.controlType);
-        if (energyContainer != null && upgrade.energyContainer != null) {
-            energyContainer.setEnergy(upgrade.energyContainer.getEnergy());
-        }
-        if (energySlot != null && upgrade.energySlot != null) {
-            energySlot.deserializeNBT(registries,
-                    upgrade.energySlot.serializeNBT(registries));
-        }
-        if (inputSlot != null && !upgrade.inputSlots.isEmpty()) {
-            inputSlot.deserializeNBT(registries,
-                    upgrade.inputSlots.getFirst().serializeNBT(registries));
-        }
-        if (outputSlot != null && !upgrade.outputSlots.isEmpty()) {
-            outputSlot.setStack(upgrade.outputSlots.getFirst().getStack());
-        }
-        for (mekanism.common.tile.component.ITileComponent component : getComponents()) {
-            component.read(upgrade.components, registries);
-        }
-        if (upgrade instanceof SpiritMachineUpgradeData spiritUpgrade) {
-            setSpiritSourceFromUpgrade(spiritUpgrade.spiritSource);
-        }
-    }
-
     protected void onNativeUpgradeChanged(Upgrade upgrade) {
     }
 
@@ -242,10 +210,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     @Override
-    protected boolean onUpdateServer() {
-        boolean changed = super.onUpdateServer();
+    protected void onUpdateServer() {
+        nativeBaseUpdate();
         if (level == null) {
-            return changed;
+            return;
         }
         ItemStackHandler snapshot = snapshotInventory();
         Optional<OccultismRecipeBridge.RecipeResult> found = findRecipe(snapshot);
@@ -253,19 +221,20 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             progress = 0;
             progressRequired = 1;
             activeRecipe = "";
-            return changed;
+            return;
         }
         OccultismRecipeBridge.RecipeResult recipe = found.get();
         progressRequired = Math.max(1, mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()));
         ItemStack output = snapshot.getStackInSlot(OUTPUT_SLOT);
         if (!recipe.output().isEmpty() && !output.isEmpty()
-                && (!ItemStack.isSameItemSameComponents(output, recipe.output())
+                && (!ItemStack.isSameItemSameTags(output, recipe.output())
                 || output.getCount() + recipe.output().getCount() > output.getMaxStackSize())) {
-            return changed;
+            return;
         }
-        long usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(this, baseEnergyPerTick());
-        if (energyContainer == null || energyContainer.getEnergy() < usage) {
-            return changed;
+        FloatingLong usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
+                this, FloatingLong.create(baseEnergyPerTick()));
+        if (energyContainer == null || energyContainer.getEnergy().smallerThan(usage)) {
+            return;
         }
         String recipeKey = recipeKey(recipe);
         if (!activeRecipe.equals(recipeKey)) {
@@ -280,11 +249,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                     && OccultismRecipeBridge.executeCommandRitual(
                     serverLevel, worldPosition, recipe.command()))) {
                 progress = 0;
-                return changed;
+                return;
             }
             if (!consumeSnapshot(snapshot, recipe)) {
                 progress = 0;
-                return changed;
+                return;
             }
             if (!recipe.output().isEmpty()) {
                 if (output.isEmpty()) {
@@ -296,9 +265,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             copyBack(snapshot);
             progress = 0;
             activeRecipe = "";
-            changed = true;
+            setChanged();
         }
-        return changed;
     }
 
     private ItemStackHandler snapshotInventory() {
@@ -344,18 +312,16 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     @Override
-    public void saveAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(net.minecraft.nbt.CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putInt("magic_progress", progress);
         tag.putInt("magic_progress_required", progressRequired);
         tag.putString("magic_active_recipe", activeRecipe);
     }
 
     @Override
-    public void loadAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(net.minecraft.nbt.CompoundTag tag) {
+        super.load(tag);
         progress = tag.getInt("magic_progress");
         progressRequired = Math.max(1, tag.getInt("magic_progress_required"));
         activeRecipe = tag.getString("magic_active_recipe");

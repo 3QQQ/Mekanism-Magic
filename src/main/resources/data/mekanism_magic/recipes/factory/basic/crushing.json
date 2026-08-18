@@ -8,5 +8,5 @@
     "P": {"item": "mekanism_magic:spirit_processor"}
   },
   "pattern": ["ACA", "IPI", "ACA"],
-  "result": {"count": 1, "id": "mekanism_magic:basic_spirit_factory"}
+  "result": {"count": 1, "item": "mekanism_magic:basic_spirit_factory"}
 }

@@ -8,13 +8,12 @@ import com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritProcessorBlockEntity;
 import com.example.mekanismmagic.container.NativeSpiritFactoryContainer;
 import mekanism.api.Upgrade;
+import mekanism.common.MekanismLang;
 import mekanism.common.block.attribute.AttributeTier;
 import mekanism.common.block.attribute.AttributeUpgradeable;
-import mekanism.common.block.attribute.Attribute;
 import mekanism.common.content.blocktype.Machine;
 import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
-import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.registration.impl.BlockDeferredRegister;
 import mekanism.common.registration.impl.BlockRegistryObject;
 import mekanism.common.registration.impl.ContainerTypeDeferredRegister;
@@ -26,11 +25,8 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.function.Supplier;
+import java.util.Set;
 
 /**
  * Native Mekanism registration layer. It is kept separate while the legacy
@@ -62,51 +58,51 @@ public final class NativeMekanismRegistries {
 
     public static final Machine<NativeSpiritProcessorBlockEntity> SPIRIT_TYPE =
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.SPIRIT_TILE,
-                            MagicLang.SPIRIT_PROCESSOR)
+                            MekanismLang.DESCRIPTION_CRUSHER)
                     .withGui(() -> SPIRIT_CONTAINER)
-                    .withEnergyConfig(() -> 400L, () -> 1_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(400),
+                            () -> mekanism.api.math.FloatingLong.create(1_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .with(new AttributeUpgradeable(
                             NativeMekanismRegistries::basicSpiritFactoryBlock))
                     .build();
     public static final Machine<NativeDimensionMinerBlockEntity> DIMENSION_MINER_TYPE =
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.DIMENSION_MINER_TILE,
-                            MagicLang.DIMENSION_MINER)
+                            MekanismLang.DESCRIPTION_DIGITAL_MINER)
                     .withGui(() -> DIMENSION_MINER_CONTAINER)
-                    .withEnergyConfig(() -> 800L, () -> 4_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(800),
+                            () -> mekanism.api.math.FloatingLong.create(4_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .build();
     public static final Machine<NativeRitualEngineBlockEntity> RITUAL_TYPE =
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.RITUAL_TILE,
-                            MagicLang.RITUAL_ENGINE)
+                            MekanismLang.DESCRIPTION_FACTORY)
                     .withGui(() -> RITUAL_CONTAINER)
-                    .withEnergyConfig(() -> 1_200L, () -> 4_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(1_200),
+                            () -> mekanism.api.math.FloatingLong.create(4_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .build();
     public static final Machine<NativeMiniRitualAssemblerBlockEntity>
             MINI_RITUAL_ASSEMBLER_TYPE =
             Machine.MachineBuilder.createMachine(
                             () -> NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_TILE,
-                            MagicLang.MINI_RITUAL_ASSEMBLER)
+                            MekanismLang.DESCRIPTION_FORMULAIC_ASSEMBLICATOR)
                     .withGui(() -> MINI_RITUAL_ASSEMBLER_CONTAINER)
-                    .withEnergyConfig(() -> 300L, () -> 1_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(300),
+                            () -> mekanism.api.math.FloatingLong.create(1_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .build();
 
     public static final Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
             BASIC_SPIRIT_FACTORY_TYPE =
             Machine.MachineBuilder.createFactoryMachine(
                             NativeMekanismRegistries::basicSpiritFactoryTile,
-                            MagicLang.BASIC_SPIRIT_FACTORY,
+                            MekanismLang.DESCRIPTION_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 1_200L, () -> 3_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(1_200),
+                            () -> mekanism.api.math.FloatingLong.create(3_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .with(new AttributeTier<>(FactoryTier.BASIC),
                             new AttributeUpgradeable(
                                     NativeMekanismRegistries::advancedSpiritFactoryBlock))
@@ -115,12 +111,12 @@ public final class NativeMekanismRegistries {
             ADVANCED_SPIRIT_FACTORY_TYPE =
             Machine.MachineBuilder.createFactoryMachine(
                             NativeMekanismRegistries::advancedSpiritFactoryTile,
-                            MagicLang.ADVANCED_SPIRIT_FACTORY,
+                            MekanismLang.DESCRIPTION_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 2_000L, () -> 5_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(2_000),
+                            () -> mekanism.api.math.FloatingLong.create(5_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .with(new AttributeTier<>(FactoryTier.ADVANCED),
                             new AttributeUpgradeable(
                                     NativeMekanismRegistries::eliteSpiritFactoryBlock))
@@ -129,19 +125,28 @@ public final class NativeMekanismRegistries {
             ELITE_SPIRIT_FACTORY_TYPE =
             Machine.MachineBuilder.createFactoryMachine(
                             NativeMekanismRegistries::eliteSpiritFactoryTile,
-                            MagicLang.ELITE_SPIRIT_FACTORY,
+                            MekanismLang.DESCRIPTION_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 2_800L, () -> 7_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(2_800),
+                            () -> mekanism.api.math.FloatingLong.create(7_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
                     .with(new AttributeTier<>(FactoryTier.ELITE),
                             new AttributeUpgradeable(
                                     NativeMekanismRegistries::ultimateSpiritFactoryBlock))
                     .build();
     public static final Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
             ULTIMATE_SPIRIT_FACTORY_TYPE =
-            createUltimateSpiritFactoryType();
+            Machine.MachineBuilder.createFactoryMachine(
+                            NativeMekanismRegistries::ultimateSpiritFactoryTile,
+                            MekanismLang.DESCRIPTION_FACTORY,
+                            FactoryType.CRUSHING)
+                    .withGui(() -> SPIRIT_FACTORY_CONTAINER)
+                    .withEnergyConfig(() -> mekanism.api.math.FloatingLong.create(3_600),
+                            () -> mekanism.api.math.FloatingLong.create(9_000_000))
+                    .withSupportedUpgrades(Set.of(Upgrade.SPEED, Upgrade.ENERGY))
+                    .with(new AttributeTier<>(FactoryTier.ULTIMATE))
+                    .build();
 
     public static final BlockRegistryObject<NativeMachineBlock<NativeSpiritProcessorBlockEntity>, BlockItem>
             SPIRIT_BLOCK = BLOCKS.register("spirit_processor",
@@ -179,57 +184,32 @@ public final class NativeMekanismRegistries {
                             .requiresCorrectToolForDrops()));
 
     public static final TileEntityTypeRegistryObject<NativeSpiritProcessorBlockEntity> SPIRIT_TILE =
-            TILES.mekBuilder(SPIRIT_BLOCK, NativeSpiritProcessorBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+            TILES.register(SPIRIT_BLOCK, NativeSpiritProcessorBlockEntity::new);
     public static final TileEntityTypeRegistryObject<NativeDimensionMinerBlockEntity>
-            DIMENSION_MINER_TILE = TILES.mekBuilder(DIMENSION_MINER_BLOCK,
-                    NativeDimensionMinerBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(
-                                    level, pos, state, tile))
-                    .build();
+            DIMENSION_MINER_TILE = TILES.register(DIMENSION_MINER_BLOCK,
+                    NativeDimensionMinerBlockEntity::new);
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            BASIC_SPIRIT_FACTORY_TILE = TILES.mekBuilder(BASIC_SPIRIT_FACTORY_BLOCK,
+            BASIC_SPIRIT_FACTORY_TILE = TILES.register(BASIC_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            BASIC_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+                            BASIC_SPIRIT_FACTORY_BLOCK, pos, state));
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ADVANCED_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ADVANCED_SPIRIT_FACTORY_BLOCK,
+            ADVANCED_SPIRIT_FACTORY_TILE = TILES.register(ADVANCED_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ADVANCED_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+                            ADVANCED_SPIRIT_FACTORY_BLOCK, pos, state));
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ELITE_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ELITE_SPIRIT_FACTORY_BLOCK,
+            ELITE_SPIRIT_FACTORY_TILE = TILES.register(ELITE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ELITE_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+                            ELITE_SPIRIT_FACTORY_BLOCK, pos, state));
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ULTIMATE_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ULTIMATE_SPIRIT_FACTORY_BLOCK,
+            ULTIMATE_SPIRIT_FACTORY_TILE = TILES.register(ULTIMATE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ULTIMATE_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+                            ULTIMATE_SPIRIT_FACTORY_BLOCK, pos, state));
     public static final TileEntityTypeRegistryObject<NativeRitualEngineBlockEntity> RITUAL_TILE =
-            TILES.mekBuilder(RITUAL_BLOCK, NativeRitualEngineBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+            TILES.register(RITUAL_BLOCK, NativeRitualEngineBlockEntity::new);
     public static final TileEntityTypeRegistryObject<
             NativeMiniRitualAssemblerBlockEntity> MINI_RITUAL_ASSEMBLER_TILE =
-            TILES.mekBuilder(MINI_RITUAL_ASSEMBLER_BLOCK,
-                    NativeMiniRitualAssemblerBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
-                    .build();
+            TILES.register(MINI_RITUAL_ASSEMBLER_BLOCK,
+                    NativeMiniRitualAssemblerBlockEntity::new);
 
     private NativeMekanismRegistries() {
     }
@@ -276,53 +256,5 @@ public final class NativeMekanismRegistries {
         return ULTIMATE_SPIRIT_FACTORY_TILE;
     }
 
-    private static Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
-    createUltimateSpiritFactoryType() {
-        Machine.MachineBuilder<
-                Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>,
-                NativeSpiritFactoryBlockEntity, ?> builder =
-                Machine.MachineBuilder.createFactoryMachine(
-                                NativeMekanismRegistries::ultimateSpiritFactoryTile,
-                                MagicLang.ULTIMATE_SPIRIT_FACTORY,
-                                FactoryType.CRUSHING)
-                        .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                        .withEnergyConfig(() -> 3_600L, () -> 9_000_000L)
-                        .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                        .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
-                        .with(new AttributeTier<>(FactoryTier.ULTIMATE));
-        Attribute extraUpgrade = optionalExtraFactoryUpgrade();
-        if (extraUpgrade != null) {
-            builder.with(extraUpgrade);
-        }
-        return builder.build();
-    }
-
-    private static Attribute optionalExtraFactoryUpgrade() {
-        if (!ModList.get().isLoaded("mekanism_extras")) {
-            return null;
-        }
-        try {
-            Class<?> attributeClass = Class.forName(
-                    "com.jerry.mekextras.common.block.attribute."
-                            + "ExtraAttributeUpgradeable");
-            Constructor<?> constructor = attributeClass.getConstructor(
-                    Supplier.class);
-            Supplier<BlockRegistryObject<?, ?>> target = () -> {
-                try {
-                    Class<?> integration = Class.forName(
-                            "com.example.mekanismmagic.integration.mekextras."
-                                    + "MekanismExtrasSpiritFactories");
-                    Field field = integration.getField("ABSOLUTE_BLOCK");
-                    return (BlockRegistryObject<?, ?>) field.get(null);
-                } catch (ReflectiveOperationException failure) {
-                    throw new IllegalStateException(failure);
-                }
-            };
-            return (Attribute) constructor.newInstance(target);
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException(
-                    "Unable to attach Mekanism Extras factory upgrade", failure);
-        }
-    }
 }
 

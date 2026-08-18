@@ -1,5 +1,5 @@
 {
-  "neoforge:conditions": [{"type": "neoforge:mod_loaded", "modid": "mekanism_extras"}],
+  "forge:conditions": [{"type": "forge:mod_loaded", "modid": "mekanism_extras"}],
   "type": "mekanism:mek_data",
   "category": "misc",
   "pattern": ["ACA", "IPI", "ACA"],
@@ -9,5 +9,5 @@
     "I": {"tag": "c:ingots/refined_obsidian"},
     "P": {"item": "mekanism_magic:supreme_spirit_factory"}
   },
-  "result": {"id": "mekanism_magic:cosmic_spirit_factory", "count": 1}
+  "result": {"item": "mekanism_magic:cosmic_spirit_factory", "count": 1}
 }

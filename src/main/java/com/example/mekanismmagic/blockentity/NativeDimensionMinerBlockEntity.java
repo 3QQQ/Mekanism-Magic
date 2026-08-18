@@ -4,11 +4,11 @@ import com.example.mekanismmagic.NativeMekanismRegistries;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
+import mekanism.api.math.FloatingLong;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -35,8 +35,7 @@ public final class NativeDimensionMinerBlockEntity
     private ItemStack pendingInput = ItemStack.EMPTY;
 
     public NativeDimensionMinerBlockEntity(BlockPos pos, BlockState state) {
-        super(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.get()
-                .builtInRegistryHolder(), pos, state);
+        super(NativeMekanismRegistries.DIMENSION_MINER_BLOCK, pos, state);
     }
 
     @Override
@@ -87,43 +86,42 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     @Override
-    protected boolean onUpdateServer() {
-        boolean changed = nativeBaseUpdate();
+    protected void onUpdateServer() {
+        nativeBaseUpdate();
         if (level == null) {
-            return changed;
+            return;
         }
         ItemStack input = inputSlot == null ? ItemStack.EMPTY : inputSlot.getStack();
         if (!OccultismRecipeBridge.isMinerItem(input)) {
             resetPending();
-            return changed;
+            return;
         }
         if (pendingOutputs.isEmpty()
-                || !ItemStack.isSameItemSameComponents(input, pendingInput)) {
+                || !ItemStack.isSameItemSameTags(input, pendingInput)) {
             preparePendingOutputs(input);
         }
         if (pendingOutputs.isEmpty()) {
             progress = 0;
-            return changed;
+            return;
         }
         if (!canAccept(pendingOutputs)) {
-            return changed;
+            return;
         }
-        long usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
-                this, baseEnergyPerTick());
-        if (energyContainer == null || energyContainer.getEnergy() < usage) {
-            return changed;
+        FloatingLong usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
+                this, FloatingLong.create(baseEnergyPerTick()));
+        if (energyContainer == null || energyContainer.getEnergy().smallerThan(usage)) {
+            return;
         }
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
-        int efficiency = enchantmentLevel(input, Enchantments.EFFICIENCY);
+        int efficiency = enchantmentLevel(input, Enchantments.BLOCK_EFFICIENCY);
         progress += 1 + minimumRandomBonus(efficiency, 2);
         if (progress >= progressRequired) {
             if (insertOutputs(pendingOutputs)) {
                 progress = 0;
                 pendingOutputs.clear();
-                changed = true;
+                setChanged();
             }
         }
-        return changed;
     }
 
     private void preparePendingOutputs(ItemStack input) {
@@ -134,7 +132,7 @@ public final class NativeDimensionMinerBlockEntity
                 mekanism.common.util.MekanismUtils.getTicks(this,
                         OccultismRecipeBridge.minerDuration(input)));
 
-        int fortune = enchantmentLevel(input, Enchantments.FORTUNE);
+        int fortune = enchantmentLevel(input, Enchantments.BLOCK_FORTUNE);
         int silkTouch = enchantmentLevel(input, Enchantments.SILK_TOUCH);
         int rolls = OccultismRecipeBridge.minerRollsPerOperation(input)
                 + minimumRandomBonus(fortune, 3);
@@ -152,16 +150,11 @@ public final class NativeDimensionMinerBlockEntity
         }
     }
 
-    private int enchantmentLevel(ItemStack stack,
-                                 ResourceKey<Enchantment> enchantment) {
-        if (level == null || stack.isEmpty()) {
+    private int enchantmentLevel(ItemStack stack, Enchantment enchantment) {
+        if (stack.isEmpty()) {
             return 0;
         }
-        try {
-            return stack.getEnchantmentLevel(level.holderOrThrow(enchantment));
-        } catch (RuntimeException ignored) {
-            return 0;
-        }
+        return stack.getEnchantmentLevel(enchantment);
     }
 
     private int minimumRandomBonus(int level, int samples) {
@@ -203,7 +196,7 @@ public final class NativeDimensionMinerBlockEntity
         int remaining = stack.getCount();
         for (ItemStack existing : targets) {
             if (!existing.isEmpty()
-                    && ItemStack.isSameItemSameComponents(existing, stack)) {
+                    && ItemStack.isSameItemSameTags(existing, stack)) {
                 int moved = Math.min(remaining,
                         existing.getMaxStackSize() - existing.getCount());
                 if (moved > 0) {
@@ -218,7 +211,9 @@ public final class NativeDimensionMinerBlockEntity
         for (int index = 0; index < targets.size() && remaining > 0; index++) {
             if (targets.get(index).isEmpty()) {
                 int moved = Math.min(remaining, stack.getMaxStackSize());
-                targets.set(index, stack.copyWithCount(moved));
+                ItemStack movedStack = stack.copy();
+                movedStack.setCount(moved);
+                targets.set(index, movedStack);
                 remaining -= moved;
             }
         }
@@ -230,7 +225,7 @@ public final class NativeDimensionMinerBlockEntity
         for (OutputInventorySlot slot : minerOutputs) {
             ItemStack existing = slot.getStack();
             if (!existing.isEmpty()
-                    && ItemStack.isSameItemSameComponents(existing, stack)) {
+                    && ItemStack.isSameItemSameTags(existing, stack)) {
                 int moved = Math.min(remaining,
                         existing.getMaxStackSize() - existing.getCount());
                 if (moved > 0) {
@@ -249,7 +244,9 @@ public final class NativeDimensionMinerBlockEntity
             }
             if (slot.getStack().isEmpty()) {
                 int moved = Math.min(remaining, stack.getMaxStackSize());
-                slot.setStack(stack.copyWithCount(moved));
+                ItemStack movedStack = stack.copy();
+                movedStack.setCount(moved);
+                slot.setStack(movedStack);
                 remaining -= moved;
             }
         }

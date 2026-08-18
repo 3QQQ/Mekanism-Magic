@@ -14,7 +14,7 @@ public final class SpiritJeiCategory extends AbstractRecipeCategory<
     public SpiritJeiCategory(IGuiHelper guiHelper) {
         super(MekanismMagicJeiPlugin.SPIRIT_TYPE,
                 Component.translatable("jei.mekanism_magic.spirit"),
-                guiHelper.createDrawableItemLike(NativeMekanismRegistries.SPIRIT_BLOCK.asItem()),
+                guiHelper.createDrawableItemLike(NativeMekanismRegistries.SPIRIT_BLOCK.getSecondary()),
                 176, 70);
     }
 

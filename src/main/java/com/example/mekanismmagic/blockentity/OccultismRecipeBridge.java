@@ -5,9 +5,8 @@ import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -17,11 +16,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -215,10 +212,10 @@ public final class OccultismRecipeBridge {
         }
         List<MinerOutput> candidates = new ArrayList<>();
         long totalWeight = 0;
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             List<Ingredient> recipeIngredients = ingredients(recipe);
-            if (recipeIngredients.isEmpty() || !recipeIngredients.getFirst().test(miner)) {
+            if (recipeIngredients.isEmpty() || !recipeIngredients.get(0).test(miner)) {
                 continue;
             }
             ItemStack output = result(level.registryAccess(), recipe);
@@ -227,7 +224,7 @@ public final class OccultismRecipeBridge {
             if (output.isEmpty() || weight <= 0) {
                 continue;
             }
-            candidates.add(new MinerOutput(holder.id(), output, weight));
+            candidates.add(new MinerOutput(recipeId(recipe), output, weight));
             totalWeight += weight;
         }
         if (candidates.isEmpty() || totalWeight <= 0) {
@@ -240,7 +237,7 @@ public final class OccultismRecipeBridge {
                 return Optional.of(candidate);
             }
         }
-        return Optional.of(candidates.getLast());
+        return Optional.of(candidates.get(candidates.size() - 1));
     }
 
     public static List<MinerJeiData> minerJeiRecipes(Level level) {
@@ -252,18 +249,18 @@ public final class OccultismRecipeBridge {
             return List.of();
         }
         List<MinerJeiData> result = new ArrayList<>();
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             List<Ingredient> recipeIngredients = ingredients(recipe);
-            if (recipeIngredients.isEmpty() || isEmptyIngredient(recipeIngredients.getFirst())) {
+            if (recipeIngredients.isEmpty() || isEmptyIngredient(recipeIngredients.get(0))) {
                 continue;
             }
             ItemStack output = result(level.registryAccess(), recipe);
             int weight = intValue(invoke(recipe, "getWeightedResult").orElse(null),
                     "weight", 0);
             if (!output.isEmpty() && weight > 0) {
-                result.add(new MinerJeiData(holder.id(),
-                        recipeIngredients.getFirst(), output, weight));
+                result.add(new MinerJeiData(recipeId(recipe),
+                        recipeIngredients.get(0), output, weight));
             }
         }
         return List.copyOf(result);
@@ -293,8 +290,8 @@ public final class OccultismRecipeBridge {
             }
             OccultismSpiritJobConfig.WorkerSettings settings =
                     OccultismSpiritJobConfig.settings(typeId, sourceTier);
-            for (RecipeHolder<?> holder : recipes(level, type)) {
-                Object recipe = holder.value();
+            for (Recipe<?> recipeHolder : recipes(level, type)) {
+                Object recipe = recipeHolder;
                 Optional<Match> match = matchSingleRecipe(level, recipe,
                         input, settings.recipeTier(), sourceJob, typeId);
                 if (match.isPresent()) {
@@ -309,7 +306,7 @@ public final class OccultismRecipeBridge {
                     }
                     ItemStack output = spiritOutput(recipe, typeId, baseOutput,
                             settings, operations);
-                    return Optional.of(new RecipeResult(holder.id(), output,
+                    return Optional.of(new RecipeResult(recipeId(recipe), output,
                             recipeDuration(recipe, typeId, settings),
                             List.of(new InputUse(0, operations)), -1, -1));
                 }
@@ -329,12 +326,12 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             if (!isMachineSafeRitual(recipe)) {
                 continue;
             }
-            if (!matchesRitualSelector(holder.id(), recipe, ritualSelector)) {
+            if (!matchesRitualSelector(recipeId(recipe), recipe, ritualSelector)) {
                 continue;
             }
             if (!matchesActivation(recipe, activation, dictionaryEnabled)) {
@@ -368,7 +365,7 @@ public final class OccultismRecipeBridge {
                 continue;
             }
             if (!output.isEmpty()) {
-                return Optional.of(new RecipeResult(holder.id(), output,
+                return Optional.of(new RecipeResult(recipeId(recipe), output,
                         Math.max(40, intValue(recipe, "getDuration", 200)),
                         slots.get(),
                         activationSlot, sacrificeSlot, command));
@@ -398,7 +395,7 @@ public final class OccultismRecipeBridge {
         if (stack.isEmpty()) {
             return false;
         }
-        CustomData data = stack.get(DataComponents.ENTITY_DATA);
+        CompoundTag data = entityDataTag(stack);
         if (data == null || data.isEmpty()) {
             return false;
         }
@@ -565,12 +562,12 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             Object dummy = invoke(recipe, "getRitualDummy").orElse(null);
             if (dummy instanceof ItemStack stack
                     && ItemStack.isSameItem(ritualDummy, stack)) {
-                return projection(holder.id(), recipe);
+                return projection(recipeId(recipe), recipe);
             }
         }
         return Optional.empty();
@@ -584,9 +581,10 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            if (holder.id().equals(recipeId)) {
-                return projection(holder.id(), holder.value());
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
+            if (recipeId(recipe).equals(recipeId)) {
+                return projection(recipeId(recipe), recipe);
             }
         }
         return Optional.empty();
@@ -601,11 +599,11 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             Object value = invoke(recipe, "getPentacleId").orElse(null);
             if (pentacleId.equals(value)) {
-                return projection(holder.id(), recipe);
+                return projection(recipeId(recipe), recipe);
             }
         }
         return Optional.empty();
@@ -620,9 +618,9 @@ public final class OccultismRecipeBridge {
             return List.of();
         }
         Map<String, PentacleJeiData> grouped = new LinkedHashMap<>();
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
-            Optional<RitualProjection> projection = projection(holder.id(), recipe);
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
+            Optional<RitualProjection> projection = projection(recipeId(recipe), recipe);
             if (projection.isEmpty()) {
                 continue;
             }
@@ -645,12 +643,12 @@ public final class OccultismRecipeBridge {
             return List.of();
         }
         List<RitualJeiData> result = new ArrayList<>();
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             if (!isMachineSafeRitual(recipe)) {
                 continue;
             }
-            Optional<RitualProjection> projection = projection(holder.id(), recipe);
+            Optional<RitualProjection> projection = projection(recipeId(recipe), recipe);
             if (projection.isEmpty()) {
                 continue;
             }
@@ -676,7 +674,7 @@ public final class OccultismRecipeBridge {
                     .filter(Ingredient.class::isInstance)
                     .map(Ingredient.class::cast)
                     .orElse(null);
-            result.add(new RitualJeiData(holder.id(),
+            result.add(new RitualJeiData(recipeId(recipe),
                     projection.get().pentacleId(),
                     List.copyOf(ritualIngredients),
                     activation,
@@ -698,24 +696,25 @@ public final class OccultismRecipeBridge {
             if (type == null) {
                 continue;
             }
-            for (RecipeHolder<?> holder : recipes(level, type)) {
-                Object recipe = holder.value();
+            for (Recipe<?> recipeHolder : recipes(level, type)) {
+                Object recipe = recipeHolder;
                 Ingredient ingredient = ingredients(recipe).stream().findFirst().orElse(null);
                 if (ingredient == null || ingredient.getItems().length == 0) {
                     continue;
                 }
-                ItemStack input = ingredient.getItems()[0].copyWithCount(1);
+                ItemStack input = ingredient.getItems()[0].copy();
+                input.setCount(1);
                 ItemStack baseOutput = result(level.registryAccess(), recipe);
                 if (baseOutput.isEmpty()) {
                     continue;
                 }
                 if ("spirit_fire".equals(typeId)) {
-                    addSpiritJeiRecipe(result, holder.id(), typeId, input,
+                    addSpiritJeiRecipe(result, recipeId(recipe), typeId, input,
                             spiritSource("foliot", ""), baseOutput);
                 } else if ("spirit_trade".equals(typeId)) {
                     String trader = stringValue(recipe, "getTrader");
                     String entity = trader.contains("gambler") ? "djinni" : "foliot";
-                    addSpiritJeiRecipe(result, holder.id(), typeId, input,
+                    addSpiritJeiRecipe(result, recipeId(recipe), typeId, input,
                             spiritSource(entity, trader), baseOutput);
                 } else {
                     for (int tier = 1; tier <= 4; tier++) {
@@ -729,7 +728,7 @@ public final class OccultismRecipeBridge {
                             case 3 -> "afrit";
                             default -> "marid";
                         };
-                        addSpiritJeiRecipe(result, holder.id(), typeId, input,
+                        addSpiritJeiRecipe(result, recipeId(recipe), typeId, input,
                                 spiritSource(entity, ""), output);
                     }
                 }
@@ -761,7 +760,7 @@ public final class OccultismRecipeBridge {
             spiritJob.putString("factoryId", job);
             entityData.put("spiritJob", spiritJob);
         }
-        source.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+        source.getOrCreateTag().put("EntityTag", entityData);
         return source;
     }
 
@@ -807,7 +806,7 @@ public final class OccultismRecipeBridge {
         List<ItemStack> stacks = new ArrayList<>();
         for (Map.Entry<net.minecraft.world.item.Item, Integer> entry : counts.entrySet()) {
             int remaining = entry.getValue();
-            int max = entry.getKey().getDefaultMaxStackSize();
+            int max = entry.getKey().getMaxStackSize();
             while (remaining > 0) {
                 int count = Math.min(remaining, max);
                 stacks.add(new ItemStack(entry.getKey(), count));
@@ -832,7 +831,7 @@ public final class OccultismRecipeBridge {
         if (candidates.isEmpty()) {
             return List.of();
         }
-        SpawnEggItem egg = SpawnEggItem.byId(candidates.getFirst());
+        SpawnEggItem egg = SpawnEggItem.byId(candidates.get(0));
         return egg == null ? List.of() : List.of(new ItemStack(egg));
     }
 
@@ -851,20 +850,20 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        for (RecipeHolder<?> holder : recipes(level, type)) {
-            Object recipe = holder.value();
+        for (Recipe<?> recipeHolder : recipes(level, type)) {
+            Object recipe = recipeHolder;
             Optional<List<InputUse>> materialSlots = matchRitualIngredients(recipe, inventory);
             if (materialSlots.isEmpty()) {
                 continue;
             }
-            Optional<RitualProjection> projection = projection(holder.id(), recipe);
+            Optional<RitualProjection> projection = projection(recipeId(recipe), recipe);
             if (projection.isEmpty()
                     || !matchesRitualProjectionChalk(projection.get(), inventory)) {
                 continue;
             }
             List<InputUse> inputs = new ArrayList<>();
             inputs.addAll(materialSlots.get());
-            return Optional.of(new RecipeResult(holder.id(),
+            return Optional.of(new RecipeResult(recipeId(recipe),
                     createPentacleMiniRitual(projection.get()), 100, inputs, -1, -1));
         }
         return Optional.empty();
@@ -878,16 +877,15 @@ public final class OccultismRecipeBridge {
 
     public static ItemStack createPentacleMiniRitual(RitualProjection projection) {
         ItemStack output = new ItemStack(MekanismMagic.MINI_RITUAL.get());
-        CustomData.update(DataComponents.CUSTOM_DATA, output, tag ->
-                tag.putString("pentacle", projection.pentacleId().toString()));
+        output.getOrCreateTag().putString(
+                "pentacle", projection.pentacleId().toString());
         return output;
     }
 
     public static void bindMiniRitual(ItemStack stack, RitualProjection projection) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
-            tag.putString("ritual", projection.recipeId().toString());
-            tag.putString("pentacle", projection.pentacleId().toString());
-        });
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString("ritual", projection.recipeId().toString());
+        tag.putString("pentacle", projection.pentacleId().toString());
     }
 
     public static boolean isSacrificeItem(ItemStack stack) {
@@ -908,7 +906,10 @@ public final class OccultismRecipeBridge {
         if (ArsNouveauIntegration.emptyMobJar(stack)) {
             inventory.setStackInSlot(slot, stack);
         } else if (isFilledOccultismContainment(stack)) {
-            stack.remove(DataComponents.ENTITY_DATA);
+            CompoundTag root = stack.getTag();
+            if (root != null) {
+                root.remove("EntityTag");
+            }
             inventory.setStackInSlot(slot, stack);
         } else {
             inventory.extractItem(slot, 1, false);
@@ -964,18 +965,19 @@ public final class OccultismRecipeBridge {
      * matching; the model only needs to represent its pentacle projection.
      */
     public static int miniRitualModelData(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        CompoundTag data = stack.getTag();
         if (data == null || data.isEmpty()) {
             return 0;
         }
-        String pentacle = data.copyTag().getString("pentacle");
+        String pentacle = data.getString("pentacle");
         ResourceLocation id = ResourceLocation.tryParse(pentacle);
         return id == null ? 0 : PENTACLE_MODEL_DATA.getOrDefault(id.getPath(), 0);
     }
 
     private static String entityId(ItemStack stack) {
         if (stack.getItem() instanceof SpawnEggItem egg) {
-            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(egg.getType(stack));
+            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(
+                    egg.getType(stack.getTag()));
             return id == null ? "" : id.toString();
         }
         String arsNouveauEntity = ArsNouveauIntegration.entityId(stack);
@@ -1007,24 +1009,25 @@ public final class OccultismRecipeBridge {
     }
 
     private static net.minecraft.nbt.CompoundTag entityDataTag(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.ENTITY_DATA);
-        return data == null || data.isEmpty() ? null : data.copyTag();
+        CompoundTag root = stack.getTag();
+        return root == null || !root.contains("EntityTag")
+                ? null : root.getCompound("EntityTag").copy();
     }
 
     private static String customRitualId(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        CompoundTag data = stack.getTag();
         if (data == null || data.isEmpty()) {
             return "";
         }
-        return data.copyTag().getString("ritual");
+        return data.getString("ritual");
     }
 
     private static String customPentacleId(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        CompoundTag data = stack.getTag();
         if (data == null || data.isEmpty()) {
             return "";
         }
-        return data.copyTag().getString("pentacle");
+        return data.getString("pentacle");
     }
 
     private static boolean isMachineSafeRitual(Object recipe) {
@@ -1121,7 +1124,7 @@ public final class OccultismRecipeBridge {
                     ? recipeResult.copy() : egg == null
                     ? RitualSpawnEggItem.forEntity(type, entityData)
                     : new ItemStack(egg);
-            output.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+            output.getOrCreateTag().put("EntityTag", entityData);
         }
         output.setCount(Math.min(count, output.getMaxStackSize()));
         return output;
@@ -1252,7 +1255,7 @@ public final class OccultismRecipeBridge {
 
     private static EntityType<?> entityType(ItemStack stack) {
         if (stack.getItem() instanceof SpawnEggItem egg) {
-            return egg.getType(stack);
+            return egg.getType(stack.getTag());
         }
         String id = entityId(stack);
         ResourceLocation entityId = ResourceLocation.tryParse(id);
@@ -1266,7 +1269,7 @@ public final class OccultismRecipeBridge {
             return Optional.empty();
         }
         try {
-            Object recipeInput = new SingleRecipeInput(input.copy());
+            Object recipeInput = new net.minecraft.world.SimpleContainer(input.copy());
             Method matches = findMethod(recipe, "matches", recipeInput.getClass(), Level.class);
             if (matches != null && (boolean) matches.invoke(recipe, recipeInput, level)) {
                 return Optional.of(new Match());
@@ -1335,7 +1338,7 @@ public final class OccultismRecipeBridge {
                 || ingredient.getItems().length == 0;
     }
 
-    private static ItemStack result(HolderLookup.Provider registries, Object recipe) {
+    private static ItemStack result(RegistryAccess registries, Object recipe) {
         Object result = invoke(recipe, "getResultItem", registries).orElse(null);
         return result instanceof ItemStack stack ? stack.copy() : ItemStack.EMPTY;
     }
@@ -1415,8 +1418,16 @@ public final class OccultismRecipeBridge {
         return BuiltInRegistries.RECIPE_TYPE.get(new ResourceLocation(OCCULTISM, path));
     }
 
+    private static ResourceLocation recipeId(Object recipe) {
+        return invoke(recipe, "getId")
+                .filter(ResourceLocation.class::isInstance)
+                .map(ResourceLocation.class::cast)
+                .orElse(new ResourceLocation(
+                        "mekanism_magic", "runtime_occultism_recipe"));
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static List<RecipeHolder<?>> recipes(Level level, RecipeType<?> type) {
+    private static List<Recipe<?>> recipes(Level level, RecipeType<?> type) {
         return (List) level.getRecipeManager().getAllRecipesFor((RecipeType) type);
     }
 
@@ -1461,5 +1472,3 @@ public final class OccultismRecipeBridge {
     private record Match() {
     }
 }
-
-

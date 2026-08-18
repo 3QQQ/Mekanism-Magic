@@ -22,7 +22,7 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
         super(MekanismMagicJeiPlugin.MINI_RITUAL_TYPE,
                 Component.translatable("jei.mekanism_magic.mini_ritual"),
                 guiHelper.createDrawableItemLike(
-                        NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem()),
+                        NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.getSecondary()),
                 176, 84);
     }
 
@@ -55,4 +55,3 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
                 .addItemStack(recipe.output());
     }
 }
-

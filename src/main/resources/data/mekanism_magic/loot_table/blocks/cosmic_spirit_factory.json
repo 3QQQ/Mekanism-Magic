@@ -1,1 +1,0 @@
-{"neoforge:conditions":[{"type":"neoforge:mod_loaded","modid":"mekanism_extras"}],"type":"minecraft:block","pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"mekanism_magic:cosmic_spirit_factory"}],"conditions":[{"condition":"minecraft:survives_explosion"}]}]}

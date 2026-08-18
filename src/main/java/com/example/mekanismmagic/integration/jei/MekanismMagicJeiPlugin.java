@@ -66,25 +66,25 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem(),
+                NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.getSecondary(),
                 MINI_RITUAL_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.RITUAL_BLOCK.asItem(),
+                NativeMekanismRegistries.RITUAL_BLOCK.getSecondary(),
                 RITUAL_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.SPIRIT_BLOCK.asItem(),
+                NativeMekanismRegistries.SPIRIT_BLOCK.getSecondary(),
                 SPIRIT_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.asItem(),
+                NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.getSecondary(),
                 SPIRIT_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.asItem(),
+                NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.getSecondary(),
                 SPIRIT_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.asItem(),
+                NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.getSecondary(),
                 SPIRIT_TYPE);
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.asItem(),
+                NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.getSecondary(),
                 SPIRIT_TYPE);
         addOptionalSpiritFactoryCatalyst(registration,
                 "absolute_spirit_factory");
@@ -95,7 +95,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         addOptionalSpiritFactoryCatalyst(registration,
                 "infinite_spirit_factory");
         registration.addRecipeCatalyst(
-                NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem(),
+                NativeMekanismRegistries.DIMENSION_MINER_BLOCK.getSecondary(),
                 MINER_TYPE);
     }
 
@@ -110,4 +110,3 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         }
     }
 }
-

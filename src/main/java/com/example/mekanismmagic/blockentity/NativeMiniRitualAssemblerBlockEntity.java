@@ -27,8 +27,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
     private boolean chalkModuleOpen;
 
     public NativeMiniRitualAssemblerBlockEntity(BlockPos pos, BlockState state) {
-        super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.get()
-                .builtInRegistryHolder(), pos, state);
+        super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK, pos, state);
     }
 
     @Override

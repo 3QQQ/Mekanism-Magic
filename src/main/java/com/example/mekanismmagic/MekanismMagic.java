@@ -9,6 +9,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -37,24 +38,24 @@ public final class MekanismMagic {
     public static final RegistryObject<CreativeModeTab> TAB =
             CREATIVE_TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.mekanism_magic"))
-                    .icon(() -> new ItemStack(NativeMekanismRegistries.SPIRIT_BLOCK.asItem()))
+                    .icon(() -> new ItemStack(NativeMekanismRegistries.SPIRIT_BLOCK.getSecondary()))
                     .displayItems((parameters, output) -> {
-                        output.accept(NativeMekanismRegistries.SPIRIT_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.RITUAL_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem());
+                        output.accept(NativeMekanismRegistries.SPIRIT_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.RITUAL_BLOCK.getSecondary());
+                        output.accept(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.getSecondary());
                         output.accept(ULTIMATE_MINI_RITUAL.get());
                         output.accept(RITUAL_SPAWN_EGG.get());
                     }).build());
 
-    public MekanismMagic(IEventBus modBus) {
+    public MekanismMagic() {
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
         NativeMekanismRegistries.register(modBus);
     }
 }
-

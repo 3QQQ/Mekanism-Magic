@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBlockEntity {
     public NativeSpiritProcessorBlockEntity(BlockPos pos, BlockState state) {
-        super(NativeMekanismRegistries.SPIRIT_BLOCK.get().builtInRegistryHolder(), pos, state);
+        super(NativeMekanismRegistries.SPIRIT_BLOCK, pos, state);
     }
 
     @Override

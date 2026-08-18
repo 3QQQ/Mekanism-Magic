@@ -5,7 +5,6 @@ import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.tile.component.ITileComponent;
 import mekanism.common.tile.interfaces.IRedstoneControl;
 import mekanism.common.upgrade.MachineUpgradeData;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import mekanism.api.inventory.IInventorySlot;
@@ -19,8 +18,7 @@ import java.util.List;
 public final class SpiritMachineUpgradeData extends MachineUpgradeData {
     public final ItemStack spiritSource;
 
-    public SpiritMachineUpgradeData(HolderLookup.Provider registries,
-                                    boolean redstone,
+    public SpiritMachineUpgradeData(boolean redstone,
                                     IRedstoneControl.RedstoneControl controlType,
                                     IEnergyContainer energyContainer,
                                     int[] progress,
@@ -30,7 +28,7 @@ public final class SpiritMachineUpgradeData extends MachineUpgradeData {
                                     boolean sorting,
                                     List<ITileComponent> components,
                                     ItemStack spiritSource) {
-        super(registries, redstone, controlType, energyContainer, progress,
+        super(redstone, controlType, energyContainer, progress,
                 energySlot, inputSlots, outputSlots, sorting, components);
         this.spiritSource = spiritSource.copy();
     }

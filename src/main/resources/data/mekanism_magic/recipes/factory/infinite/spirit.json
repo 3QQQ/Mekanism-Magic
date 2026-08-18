@@ -1,5 +1,5 @@
 {
-  "neoforge:conditions": [{"type": "neoforge:mod_loaded", "modid": "mekanism_extras"}],
+  "forge:conditions": [{"type": "forge:mod_loaded", "modid": "mekanism_extras"}],
   "type": "mekanism:mek_data",
   "category": "misc",
   "pattern": ["ACA", "IPJ", "ACA"],
@@ -10,5 +10,5 @@
     "J": {"tag": "c:pellets/polonium"},
     "P": {"item": "mekanism_magic:cosmic_spirit_factory"}
   },
-  "result": {"id": "mekanism_magic:infinite_spirit_factory", "count": 1}
+  "result": {"item": "mekanism_magic:infinite_spirit_factory", "count": 1}
 }

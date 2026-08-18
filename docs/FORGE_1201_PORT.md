@@ -1,23 +1,34 @@
 # Forge 1.20.1 移植状态
 
-当前分支目标为 Minecraft 1.20.1 + Forge 47.4.22。
+当前分支目标为 Minecraft 1.20.1 + Forge 47.4.22，使用 Java 17。
 
-已完成：
+## 已完成
 
 * Gradle 已切换到 ModDevGradle Legacy Forge 模式。
-* Java 工具链切换为 Java 17。
-* 已准备 Mekanism 10.4.16.80、Occultism 1.20.1-1.158.0、JEI 15.49.0.190
-  及 Occultism 的 Forge 依赖。
-* `mods.toml` 和资源包格式已切换到 Forge/Minecraft 1.20.1。
-* NeoForge 包名已批量替换为 Forge 包名。
+* 本地模组依赖通过 `modCompileOnly` / `modLocalRuntime` 进行开发环境重映射。
+* 已适配 Mekanism 10.4.16.80、Occultism 1.20.1-1.158.0 和 JEI 15.49.0.190。
+* `mods.toml`、资源包格式、Forge 注册 API 和客户端屏幕注册已迁移。
+* ItemStack 数据组件已迁移到 1.20.1 NBT。
+* Occultism 配方遍历、配方输入容器和运行时配方桥已迁移。
+* Mekanism 机器基类、能量容器、升级数据、缓存配方与四级魔灵工厂已迁移到 10.4 API。
+* JEI 15 插件和配方分类已完成源码适配。
+* 资源目录已改为 1.20.1 的 `recipes` / `loot_tables`，合成结果字段已改为 `item`。
+* 复合机器模型已从 `neoforge:composite` 改为 `forge:composite`。
 
-尚未完成：
+## 已验证
 
-* 1.21 数据组件需要迁移到 1.20.1 的 ItemStack NBT。
-* RecipeHolder、SingleRecipeInput、ItemHandlerRecipeInput 等配方 API 需要迁移。
-* TileEntityMekanism、能量容器、升级数据和侧面配置 API 需要按 Mekanism 10.4 重写。
-* Mekanism Factory 10.4 的缓存和工厂接口与 10.7 不兼容。
-* JEI 15 的插件/分类接口需要重新适配。
-* Ars Nouveau、Mekanism Extras 和 MoreMachine 的 1.20.1 版本尚未加入。
+* `gradlew clean build` 成功。
+* `gradlew runData` 成功。
+* `gradlew runClient` 能完成模组加载并进入主菜单，未产生新的崩溃报告。
+* 客户端日志中已无 Mekanism Magic 模型加载错误。
 
-因此当前分支是移植起点，尚未达到可运行状态；不要用它替换 1.21.1 的正式 JAR。
+## 尚未完成
+
+* 需要在实际世界中逐台放置机器，验证方块实体、容器、GUI、侧面配置、升级和配方处理。
+* 粉笔模块与魔灵全典模块的展开按钮尚未恢复。
+* 部分 GUI 背景仍是移植阶段的临时实现，需要重新接回 Mekanism 10.4 原生组件。
+* Ars Nouveau 1.20.1 集成暂时为空实现。
+* Mekanism Extras / MoreMachine 的 1.20.1 高阶工厂适配尚未恢复；当前仅注册 Mekanism 原生四个工厂等级。
+* 需要在进入世界后验证 JEI 配方查看、仪式数据加载和维度矿工输出。
+
+因此当前版本已经达到“可构建、可启动到主菜单”的阶段，但还不能视为完成的 1.20.1 发布版。

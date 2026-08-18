@@ -14,7 +14,7 @@
     "G": {"item": "minecraft:diamond_block"}
   },
   "result": {
-    "id": "mekanism_magic:dimension_miner",
+    "item": "mekanism_magic:dimension_miner",
     "count": 1
   }
 }

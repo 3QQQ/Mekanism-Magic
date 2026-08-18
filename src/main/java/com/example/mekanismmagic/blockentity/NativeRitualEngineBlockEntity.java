@@ -21,7 +21,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     private boolean dictionaryModuleOpen;
 
     public NativeRitualEngineBlockEntity(BlockPos pos, BlockState state) {
-        super(NativeMekanismRegistries.RITUAL_BLOCK.get().builtInRegistryHolder(), pos, state);
+        super(NativeMekanismRegistries.RITUAL_BLOCK, pos, state);
     }
 
     @Override
