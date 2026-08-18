@@ -93,6 +93,18 @@ Mekanism 的 `speed_upgrade` / `energy_upgrade` 是普通机器的升级物品�
 
 当前已注册魔灵工厂的四个 Mekanism Tier Installer 等级：基础 3 工位、高级 5 工位、精英 7 工位、终极 9 工位。工厂使用 `TileEntityFactory` 的缓存处理、排序、能量和原生 Factory 容器布局；魔灵配方仍由 Occultism 运行时桥接提供。
 
+安装 Mekanism Extras 后，本模组通过独立的可选集成注册其四种
+`ExtraFactoryTier`：
+
+* 绝对魔灵工厂：11 工位
+* 至尊魔灵工厂：13 工位
+* 宇宙魔灵工厂：15 工位
+* 无限魔灵工厂：17 工位
+
+高阶工厂使用 Extras 自带的 `TileEntityExtraFactory`、Factory 容器、
+等级灯和 `ItemExtraTierInstaller` 升级链。Extras 未安装时这些类不会被
+加载，基础模组仍只注册 Mekanism 原版四级工厂。
+
 安装 JEI `19.39.0` 或更高版本时，本模组会注册“微缩五芒星制作”“神秘仪式”和
 “魔灵处理”三个配方分类：前者显示 18 种五芒星成立材料、法阵粉笔和微缩输出，
 第二类显示所有具体仪式的材料、激活物品、献祭示例和输出，第三类显示灵火、粉碎、

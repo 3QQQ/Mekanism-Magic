@@ -1,0 +1,13 @@
+{
+  "neoforge:conditions": [{"type": "neoforge:mod_loaded", "modid": "mekanism_extras"}],
+  "type": "mekanism:mek_data",
+  "category": "misc",
+  "pattern": ["ACA", "IPI", "ACA"],
+  "key": {
+    "A": {"tag": "mekanism_extras:alloys/radiance"},
+    "C": {"tag": "c:circuits/absolute"},
+    "I": {"tag": "c:gems/emerald"},
+    "P": {"item": "mekanism_magic:ultimate_spirit_factory"}
+  },
+  "result": {"id": "mekanism_magic:absolute_spirit_factory", "count": 1}
+}

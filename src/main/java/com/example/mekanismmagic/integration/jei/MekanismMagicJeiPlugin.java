@@ -86,8 +86,27 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.asItem(),
                 SPIRIT_TYPE);
+        addOptionalSpiritFactoryCatalyst(registration,
+                "absolute_spirit_factory");
+        addOptionalSpiritFactoryCatalyst(registration,
+                "supreme_spirit_factory");
+        addOptionalSpiritFactoryCatalyst(registration,
+                "cosmic_spirit_factory");
+        addOptionalSpiritFactoryCatalyst(registration,
+                "infinite_spirit_factory");
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem(),
                 MINER_TYPE);
+    }
+
+    private static void addOptionalSpiritFactoryCatalyst(
+            IRecipeCatalystRegistration registration, String path) {
+        net.minecraft.world.item.Item item =
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                        ResourceLocation.fromNamespaceAndPath(
+                                MekanismMagic.MOD_ID, path));
+        if (item != net.minecraft.world.item.Items.AIR) {
+            registration.addRecipeCatalyst(item, SPIRIT_TYPE);
+        }
     }
 }
