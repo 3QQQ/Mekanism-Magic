@@ -85,10 +85,4 @@ public abstract class NativeMagicMachineScreen<
                 inventoryLabelY, titleTextColor(), false);
     }
 
-    @Override
-    protected void renderBg(net.minecraft.client.gui.GuiGraphics gui,
-                            float partialTick, int mouseX, int mouseY) {
-        gui.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight,
-                0xFF20262D);
-    }
 }

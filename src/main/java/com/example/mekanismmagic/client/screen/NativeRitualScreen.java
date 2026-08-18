@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeRitualEngineBlockEntity;
+import com.example.mekanismmagic.client.gui.GuiDictionaryModuleTab;
 import mekanism.client.gui.GuiConfigurableTile;
 import mekanism.client.gui.element.GuiUpArrow;
 import mekanism.client.gui.element.slot.GuiSlot;
@@ -52,6 +53,12 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     @Override
     protected int energyBarHeight() {
         return 87;
+    }
+
+    @Override
+    protected void addMachineGuiElements() {
+        addRenderableWidget(new GuiDictionaryModuleTab(this, getTileEntity(),
+                this::toggleDictionaryModule));
     }
 
     @Override

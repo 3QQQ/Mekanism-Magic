@@ -14,6 +14,8 @@
 * JEI 15 插件和配方分类已完成源码适配。
 * 资源目录已改为 1.20.1 的 `recipes` / `loot_tables`，合成结果字段已改为 `item`。
 * 复合机器模型已从 `neoforge:composite` 改为 `forge:composite`。
+* 粉笔模块与魔灵全典模块已用 Mekanism 10.4 的侧边标签组件恢复。
+* 通用机器界面已重新使用 Mekanism 原生背景与边框渲染。
 
 ## 已验证
 
@@ -21,12 +23,11 @@
 * `gradlew runData` 成功。
 * `gradlew runClient` 能完成模组加载并进入主菜单，未产生新的崩溃报告。
 * 客户端日志中已无 Mekanism Magic 模型加载错误。
+* `gradlew runServer` 能完成专用服务端模组加载并到达 EULA 检查。
 
 ## 尚未完成
 
 * 需要在实际世界中逐台放置机器，验证方块实体、容器、GUI、侧面配置、升级和配方处理。
-* 粉笔模块与魔灵全典模块的展开按钮尚未恢复。
-* 部分 GUI 背景仍是移植阶段的临时实现，需要重新接回 Mekanism 10.4 原生组件。
 * Ars Nouveau 1.20.1 集成暂时为空实现。
 * Mekanism Extras / MoreMachine 的 1.20.1 高阶工厂适配尚未恢复；当前仅注册 Mekanism 原生四个工厂等级。
 * 需要在进入世界后验证 JEI 配方查看、仪式数据加载和维度矿工输出。
