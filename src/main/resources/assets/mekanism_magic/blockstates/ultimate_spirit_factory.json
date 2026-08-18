@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,active=false": {"model": "mekanism_magic:block/ultimate_spirit_factory"},
+    "facing=south,active=false": {"model": "mekanism_magic:block/ultimate_spirit_factory", "y": 180},
+    "facing=east,active=false": {"model": "mekanism_magic:block/ultimate_spirit_factory", "y": 90},
+    "facing=west,active=false": {"model": "mekanism_magic:block/ultimate_spirit_factory", "y": -90},
+    "facing=north,active=true": {"model": "mekanism_magic:block/spirit_factory/active/ultimate"},
+    "facing=south,active=true": {"model": "mekanism_magic:block/spirit_factory/active/ultimate", "y": 180},
+    "facing=east,active=true": {"model": "mekanism_magic:block/spirit_factory/active/ultimate", "y": 90},
+    "facing=west,active=true": {"model": "mekanism_magic:block/spirit_factory/active/ultimate", "y": -90}
+  }
+}

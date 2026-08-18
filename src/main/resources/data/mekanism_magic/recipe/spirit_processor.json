@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CSC",
+    "IAI",
+    "CSC"
+  ],
+  "key": {
+    "C": {
+      "item": "occultism:otherstone"
+    },
+    "S": {
+      "item": "occultism:spirit_attuned_crystal"
+    },
+    "I": {
+      "item": "mekanism:alloy_infused"
+    },
+    "A": {
+      "item": "occultism:golden_sacrificial_bowl"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:spirit_processor",
+    "count": 1
+  }
+}

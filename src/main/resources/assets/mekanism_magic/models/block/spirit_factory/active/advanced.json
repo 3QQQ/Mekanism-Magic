@@ -1,0 +1,29 @@
+{
+  "loader": "neoforge:composite",
+  "parent": "block/block",
+  "textures": {
+    "particle": "mekanism_magic:block/spirit_factory/advanced/front_active"
+  },
+  "children": {
+    "opaque_core": {
+      "parent": "mekanism_magic:block/spirit_factory/opaque_core",
+      "textures": {
+        "core": "mekanism_magic:block/spirit_factory/advanced/side"
+      }
+    },
+    "base": {
+      "parent": "mekanism_magic:block/spirit_factory/base_active",
+      "textures": {
+        "particle": "mekanism_magic:block/spirit_factory/advanced/front_active",
+        "front": "mekanism_magic:block/spirit_factory/advanced/front_active",
+        "top": "mekanism_magic:block/spirit_factory/advanced/top",
+        "back_panel": "mekanism_magic:block/spirit_factory/advanced/back",
+        "side": "mekanism_magic:block/spirit_factory/advanced/side",
+        "bottom": "mekanism_magic:block/spirit_factory/advanced/bottom"
+      }
+    },
+    "front_led": {
+      "parent": "mekanism:block/factory/front_led/active/advanced"
+    }
+  }
+}

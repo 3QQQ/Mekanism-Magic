@@ -1,0 +1,114 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.143'
+    id 'idea'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
+    maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
+    mavenCentral()
+}
+
+neoForge {
+    version = project.neo_version
+    runs {
+        client {
+            client()
+            if (project.hasProperty('quickPlayWorld')) {
+                programArguments.addAll '--quickPlaySingleplayer',
+                        project.property('quickPlayWorld').toString()
+            }
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+sourceSets.main.resources {
+    srcDir('src/generated/resources')
+}
+
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom(localRuntime)
+}
+
+def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
+
+dependencies {
+    compileOnly files('libs/Mekanism-1.21.1-10.7.19.85.jar')
+    compileOnly files('run/mods/jei-1.21.1-neoforge-19.39.0.369.jar')
+    compileOnly files(
+            'libs/ars_nouveau-1.21.1-5.13.0.jar',
+            'libs/mekanism_extras-1.21.1-1.4.0.jar',
+            'libs/mekmm-1.21.1-1.4.0.jar'
+    )
+    // Recipe and mob-jar bridges use registry lookups/reflection so optional
+    // implementation classes are not hard-linked into the addon.
+    localRuntime files(
+            'libs/Mekanism-1.21.1-10.7.19.85.jar',
+            'libs/occultism-1.21.1-neoforge-1.224.2.jar',
+            'libs/ars_nouveau-1.21.1-5.13.0.jar'
+    )
+    if (compatRuntimeEnabled) {
+        localRuntime files(
+                'libs/mekanism_extras-1.21.1-1.4.0.jar',
+                'libs/mekmm-1.21.1-1.4.0.jar'
+        )
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

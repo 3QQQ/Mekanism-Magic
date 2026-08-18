@@ -1,0 +1,31 @@
+package com.example.mekanismmagic.item;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+
+import java.util.List;
+
+/**
+ * Universal ritual selector. Occultism 1.224.2 has no duplicate ritual input
+ * signatures, so selecting by ingredients remains deterministic.
+ */
+public final class UltimateMiniRitualItem extends Item {
+    public UltimateMiniRitualItem(Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    public boolean isFoil(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context,
+                                List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable(
+                "item.mekanism_magic.ultimate_mini_ritual.tooltip"));
+    }
+}

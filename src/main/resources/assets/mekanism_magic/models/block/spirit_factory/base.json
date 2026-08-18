@@ -1,0 +1,11 @@
+{
+  "parent": "mekanism:block/factory/crushing/base",
+  "textures": {
+    "particle": "mekanism_magic:block/spirit_factory/front",
+    "front": "mekanism_magic:block/spirit_factory/front",
+    "top": "mekanism_magic:block/spirit_factory/top",
+    "back_panel": "mekanism_magic:block/spirit_factory/back",
+    "side": "mekanism_magic:block/spirit_factory/side",
+    "bottom": "mekanism_magic:block/spirit_factory/bottom"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PIP",
+    "AEA",
+    "PIP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "I": {
+      "item": "mekanism:alloy_infused"
+    },
+    "A": {
+      "item": "minecraft:ender_pearl"
+    },
+    "E": {
+      "item": "mekanism:steel_casing"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:mini_ritual_assembler",
+    "count": 1
+  }
+}

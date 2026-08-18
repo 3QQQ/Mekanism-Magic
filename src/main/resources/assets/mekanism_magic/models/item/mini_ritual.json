@@ -1,0 +1,26 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "mekanism_magic:item/mini_ritual/mini_ritual_unbound"
+  },
+  "overrides": [
+    {"predicate": {"mekanism_magic:ritual": 1}, "model": "mekanism_magic:item/mini_ritual/contact_eldritch_spirit"},
+    {"predicate": {"mekanism_magic:ritual": 2}, "model": "mekanism_magic:item/mini_ritual/contact_wild_spirit"},
+    {"predicate": {"mekanism_magic:ritual": 3}, "model": "mekanism_magic:item/mini_ritual/craft_afrit"},
+    {"predicate": {"mekanism_magic:ritual": 4}, "model": "mekanism_magic:item/mini_ritual/craft_djinni"},
+    {"predicate": {"mekanism_magic:ritual": 5}, "model": "mekanism_magic:item/mini_ritual/craft_foliot"},
+    {"predicate": {"mekanism_magic:ritual": 6}, "model": "mekanism_magic:item/mini_ritual/craft_marid"},
+    {"predicate": {"mekanism_magic:ritual": 7}, "model": "mekanism_magic:item/mini_ritual/possess_afrit"},
+    {"predicate": {"mekanism_magic:ritual": 8}, "model": "mekanism_magic:item/mini_ritual/possess_djinni"},
+    {"predicate": {"mekanism_magic:ritual": 9}, "model": "mekanism_magic:item/mini_ritual/possess_foliot"},
+    {"predicate": {"mekanism_magic:ritual": 10}, "model": "mekanism_magic:item/mini_ritual/possess_marid"},
+    {"predicate": {"mekanism_magic:ritual": 11}, "model": "mekanism_magic:item/mini_ritual/possess_unbound_afrit"},
+    {"predicate": {"mekanism_magic:ritual": 12}, "model": "mekanism_magic:item/mini_ritual/resurrect_spirit"},
+    {"predicate": {"mekanism_magic:ritual": 13}, "model": "mekanism_magic:item/mini_ritual/summon_afrit"},
+    {"predicate": {"mekanism_magic:ritual": 14}, "model": "mekanism_magic:item/mini_ritual/summon_djinni"},
+    {"predicate": {"mekanism_magic:ritual": 15}, "model": "mekanism_magic:item/mini_ritual/summon_foliot"},
+    {"predicate": {"mekanism_magic:ritual": 16}, "model": "mekanism_magic:item/mini_ritual/summon_marid"},
+    {"predicate": {"mekanism_magic:ritual": 17}, "model": "mekanism_magic:item/mini_ritual/summon_unbound_afrit"},
+    {"predicate": {"mekanism_magic:ritual": 18}, "model": "mekanism_magic:item/mini_ritual/summon_unbound_marid"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "render_type": "minecraft:solid",
+  "textures": {
+    "particle": "#core"
+  },
+  "elements": [
+    {
+      "name": "opaque_inner_shell",
+      "from": [1.01, 0.01, 4.01],
+      "to": [14.99, 14.99, 14.99],
+      "faces": {
+        "north": {"texture": "#core"},
+        "east": {"texture": "#core"},
+        "south": {"texture": "#core"},
+        "west": {"texture": "#core"},
+        "up": {"texture": "#core"},
+        "down": {"texture": "#core"}
+      }
+    }
+  ]
+}

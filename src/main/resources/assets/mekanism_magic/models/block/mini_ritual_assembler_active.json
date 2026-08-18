@@ -1,0 +1,8 @@
+{
+  "parent": "mekanism_magic:block/mini_ritual_assembler",
+  "textures": {
+    "front": "mekanism_magic:block/mini_ritual_assembler/front_active",
+    "west": "mekanism_magic:block/mini_ritual_assembler/side_active",
+    "east": "mekanism_magic:block/mini_ritual_assembler/side_active"
+  }
+}

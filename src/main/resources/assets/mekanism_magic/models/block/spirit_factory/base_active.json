@@ -1,0 +1,6 @@
+{
+  "parent": "mekanism_magic:block/spirit_factory/base",
+  "textures": {
+    "front": "mekanism_magic:block/spirit_factory/front_active"
+  }
+}

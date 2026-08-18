@@ -1,0 +1,8 @@
+{
+  "parent": "mekanism_magic:block/ritual_engine",
+  "textures": {
+    "front": "mekanism_magic:block/ritual_engine/front_active",
+    "west": "mekanism_magic:block/ritual_engine/side_active",
+    "east": "mekanism_magic:block/ritual_engine/side_active"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ODO",
+    "SCS",
+    "BGB"
+  ],
+  "key": {
+    "O": {"item": "occultism:otherstone"},
+    "D": {"item": "occultism:spirit_attuned_crystal"},
+    "S": {"item": "mekanism:steel_casing"},
+    "C": {"item": "mekanism:advanced_control_circuit"},
+    "B": {"item": "occultism:golden_sacrificial_bowl"},
+    "G": {"item": "minecraft:diamond_block"}
+  },
+  "result": {
+    "id": "mekanism_magic:dimension_miner",
+    "count": 1
+  }
+}
