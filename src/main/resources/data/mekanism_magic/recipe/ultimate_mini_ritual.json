@@ -1,25 +1,54 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "MAM",
+    "ABC",
     "SNS",
-    "MCM"
+    "DUE"
   ],
   "key": {
-    "M": {
-      "item": "mekanism_magic:mini_ritual"
-    },
     "A": {
-      "item": "mekanism:alloy_atomic"
+      "item": "mekanism_magic:mini_ritual",
+      "components": {
+        "minecraft:custom_data": {
+          "pentacle": "occultism:craft_marid"
+        }
+      }
     },
-    "S": {
-      "item": "occultism:spirit_attuned_crystal"
+    "B": {
+      "item": "mekanism_magic:mini_ritual",
+      "components": {
+        "minecraft:custom_data": {
+          "pentacle": "occultism:possess_marid"
+        }
+      }
+    },
+    "C": {
+      "item": "mekanism_magic:mini_ritual",
+      "components": {
+        "minecraft:custom_data": {
+          "pentacle": "occultism:summon_marid"
+        }
+      }
+    },
+    "D": {
+      "item": "mekanism_magic:mini_ritual",
+      "components": {
+        "minecraft:custom_data": {
+          "pentacle": "occultism:summon_unbound_marid"
+        }
+      }
     },
     "N": {
       "item": "minecraft:nether_star"
     },
-    "C": {
+    "S": {
+      "item": "occultism:spirit_attuned_crystal"
+    },
+    "U": {
       "item": "mekanism:ultimate_control_circuit"
+    },
+    "E": {
+      "item": "mekanism:alloy_atomic"
     }
   },
   "result": {

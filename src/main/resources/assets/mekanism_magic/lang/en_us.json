@@ -19,7 +19,7 @@
   "container.mekanism_magic.spirit_factory": "Spirit Factory",
   "item.mekanism_magic.mini_ritual": "Mini Ritual",
   "item.mekanism_magic.ultimate_mini_ritual": "Ultimate Mini Ritual",
-  "item.mekanism_magic.ultimate_mini_ritual.tooltip": "Replaces any miniature pentacle and matches every Occultism ritual",
+  "item.mekanism_magic.ultimate_mini_ritual.tooltip": "Crafted from four highest-tier Marid pentacles; matches every Occultism ritual",
   "item.mekanism_magic.ritual_spawn_egg": "Ritual Spawn Egg",
   "item.mekanism_magic.mini_ritual.unconfigured": "Unconfigured ritual id",
   "item.mekanism_magic.mini_ritual.bind": "Hold an Occultism ritual projection item offhand and use to bind",
