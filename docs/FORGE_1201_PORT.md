@@ -16,6 +16,7 @@
 * 复合机器模型已从 `neoforge:composite` 改为 `forge:composite`。
 * 粉笔模块与魔灵全典模块已用 Mekanism 10.4 的侧边标签组件恢复。
 * 通用机器界面已重新使用 Mekanism 原生背景与边框渲染。
+* Ars Nouveau 1.20.1 Mob Jar 已按 `BlockEntityTag.entityTag` NBT 格式恢复软兼容。
 
 ## 已验证
 
@@ -28,7 +29,6 @@
 ## 尚未完成
 
 * 需要在实际世界中逐台放置机器，验证方块实体、容器、GUI、侧面配置、升级和配方处理。
-* Ars Nouveau 1.20.1 集成暂时为空实现。
 * Mekanism Extras / MoreMachine 的 1.20.1 高阶工厂适配尚未恢复；当前仅注册 Mekanism 原生四个工厂等级。
 * 需要在进入世界后验证 JEI 配方查看、仪式数据加载和维度矿工输出。
 
