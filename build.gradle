@@ -61,6 +61,10 @@ configurations {
 }
 
 def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
+def mekExtrasRuntimeEnabled = compatRuntimeEnabled ||
+        (project.findProperty('mekanism_magic.mekextras_runtime')?.toString()?.toBoolean() ?: false)
+def mekmmRuntimeEnabled = compatRuntimeEnabled ||
+        (project.findProperty('mekanism_magic.mekmm_runtime')?.toString()?.toBoolean() ?: false)
 def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
@@ -82,10 +86,14 @@ dependencies {
                 "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar"
         )
     }
-    if (compatRuntimeEnabled) {
+    if (mekExtrasRuntimeEnabled) {
         localRuntime files(
-                'libs/mekanism_extras-1.21.1-1.4.0.jar',
-                'libs/mekmm-1.21.1-1.4.0.jar'
+                'libs/mekanism_extras-1.21.1-1.4.0.jar'
+        )
+    }
+    if (mekmmRuntimeEnabled) {
+        localRuntime files(
+                "libs/mekmm-1.21.1-${mekmm_runtime_version}.jar"
         )
     }
 }

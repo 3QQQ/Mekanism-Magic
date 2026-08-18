@@ -22,6 +22,21 @@
 接入 Gradle。这些附属模组在 `neoforge.mods.toml` 中作为可选依赖，
 不安装它们时本模组仍可加载。
 
+### Mekanism Extras / MoreMachine 版本组合
+
+实测结果：
+
+* Mekanism Extras `1.4.0` 单独加载：兼容。
+* Mekanism: MoreMachine `1.4.0` 单独加载：兼容。
+* 两者同时使用 `1.4.0`：不兼容。MoreMachine `1.4.0` 新增
+  `PRESSING` 工厂类型，而 Extras `1.4.0` 的类型映射只覆盖此前 6 种
+  类型，会在启动时抛出 `MatchException`。
+* Mekanism Extras `1.4.0` + mekmm `1.3.3`：兼容，客户端可正常完成
+  模组初始化和资源加载。
+* 本模组自身不依赖 mekmm `1.4.0` 的专用 API，因此可选依赖下限已放宽
+  到 `1.3.3`。`mekanism_magic.compat_runtime=true` 默认使用已验证的
+  Extras `1.4.0 + mekmm 1.3.3` 组合。
+
 ## Ars Nouveau 收容罐
 
 Ars Nouveau 的实体收容罐注册名为 `ars_nouveau:mob_jar`。其捕获实体不使用原版

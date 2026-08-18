@@ -48,6 +48,10 @@ Ars Nouveau `5.13.0` 为可选兼容；其内置依赖要求 NeoForge 至少
 
 附属模组兼容性记录见 [docs/COMPATIBILITY.md](<E:/IdeaProjects/Mekanism Magic/docs/COMPATIBILITY.md>)。Mekanism Extras 与 Mekanism: MoreMachine 的 JAR 已加入编译参考，但默认不会加载到 `runClient`；当前提供的两个 `1.4.0` JAR 在自身集成阶段会抛出 `MatchException`。确认使用兼容版本后，可将 `gradle.properties` 中的 `mekanism_magic.compat_runtime` 改为 `true`。
 
+已验证的联合运行组合为 Mekanism Extras `1.4.0` + Mekanism:
+MoreMachine `1.3.3`；两者同时使用 `1.4.0` 会因 MoreMachine 新增
+`PRESSING` 工厂类型而在 Extras 的类型映射中触发 `MatchException`。
+
 ## 设计边界
 
 真正需要实体召唤、献祭、命令或世界中的魔法阵布局的仪式不会被仪式引擎接管，以免改变 Occultism 原本的世界交互语义；这些配方仍应在神秘学魔法阵上完成。
