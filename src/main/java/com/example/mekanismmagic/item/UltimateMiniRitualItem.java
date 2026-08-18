@@ -8,8 +8,8 @@ import net.minecraft.world.item.TooltipFlag;
 import java.util.List;
 
 /**
- * Universal ritual selector. Occultism 1.224.2 has no duplicate ritual input
- * signatures, so selecting by ingredients remains deterministic.
+ * Universal ritual selector. Supported Occultism 1.21.1 releases have no
+ * duplicate ritual input signatures, so ingredient selection is deterministic.
  */
 public final class UltimateMiniRitualItem extends Item {
     public UltimateMiniRitualItem(Properties properties) {

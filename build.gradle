@@ -61,22 +61,27 @@ configurations {
 }
 
 def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
+def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
-    compileOnly files('libs/Mekanism-1.21.1-10.7.19.85.jar')
-    compileOnly files('run/mods/jei-1.21.1-neoforge-19.39.0.369.jar')
+    compileOnly files("libs/Mekanism-1.21.1-${mekanism_version}.jar")
+    compileOnly files("run/mods/jei-1.21.1-neoforge-${jei_version}.jar")
     compileOnly files(
-            'libs/ars_nouveau-1.21.1-5.13.0.jar',
+            "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar",
             'libs/mekanism_extras-1.21.1-1.4.0.jar',
             'libs/mekmm-1.21.1-1.4.0.jar'
     )
     // Recipe and mob-jar bridges use registry lookups/reflection so optional
     // implementation classes are not hard-linked into the addon.
     localRuntime files(
-            'libs/Mekanism-1.21.1-10.7.19.85.jar',
-            'libs/occultism-1.21.1-neoforge-1.224.2.jar',
-            'libs/ars_nouveau-1.21.1-5.13.0.jar'
+            "libs/Mekanism-1.21.1-${mekanism_version}.jar",
+            "libs/occultism-1.21.1-neoforge-${occultism_version}.jar"
     )
+    if (arsRuntimeEnabled) {
+        localRuntime files(
+                "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar"
+        )
+    }
     if (compatRuntimeEnabled) {
         localRuntime files(
                 'libs/mekanism_extras-1.21.1-1.4.0.jar',

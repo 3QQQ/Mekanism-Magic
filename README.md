@@ -1,6 +1,14 @@
 # Mekanism Magic
 
-NeoForge 1.21.1 addon for Mekanism 10.7.19.85 and Occultism 1.224.2.
+NeoForge 1.21.1 addon for Mekanism and Occultism.
+
+最低核心兼容基线为 NeoForge `21.1.194`、Mekanism `10.7.15` 和 Occultism
+`1.222.0`；同时兼容已验证的新版本 Mekanism `10.7.19.85` 与 Occultism
+`1.224.2`。
+
+Ars Nouveau `5.13.0` 为可选兼容；其内置依赖要求 NeoForge 至少
+`21.1.205`。开发环境需要测试该兼容时，将
+`mekanism_magic.ars_runtime` 改为 `true`。
 
 ## 当前实现
 
@@ -26,8 +34,8 @@ NeoForge 1.21.1 addon for Mekanism 10.7.19.85 and Occultism 1.224.2.
 2. 使用 Java 21 SDK（NeoForge 1.21.1 的开发环境要求）。
 3. Gradle 面板执行 `build`；运行配置由 ModDevGradle 自动生成，也可执行 `client` 或 `server`。
 4. 请自行将依赖 JAR 放入本地 `libs/`（这些第三方 JAR 不包含在源码仓库中）：
-   * `Mekanism-1.21.1-10.7.19.85.jar`
-   * `occultism-1.21.1-neoforge-1.224.2.jar`
+   * `Mekanism-1.21.1-10.7.15.81.jar`
+   * `occultism-1.21.1-neoforge-1.222.0.jar`
    * `ars_nouveau-1.21.1-5.13.0.jar`（可选兼容）
 
 命令行等价操作：

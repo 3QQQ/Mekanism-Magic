@@ -1,12 +1,26 @@
 # 附属模组兼容性记录
 
+## 核心版本范围
+
+本项目固定 Minecraft `1.21.1`，以较低依赖版本作为编译基线：
+
+* NeoForge `21.1.194` 或更高版本
+* Mekanism `10.7.15` 或更高版本
+* Occultism `1.222.0` 或更高版本
+
+已分别使用最低基线组合和 Mekanism `10.7.19.85`、Occultism `1.224.2`
+组合完成编译验证。Ars Nouveau `5.13.0` 内置的 Nuggets 要求 NeoForge
+`21.1.205`，因此只有安装该可选模组时才需要更高的 NeoForge。
+
 当前开发环境已加入：
 
 * Mekanism Extras `1.4.0` (`mekanism_extras`)
 * Mekanism: MoreMachine `1.4.0` (`mekmm`)
 * Ars Nouveau `5.13.0` (`ars_nouveau`，可选)
 
-对应 JAR 位于 `libs/`，并通过 `compileOnly` 或 `localRuntime` 接入 Gradle。这些附属模组在 `neoforge.mods.toml` 中作为可选依赖，不安装它们时本模组仍可加载。
+对应 JAR 位于本地 `libs/`，并通过 `compileOnly` 或按需 `localRuntime`
+接入 Gradle。这些附属模组在 `neoforge.mods.toml` 中作为可选依赖，
+不安装它们时本模组仍可加载。
 
 ## Ars Nouveau 收容罐
 
