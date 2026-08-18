@@ -37,8 +37,10 @@ public abstract class NativeMagicMachineScreen<
         addRenderableWidget(new GuiVerticalPowerBar(this,
                 getTileEntity().getNativeEnergyContainer(), energyBarX(), 16,
                 energyBarHeight()));
-        addRenderableWidget(new GuiProgress(getTileEntity()::getProgress,
-                progressType(), this, workProgressX(), workProgressY()));
+        if (showProgress()) {
+            addRenderableWidget(new GuiProgress(getTileEntity()::getProgress,
+                    progressType(), this, workProgressX(), workProgressY()));
+        }
         addMachineGuiElements();
     }
 
@@ -54,6 +56,10 @@ public abstract class NativeMagicMachineScreen<
     }
 
     protected boolean showUpArrow() {
+        return true;
+    }
+
+    protected boolean showProgress() {
         return true;
     }
 

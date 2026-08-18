@@ -5,6 +5,7 @@ import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import net.minecraft.core.BlockPos;
@@ -33,6 +34,7 @@ public final class NativeDimensionMinerBlockEntity
     private List<OutputInventorySlot> minerOutputs;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
     private ItemStack pendingInput = ItemStack.EMPTY;
+    private boolean minerModuleOpen;
 
     public NativeDimensionMinerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.get()
@@ -46,15 +48,14 @@ public final class NativeDimensionMinerBlockEntity
         // constructor, before subclass field initializers have run.
         minerOutputs = new ArrayList<>(MINER_OUTPUT_COUNT);
         inputSlot = registerLogicalSlot(helper, MINER_INPUT_SLOT,
-                InputInventorySlot.at(OccultismRecipeBridge::isMinerItem,
-                        listener, 20, 35));
+                new MinerInputInventorySlot(this, listener, 220, 104));
         for (int index = 0; index < MINER_OUTPUT_COUNT; index++) {
             int column = index % 9;
             int row = index / 9;
             OutputInventorySlot slot = registerLogicalSlot(helper,
                     MINER_OUTPUT_START + index,
                     OutputInventorySlot.at(listener,
-                            48 + column * 18, 8 + row * 18));
+                            29 + column * 18, 8 + row * 18));
             minerOutputs.add(slot);
             if (index == 0) {
                 outputSlot = slot;
@@ -66,12 +67,20 @@ public final class NativeDimensionMinerBlockEntity
 
     @Override
     protected int energySlotX() {
-        return 20;
+        return 11;
     }
 
     @Override
     protected int energySlotY() {
         return 35;
+    }
+
+    public void setMinerModuleOpen(boolean open) {
+        minerModuleOpen = open;
+    }
+
+    private boolean isMinerContainerSlotActive() {
+        return level == null || !level.isClientSide() || minerModuleOpen;
     }
 
     @Override
@@ -261,5 +270,34 @@ public final class NativeDimensionMinerBlockEntity
         pendingInput = ItemStack.EMPTY;
         progress = 0;
         progressRequired = 1;
+    }
+
+    private static final class MinerInputInventorySlot
+            extends InputInventorySlot {
+        private final NativeDimensionMinerBlockEntity tile;
+        private final int x;
+        private final int y;
+
+        private MinerInputInventorySlot(NativeDimensionMinerBlockEntity tile,
+                                        IContentsListener listener,
+                                        int x, int y) {
+            super(OccultismRecipeBridge::isMinerItem,
+                    stack -> true, listener, x, y);
+            this.tile = tile;
+            this.x = x;
+            this.y = y;
+        }
+
+        @Override
+        public InventoryContainerSlot createContainerSlot() {
+            return new InventoryContainerSlot(this, x, y, getSlotType(),
+                    getSlotOverlay(), warning -> {
+            }, this::setStackUnchecked) {
+                @Override
+                public boolean isActive() {
+                    return tile.isMinerContainerSlotActive();
+                }
+            };
+        }
     }
 }
