@@ -122,7 +122,8 @@ def bottom() -> Image.Image:
     return image
 
 
-def factory_face(accent: tuple[int, int, int], active: bool) -> Image.Image:
+def factory_face(accent: tuple[int, int, int], active: bool,
+                 motif: str = "spirit") -> Image.Image:
     image = shell(accent, active)
     draw = ImageDraw.Draw(image)
     bright = (125, 245, 232, 255) if active else (62, 147, 153, 255)
@@ -137,6 +138,35 @@ def factory_face(accent: tuple[int, int, int], active: bool) -> Image.Image:
     draw.point((3, 7), fill=(*tier_bright, 255))
     draw.point((12, 7), fill=(*tier_bright, 255))
     draw.rectangle((3, 11, 12, 12), fill=(47, 54, 65, 255))
+    if motif == "diamond":
+        draw.point((7, 6), fill=bright)
+        draw.point((8, 6), fill=bright)
+        draw.point((6, 7), fill=bright)
+        draw.point((9, 7), fill=bright)
+        draw.point((7, 8), fill=bright)
+        draw.point((8, 8), fill=bright)
+    elif motif == "star":
+        draw.point((7, 6), fill=bright)
+        draw.point((8, 6), fill=bright)
+        draw.line((6, 7, 9, 7), fill=bright)
+        draw.point((7, 8), fill=bright)
+        draw.point((8, 8), fill=bright)
+        draw.point((5, 9), fill=(*tier_bright, 255))
+        draw.point((10, 9), fill=(*tier_bright, 255))
+    elif motif == "orbit":
+        draw.line((6, 6, 9, 9), fill=bright)
+        draw.line((9, 6, 6, 9), fill=bright)
+        draw.point((5, 7), fill=(*tier_bright, 255))
+        draw.point((10, 8), fill=(*tier_bright, 255))
+    elif motif == "infinity":
+        draw.line((6, 7, 7, 6), fill=bright)
+        draw.line((7, 6, 8, 7), fill=bright)
+        draw.line((8, 7, 9, 6), fill=bright)
+        draw.line((9, 6, 10, 7), fill=bright)
+        draw.line((10, 7, 9, 8), fill=bright)
+        draw.line((9, 8, 8, 7), fill=bright)
+        draw.line((8, 7, 7, 8), fill=bright)
+        draw.line((7, 8, 6, 7), fill=bright)
     return image
 
 
@@ -188,6 +218,35 @@ def assembler_top() -> Image.Image:
     return top((55, 166, 181))
 
 
+def miner_front(active: bool) -> Image.Image:
+    accent = (112, 76, 180)
+    image = shell(accent, active)
+    draw = ImageDraw.Draw(image)
+    violet = (220, 150, 255, 255) if active else (130, 83, 188, 255)
+    gold = (247, 192, 76, 255) if active else (166, 119, 53, 255)
+    draw.rectangle((3, 3, 12, 12), fill=(15, 17, 27, 255))
+    draw.rectangle((4, 4, 11, 11), outline=violet)
+    draw.line((5, 8, 10, 8), fill=gold)
+    draw.line((7, 5, 7, 11), fill=gold)
+    draw.line((9, 5, 9, 11), fill=violet)
+    draw.point((8, 8), fill=(250, 241, 255, 255) if active else violet)
+    draw.point((5, 5), fill=gold)
+    draw.point((10, 10), fill=gold)
+    return image
+
+
+def miner_side(active: bool = False) -> Image.Image:
+    return side((112, 76, 180), active)
+
+
+def miner_top() -> Image.Image:
+    image = top((112, 76, 180))
+    draw = ImageDraw.Draw(image)
+    draw.line((5, 8, 10, 8), fill=(247, 192, 76, 255))
+    draw.line((8, 5, 8, 10), fill=(220, 150, 255, 255))
+    return image
+
+
 def main() -> None:
     spirit = (74, 162, 174)
     ritual = (154, 101, 48)
@@ -209,10 +268,14 @@ def main() -> None:
     save(bottom(), "ritual_engine/bottom.png")
 
     factory_tiers = {
-        "basic": (73, 151, 74),
-        "advanced": (181, 64, 57),
-        "elite": (49, 155, 190),
-        "ultimate": (139, 72, 190),
+        "basic": ((73, 151, 74), "spirit"),
+        "advanced": ((181, 64, 57), "diamond"),
+        "elite": ((49, 155, 190), "star"),
+        "ultimate": ((139, 72, 190), "orbit"),
+        "absolute": ((235, 125, 42), "diamond"),
+        "supreme": ((221, 61, 99), "star"),
+        "cosmic": ((72, 156, 231), "orbit"),
+        "infinite": ((194, 91, 235), "infinity"),
     }
     # Neutral fallback textures remain available for the shared parent models.
     fallback = (99, 71, 155)
@@ -222,10 +285,10 @@ def main() -> None:
     save(factory_top(fallback), "spirit_factory/top.png")
     save(back(fallback), "spirit_factory/back.png")
     save(bottom(), "spirit_factory/bottom.png")
-    for tier, accent in factory_tiers.items():
+    for tier, (accent, motif) in factory_tiers.items():
         folder = f"spirit_factory/{tier}"
-        save(factory_face(accent, False), f"{folder}/front.png")
-        save(factory_face(accent, True), f"{folder}/front_active.png")
+        save(factory_face(accent, False, motif), f"{folder}/front.png")
+        save(factory_face(accent, True, motif), f"{folder}/front_active.png")
         save(factory_side(accent), f"{folder}/side.png")
         save(factory_top(accent), f"{folder}/top.png")
         save(back(accent), f"{folder}/back.png")
@@ -238,6 +301,14 @@ def main() -> None:
     save(back((55, 166, 181)), "mini_ritual_assembler/back.png")
     save(assembler_top(), "mini_ritual_assembler/top.png")
     save(bottom(), "mini_ritual_assembler/bottom.png")
+
+    save(miner_front(False), "dimension_miner/front.png")
+    save(miner_front(True), "dimension_miner/front_active.png")
+    save(miner_side(), "dimension_miner/side.png")
+    save(miner_side(True), "dimension_miner/side_active.png")
+    save(back((112, 76, 180)), "dimension_miner/back.png")
+    save(miner_top(), "dimension_miner/top.png")
+    save(bottom(), "dimension_miner/bottom.png")
 
 
 if __name__ == "__main__":
