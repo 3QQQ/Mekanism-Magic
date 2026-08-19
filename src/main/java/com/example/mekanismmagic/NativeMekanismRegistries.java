@@ -48,7 +48,7 @@ public final class NativeMekanismRegistries {
             NativeSpiritProcessorBlockEntity.class).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeDimensionMinerBlockEntity>>
             DIMENSION_MINER_CONTAINER = CONTAINERS.custom("dimension_miner",
-            NativeDimensionMinerBlockEntity.class).build();
+            NativeDimensionMinerBlockEntity.class).offset(16, 20).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeRitualEngineBlockEntity>>
             RITUAL_CONTAINER = CONTAINERS.custom("ritual_engine",
             NativeRitualEngineBlockEntity.class).offset(17, 42).build();

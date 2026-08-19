@@ -54,7 +54,7 @@ public final class NativeDimensionMinerBlockEntity
             OutputInventorySlot slot = registerLogicalSlot(helper,
                     MINER_OUTPUT_START + index,
                     OutputInventorySlot.at(listener,
-                            24 + column * 18, 44 + row * 18));
+                            24 + column * 18, 40 + row * 18));
             minerOutputs.add(slot);
             if (index == 0) {
                 outputSlot = slot;
