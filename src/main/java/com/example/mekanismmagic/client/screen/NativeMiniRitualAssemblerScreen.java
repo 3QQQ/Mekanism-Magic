@@ -2,23 +2,26 @@ package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
 import com.example.mekanismmagic.client.gui.GuiChalkModuleTab;
+import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import mekanism.client.gui.element.button.MekanismButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class NativeMiniRitualAssemblerScreen
-        extends NativeMagicMachineScreen<NativeMiniRitualAssemblerBlockEntity> {
+        extends NativeMagicMachineScreen<NativeMiniRitualAssemblerBlockEntity,
+        NativeMiniRitualAssemblerContainer> {
     private final List<GuiSlot> chalkGuiSlots = new ArrayList<>();
     private boolean chalkModuleOpen;
 
     public NativeMiniRitualAssemblerScreen(
-            MekanismTileContainer<NativeMiniRitualAssemblerBlockEntity> container,
+        NativeMiniRitualAssemblerContainer container,
             Inventory inventory, Component title) {
         super(container, inventory, title, 208);
         imageWidth = 210;
@@ -55,6 +58,20 @@ public final class NativeMiniRitualAssemblerScreen
     protected void addMachineGuiElements() {
         addRenderableWidget(new GuiChalkModuleTab(this, getTileEntity(),
                 () -> chalkModuleOpen, this::toggleChalkModule));
+        addRenderableWidget(new MekanismButton(this, 137, 78, 18, 18,
+                Component.literal("<"),
+                (element, x, y) -> clickMachineButton(0)));
+        addRenderableWidget(new MekanismButton(this, 157, 78, 18, 18,
+                Component.literal("✓"),
+                (element, x, y) -> clickMachineButton(1)));
+        addRenderableWidget(new MekanismButton(this, 177, 78, 18, 18,
+                Component.literal(">"),
+                (element, x, y) -> clickMachineButton(2)));
+    }
+
+    private boolean clickMachineButton(int id) {
+        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
+        return true;
     }
 
     @Override
@@ -88,6 +105,8 @@ public final class NativeMiniRitualAssemblerScreen
     @Override
     protected void drawForegroundText(GuiGraphics graphics, int mouseX, int mouseY) {
         super.drawForegroundText(graphics, mouseX, mouseY);
+        graphics.drawString(font, getTileEntity().getPreviewLabel(),
+                4, 70, 0xD8DEE8, false);
         if (chalkModuleOpen) {
             graphics.drawString(font,
                     Component.translatable("gui.mekanism_magic.chalk"),

@@ -15,10 +15,11 @@ import net.minecraft.world.entity.player.Inventory;
  * machine-specific slot widgets.
  */
 public abstract class NativeMagicMachineScreen<
-        TILE extends NativeMagicMachineBlockEntity>
-        extends GuiConfigurableTile<TILE, MekanismTileContainer<TILE>> {
+        TILE extends NativeMagicMachineBlockEntity,
+        CONTAINER extends MekanismTileContainer<TILE>>
+        extends GuiConfigurableTile<TILE, CONTAINER> {
 
-    protected NativeMagicMachineScreen(MekanismTileContainer<TILE> container,
+    protected NativeMagicMachineScreen(CONTAINER container,
                                        Inventory inventory, Component title,
                                        int imageHeight) {
         super(container, inventory, title);

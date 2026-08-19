@@ -6,7 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
 public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
-        NativeDimensionMinerBlockEntity> {
+        NativeDimensionMinerBlockEntity,
+        MekanismTileContainer<NativeDimensionMinerBlockEntity>> {
     public NativeDimensionMinerScreen(
             MekanismTileContainer<NativeDimensionMinerBlockEntity> container,
             Inventory inventory, Component title) {

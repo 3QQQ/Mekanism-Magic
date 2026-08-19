@@ -329,6 +329,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             copyBack(snapshot);
             progress = 0;
             activeRecipe = "";
+            onRecipeFinished(recipe);
             changed = true;
         }
         return changed;
@@ -343,6 +344,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             ejectorComponent.tickServer();
         }
         return changed;
+    }
+
+    protected void onRecipeFinished(OccultismRecipeBridge.RecipeResult recipe) {
     }
 
     private ItemStackHandler snapshotInventory() {

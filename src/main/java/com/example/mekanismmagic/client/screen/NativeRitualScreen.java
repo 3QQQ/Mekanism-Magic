@@ -18,7 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class NativeRitualScreen extends NativeMagicMachineScreen<
-        NativeRitualEngineBlockEntity> {
+        NativeRitualEngineBlockEntity,
+        MekanismTileContainer<NativeRitualEngineBlockEntity>> {
     private final List<GuiSlot> dictionaryGuiSlots = new ArrayList<>();
     private boolean dictionaryModuleOpen;
 

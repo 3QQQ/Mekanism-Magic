@@ -859,9 +859,16 @@ public final class OccultismRecipeBridge {
 
     public static Optional<RecipeResult> findMiniRitualRecipe(Level level,
                                                               ItemStackHandler inventory) {
+        List<RecipeResult> candidates = findMiniRitualCandidates(level, inventory);
+        return candidates.isEmpty() ? Optional.empty() : Optional.of(candidates.getFirst());
+    }
+
+    public static List<RecipeResult> findMiniRitualCandidates(
+            Level level, ItemStackHandler inventory) {
+        Map<String, RecipeResult> candidates = new LinkedHashMap<>();
         RecipeType<?> type = recipeType("ritual");
         if (type == null) {
-            return Optional.empty();
+            return List.of();
         }
         for (RecipeHolder<?> holder : recipes(level, type)) {
             Object recipe = holder.value();
@@ -879,10 +886,11 @@ public final class OccultismRecipeBridge {
             }
             List<InputUse> inputs = new ArrayList<>();
             inputs.addAll(materialSlots.get());
-            return Optional.of(new RecipeResult(holder.id(),
-                    createPentacleMiniRitual(projection.get()), 100, inputs, -1, -1));
+            RecipeResult candidate = new RecipeResult(holder.id(),
+                    createPentacleMiniRitual(projection.get()), 100, inputs, -1, -1);
+            candidates.putIfAbsent(projection.get().pentacleId().toString(), candidate);
         }
-        return Optional.empty();
+        return List.copyOf(candidates.values());
     }
 
     private static Optional<List<InputUse>> matchPentacleMaterials(

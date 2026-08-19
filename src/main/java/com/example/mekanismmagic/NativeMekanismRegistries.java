@@ -3,6 +3,7 @@ package com.example.mekanismmagic;
 import com.example.mekanismmagic.block.NativeMachineBlock;
 import com.example.mekanismmagic.blockentity.NativeRitualEngineBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
+import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
 import com.example.mekanismmagic.blockentity.NativeDimensionMinerBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritProcessorBlockEntity;
@@ -53,9 +54,11 @@ public final class NativeMekanismRegistries {
             RITUAL_CONTAINER = CONTAINERS.custom("ritual_engine",
             NativeRitualEngineBlockEntity.class).offset(17, 42).build();
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<NativeMiniRitualAssemblerBlockEntity>>
-            MINI_RITUAL_ASSEMBLER_CONTAINER = CONTAINERS.custom("mini_ritual_assembler",
-            NativeMiniRitualAssemblerBlockEntity.class).offset(17, 42).build();
+            NativeMiniRitualAssemblerContainer> MINI_RITUAL_ASSEMBLER_CONTAINER =
+            CONTAINERS.register("mini_ritual_assembler",
+                    NativeMiniRitualAssemblerBlockEntity.class,
+                    (id, inventory, tile) -> new NativeMiniRitualAssemblerContainer(
+                            id, inventory, tile));
     public static final ContainerTypeRegistryObject<NativeSpiritFactoryContainer> SPIRIT_FACTORY_CONTAINER =
             CONTAINERS.register("spirit_factory", NativeSpiritFactoryBlockEntity.class,
                     (id, inventory, tile) -> new NativeSpiritFactoryContainer(id, inventory, tile));
