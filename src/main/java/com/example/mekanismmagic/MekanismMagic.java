@@ -4,6 +4,7 @@ import com.example.mekanismmagic.item.MiniRitualItem;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
+import com.example.mekanismmagic.recipe.SpecificPentacleIngredient;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -11,6 +12,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.crafting.IngredientType;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -25,6 +28,8 @@ public final class MekanismMagic {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, MOD_ID);
+    public static final DeferredRegister<IngredientType<?>> INGREDIENT_TYPES =
+            DeferredRegister.create(NeoForgeRegistries.INGREDIENT_TYPES, MOD_ID);
 
     public static final DeferredHolder<Item, MiniRitualItem> MINI_RITUAL =
             ITEMS.register("mini_ritual",
@@ -40,6 +45,12 @@ public final class MekanismMagic {
             UltimateMiniRitualRecipe>> ULTIMATE_MINI_RITUAL_RECIPE =
             RECIPE_SERIALIZERS.register("ultimate_mini_ritual",
                     () -> UltimateMiniRitualRecipe.SERIALIZER);
+    public static final DeferredHolder<IngredientType<?>,
+            IngredientType<SpecificPentacleIngredient>> SPECIFIC_PENTACLE_INGREDIENT =
+            INGREDIENT_TYPES.register("specific_pentacle",
+                    () -> new IngredientType<SpecificPentacleIngredient>(
+                            SpecificPentacleIngredient.CODEC,
+                            SpecificPentacleIngredient.STREAM_CODEC));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB =
             CREATIVE_TABS.register("main", () -> CreativeModeTab.builder()
@@ -66,6 +77,7 @@ public final class MekanismMagic {
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
         RECIPE_SERIALIZERS.register(modBus);
+        INGREDIENT_TYPES.register(modBus);
         NativeMekanismRegistries.register(modBus);
         registerMekanismExtrasIntegration(modBus);
     }

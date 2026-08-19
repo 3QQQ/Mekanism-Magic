@@ -1,3 +1,34 @@
 {
-  "type": "mekanism_magic:ultimate_mini_ritual"
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AEB",
+    "SNS",
+    "CUD"
+  ],
+  "key": {
+    "A": {
+      "type": "mekanism_magic:specific_pentacle",
+      "pentacle": "occultism:craft_marid"
+    },
+    "B": {
+      "type": "mekanism_magic:specific_pentacle",
+      "pentacle": "occultism:possess_marid"
+    },
+    "C": {
+      "type": "mekanism_magic:specific_pentacle",
+      "pentacle": "occultism:summon_marid"
+    },
+    "D": {
+      "type": "mekanism_magic:specific_pentacle",
+      "pentacle": "occultism:summon_unbound_marid"
+    },
+    "E": {"item": "mekanism:alloy_atomic"},
+    "S": {"item": "occultism:spirit_attuned_crystal"},
+    "N": {"item": "minecraft:nether_star"},
+    "U": {"item": "mekanism:ultimate_control_circuit"}
+  },
+  "result": {
+    "id": "mekanism_magic:ultimate_mini_ritual",
+    "count": 1
+  }
 }
