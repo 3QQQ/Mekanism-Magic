@@ -26,7 +26,7 @@ public final class GuiDictionaryModuleTab
     public GuiDictionaryModuleTab(IGuiWrapper gui,
                                   NativeRitualEngineBlockEntity tile,
                                   BooleanSupplier open, Runnable toggle) {
-        super(gui, tile, 210, 80, 26, 18, false,
+        super(gui, tile, gui.getXSize(), 80, 26, 18, false,
                 ICON, ICON, open);
         this.toggle = toggle;
         setTooltip(Tooltip.create(Component.translatable(

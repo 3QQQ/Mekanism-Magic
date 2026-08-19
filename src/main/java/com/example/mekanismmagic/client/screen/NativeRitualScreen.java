@@ -25,14 +25,9 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     public NativeRitualScreen(MekanismTileContainer<NativeRitualEngineBlockEntity> container,
                               Inventory inventory, Component title) {
         super(container, inventory, title, 208);
-        imageWidth = 320;
-        inventoryLabelX = 80;
+        imageWidth = 210;
+        inventoryLabelX = 26;
         getTileEntity().setDictionaryModuleOpen(false);
-    }
-
-    @Override
-    protected int energyBarX() {
-        return 198;
     }
 
     @Override

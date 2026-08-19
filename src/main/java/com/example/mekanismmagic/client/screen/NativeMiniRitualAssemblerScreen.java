@@ -21,14 +21,14 @@ public final class NativeMiniRitualAssemblerScreen
             MekanismTileContainer<NativeMiniRitualAssemblerBlockEntity> container,
             Inventory inventory, Component title) {
         super(container, inventory, title, 208);
-        imageWidth = 320;
-        inventoryLabelX = 80;
+        imageWidth = 210;
+        inventoryLabelX = 26;
         getTileEntity().setChalkModuleOpen(false);
     }
 
     @Override
     protected int energyBarX() {
-        return 198;
+        return imageWidth - 12;
     }
 
     @Override

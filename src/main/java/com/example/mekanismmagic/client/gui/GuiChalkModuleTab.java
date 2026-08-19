@@ -28,7 +28,7 @@ public final class GuiChalkModuleTab
     public GuiChalkModuleTab(IGuiWrapper gui,
                              NativeMiniRitualAssemblerBlockEntity tile,
                              BooleanSupplier open, Runnable toggle) {
-        super(gui, tile, 210, 80, 26, 18, false,
+        super(gui, tile, gui.getXSize(), 80, 26, 18, false,
                 CLOSED_ICON, OPEN_ICON, open);
         this.toggle = toggle;
         setTooltip(Tooltip.create(Component.translatable(
