@@ -1120,10 +1120,8 @@ public final class OccultismRecipeBridge {
 
     private static boolean isSpecialEffectRitual(String ritualType) {
         return ritualType.equals("repair")
-                || ritualType.equals("upgrade")
                 || ritualType.equals("resurrect_familiar")
                 || ritualType.equals("craft_with_spirit_name")
-                || ritualType.equals("craft_miner_spirit")
                 || ritualType.equals("summon_with_chance_of_chicken_tamed");
     }
 
