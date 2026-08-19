@@ -3,6 +3,7 @@ package com.example.mekanismmagic.blockentity;
 import mekanism.api.IContentsListener;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
+import mekanism.api.RelativeSide;
 import mekanism.api.Upgrade;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.energy.IEnergyContainer;
@@ -31,6 +32,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import java.util.EnumSet;
@@ -123,6 +125,14 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                     new InventorySlotInfo(true, true,
                             new java.util.ArrayList<>(extras)));
         }
+        // Match Mekanism's normal machine behavior for newly placed machines:
+        // every item side exposes the configured inventory and automatic
+        // ejection is enabled. Players can still change these modes through
+        // the standard side-configuration window.
+        for (RelativeSide side : RelativeSide.values()) {
+            itemConfig.setDataType(DataType.INPUT_OUTPUT, side);
+        }
+        itemConfig.setEjecting(true);
     }
 
     protected final <SLOT extends IInventorySlot> SLOT registerLogicalSlot(
@@ -317,6 +327,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         boolean changed = super.onUpdateServer();
         if (energySlot != null) {
             energySlot.fillContainerOrConvert();
+        }
+        if (ejectorComponent != null && level instanceof ServerLevel) {
+            ejectorComponent.tickServer();
         }
         return changed;
     }

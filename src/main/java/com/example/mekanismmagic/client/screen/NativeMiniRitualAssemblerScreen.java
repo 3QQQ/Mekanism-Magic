@@ -104,8 +104,21 @@ public final class NativeMiniRitualAssemblerScreen
     private void updateChalkSlotVisibility() {
         for (GuiSlot slot : chalkGuiSlots) {
             slot.visible = chalkModuleOpen;
-            slot.active = chalkModuleOpen;
+            // GuiSlot is the visual overlay. Keeping it inactive lets the
+            // underlying Mekanism container slot receive mouse clicks.
+            slot.active = false;
         }
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY,
+                                        int left, int top, int button) {
+        if (chalkModuleOpen
+                && mouseX >= leftPos + 236 && mouseX < leftPos + 316
+                && mouseY >= topPos + 88 && mouseY < topPos + 180) {
+            return false;
+        }
+        return super.hasClickedOutside(mouseX, mouseY, left, top, button);
     }
 
     private static boolean isChalkGuiSlot(GuiSlot slot) {

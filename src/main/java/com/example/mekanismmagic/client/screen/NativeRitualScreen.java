@@ -108,8 +108,21 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     private void updateDictionarySlotVisibility() {
         for (GuiSlot slot : dictionaryGuiSlots) {
             slot.visible = dictionaryModuleOpen;
-            slot.active = dictionaryModuleOpen;
+            // GuiSlot is the visual overlay. Keeping it inactive lets the
+            // underlying Mekanism container slot receive mouse clicks.
+            slot.active = false;
         }
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY,
+                                        int left, int top, int button) {
+        if (dictionaryModuleOpen
+                && mouseX >= leftPos + 236 && mouseX < leftPos + 294
+                && mouseY >= topPos + 88 && mouseY < topPos + 140) {
+            return false;
+        }
+        return super.hasClickedOutside(mouseX, mouseY, left, top, button);
     }
 
     private static boolean isDictionaryGuiSlot(GuiSlot slot) {

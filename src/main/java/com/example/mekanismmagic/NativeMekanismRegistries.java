@@ -180,13 +180,13 @@ public final class NativeMekanismRegistries {
 
     public static final TileEntityTypeRegistryObject<NativeSpiritProcessorBlockEntity> SPIRIT_TILE =
             TILES.mekBuilder(SPIRIT_BLOCK, NativeSpiritProcessorBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<NativeDimensionMinerBlockEntity>
             DIMENSION_MINER_TILE = TILES.mekBuilder(DIMENSION_MINER_BLOCK,
                     NativeDimensionMinerBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(
                                     level, pos, state, tile))
                     .build();
@@ -194,40 +194,40 @@ public final class NativeMekanismRegistries {
             BASIC_SPIRIT_FACTORY_TILE = TILES.mekBuilder(BASIC_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
                             BASIC_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
             ADVANCED_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ADVANCED_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
                             ADVANCED_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
             ELITE_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ELITE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
                             ELITE_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
             ULTIMATE_SPIRIT_FACTORY_TILE = TILES.mekBuilder(ULTIMATE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
                             ULTIMATE_SPIRIT_FACTORY_BLOCK.get().builtInRegistryHolder(), pos, state))
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<NativeRitualEngineBlockEntity> RITUAL_TILE =
             TILES.mekBuilder(RITUAL_BLOCK, NativeRitualEngineBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<
             NativeMiniRitualAssemblerBlockEntity> MINI_RITUAL_ASSEMBLER_TILE =
             TILES.mekBuilder(MINI_RITUAL_ASSEMBLER_BLOCK,
                     NativeMiniRitualAssemblerBlockEntity::new)
-                    .commonTicker((level, pos, state, tile) ->
+                    .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism.tickServer(level, pos, state, tile))
                     .build();
 
