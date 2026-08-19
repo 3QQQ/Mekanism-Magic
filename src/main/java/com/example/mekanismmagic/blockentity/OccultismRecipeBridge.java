@@ -150,9 +150,9 @@ public final class OccultismRecipeBridge {
     }
 
     public record PentacleJeiData(ResourceLocation pentacleId,
-                                  List<ItemStack> materials,
-                                    List<String> chalkColors,
-                                    ItemStack output) {
+                                  List<Ingredient> materials,
+                                  List<String> chalkColors,
+                                  ItemStack output) {
     }
 
     public record RitualJeiData(ResourceLocation recipeId,
@@ -641,7 +641,7 @@ public final class OccultismRecipeBridge {
             String key = projection.get().pentacleId().toString();
             grouped.putIfAbsent(key, new PentacleJeiData(
                     projection.get().pentacleId(),
-                    pentacleMaterialStacks(projection.get().multiblock()),
+                    List.copyOf(ingredients(recipe)),
                     List.copyOf(ritualChalkColors(recipe)),
                     createPentacleMiniRitual(projection.get())));
         }
