@@ -11,6 +11,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 
 public final class UltimateMiniRitualJeiCategory extends AbstractRecipeCategory<
@@ -18,8 +19,7 @@ public final class UltimateMiniRitualJeiCategory extends AbstractRecipeCategory<
     public UltimateMiniRitualJeiCategory(IGuiHelper guiHelper) {
         super(MekanismMagicJeiPlugin.ULTIMATE_MINI_RITUAL_TYPE,
                 Component.translatable("jei.mekanism_magic.ultimate_mini_ritual"),
-                guiHelper.createDrawableItemLike(
-                        MekanismMagic.ULTIMATE_MINI_RITUAL.get()),
+                guiHelper.createDrawableItemLike(Items.CRAFTING_TABLE),
                 176, 84);
     }
 
