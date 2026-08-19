@@ -471,6 +471,18 @@ public final class OccultismRecipeBridge {
                 && id.getPath().equals("chalk_" + color);
     }
 
+    public static boolean isAnyChalk(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null || !OCCULTISM.equals(id.getNamespace())) {
+            return false;
+        }
+        return isUniversalChalk(stack) || RITUAL_CHALK_COLORS.stream()
+                .anyMatch(color -> id.getPath().equals("chalk_" + color));
+    }
+
     public static boolean isUniversalChalk(ItemStack stack) {
         if (stack.isEmpty()) {
             return false;

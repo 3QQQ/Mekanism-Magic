@@ -59,7 +59,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected TileComponentUpgrade upgradeComponent;
     protected MachineEnergyContainer<? extends NativeMagicMachineBlockEntity> energyContainer;
     protected InputInventorySlot inputSlot;
-    protected OutputInventorySlot outputSlot;
+    protected IInventorySlot outputSlot;
     protected EnergyInventorySlot energySlot;
     protected BasicInventorySlot containmentSlot;
     private Map<Integer, IInventorySlot> logicalSlots;

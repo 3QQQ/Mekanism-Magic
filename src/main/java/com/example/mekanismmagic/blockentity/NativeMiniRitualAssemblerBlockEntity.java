@@ -51,10 +51,9 @@ public final class NativeMiniRitualAssemblerBlockEntity
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 int index = row * 4 + column;
-                String color = chalkColors.get(index);
                 chalkSlots.add(registerLogicalSlot(helper, CHALK_SLOT_START + index,
                         new ChalkInventorySlot(this,
-                                stack -> OccultismRecipeBridge.isChalkForColor(stack, color),
+                                OccultismRecipeBridge::isAnyChalk,
                                 listener, 240 + column * 18, 104 + row * 18)));
             }
         }

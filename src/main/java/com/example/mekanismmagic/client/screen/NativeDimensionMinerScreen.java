@@ -13,7 +13,7 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
         super(container, inventory, title, 208);
         imageWidth = 210;
         inventoryLabelX = 26;
-        inventoryLabelY = 94;
+        inventoryLabelY = 114;
     }
 
     @Override

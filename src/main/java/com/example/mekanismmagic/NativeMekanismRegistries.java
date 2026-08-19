@@ -48,14 +48,14 @@ public final class NativeMekanismRegistries {
             NativeSpiritProcessorBlockEntity.class).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeDimensionMinerBlockEntity>>
             DIMENSION_MINER_CONTAINER = CONTAINERS.custom("dimension_miner",
-            NativeDimensionMinerBlockEntity.class).offset(16, 20).build();
+            NativeDimensionMinerBlockEntity.class).offset(16, 42).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeRitualEngineBlockEntity>>
             RITUAL_CONTAINER = CONTAINERS.custom("ritual_engine",
-            NativeRitualEngineBlockEntity.class).offset(17, 42).build();
+            NativeRitualEngineBlockEntity.class).offset(72, 42).build();
     public static final ContainerTypeRegistryObject<
             MekanismTileContainer<NativeMiniRitualAssemblerBlockEntity>>
             MINI_RITUAL_ASSEMBLER_CONTAINER = CONTAINERS.custom("mini_ritual_assembler",
-            NativeMiniRitualAssemblerBlockEntity.class).offset(17, 42).build();
+            NativeMiniRitualAssemblerBlockEntity.class).offset(72, 42).build();
     public static final ContainerTypeRegistryObject<NativeSpiritFactoryContainer> SPIRIT_FACTORY_CONTAINER =
             CONTAINERS.register("spirit_factory", NativeSpiritFactoryBlockEntity.class,
                     (id, inventory, tile) -> new NativeSpiritFactoryContainer(id, inventory, tile));
