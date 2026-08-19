@@ -48,12 +48,16 @@ public final class MiniRitualItem extends Item {
         ResourceLocation pentacleId = pentacleId(miniature);
         if (level.isClientSide() && ritualId != null) {
             OccultismRecipeBridge.findProjection(level, ritualId).ifPresent(projection ->
-                    showProjection(projection.multiblock(), miniature.getHoverName()));
+                    showProjection(projection.multiblock(),
+                            OccultismRecipeBridge.pentacleDisplayName(
+                                    projection.pentacleId())));
             return InteractionResultHolder.success(miniature);
         }
         if (level.isClientSide() && ritualId == null && pentacleId != null) {
             OccultismRecipeBridge.findProjectionByPentacle(level, pentacleId).ifPresent(projection ->
-                    showProjection(projection.multiblock(), miniature.getHoverName()));
+                    showProjection(projection.multiblock(),
+                            OccultismRecipeBridge.pentacleDisplayName(
+                                    projection.pentacleId())));
             return InteractionResultHolder.success(miniature);
         }
         return InteractionResultHolder.pass(miniature);

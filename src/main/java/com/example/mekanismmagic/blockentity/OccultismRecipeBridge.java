@@ -979,12 +979,19 @@ public final class OccultismRecipeBridge {
             return net.minecraft.network.chat.Component.translatable(
                     "item.mekanism_magic.mini_ritual.pentacle_only");
         }
-        String key = "pentacle.mekanism_magic." + pentacleId.getPath();
+        String key = "book.occultism.dictionary_of_spirits.pentacles."
+                + pentacleId.getPath() + ".name";
         net.minecraft.network.chat.MutableComponent translated =
                 net.minecraft.network.chat.Component.translatable(key);
-        return translated.getString().equals(key)
+        if (!translated.getString().equals(key)) {
+            return translated;
+        }
+        String fallbackKey = "pentacle.mekanism_magic." + pentacleId.getPath();
+        net.minecraft.network.chat.MutableComponent fallback =
+                net.minecraft.network.chat.Component.translatable(fallbackKey);
+        return fallback.getString().equals(fallbackKey)
                 ? net.minecraft.network.chat.Component.literal(pentacleId.getPath())
-                : translated;
+                : fallback;
     }
 
     private static String entityId(ItemStack stack) {
