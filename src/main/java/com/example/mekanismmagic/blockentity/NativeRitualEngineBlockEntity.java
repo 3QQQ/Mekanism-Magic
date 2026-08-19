@@ -18,6 +18,7 @@ import java.util.Optional;
 
 public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlockEntity {
     private DictionaryInventorySlot dictionarySlot;
+    private boolean dictionaryModuleOpen;
 
     public NativeRitualEngineBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.RITUAL_BLOCK.get().builtInRegistryHolder(), pos, state);
@@ -77,8 +78,11 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     }
 
     public void setDictionaryModuleOpen(boolean open) {
-        // The module state is client-side presentation only. Keep the
-        // container slot active independently of the visual side panel.
+        dictionaryModuleOpen = open;
+    }
+
+    private boolean isDictionaryContainerSlotActive() {
+        return level == null || !level.isClientSide() || dictionaryModuleOpen;
     }
 
     private static final class DictionaryInventorySlot extends BasicInventorySlot {
@@ -102,7 +106,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 }, this::setStackUnchecked) {
                 @Override
                 public boolean isActive() {
-                    return true;
+                    return tile.isDictionaryContainerSlotActive();
                 }
             };
         }

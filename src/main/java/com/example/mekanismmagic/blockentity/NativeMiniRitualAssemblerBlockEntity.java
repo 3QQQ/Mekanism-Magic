@@ -28,6 +28,7 @@ import net.minecraft.network.chat.Component;
 public final class NativeMiniRitualAssemblerBlockEntity
         extends NativeMagicMachineBlockEntity {
     private List<mekanism.api.inventory.IInventorySlot> chalkSlots;
+    private boolean chalkModuleOpen;
     private int previewIndex;
     private boolean craftRequested;
     private String requestedPentacle = "";
@@ -185,9 +186,11 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     public void setChalkModuleOpen(boolean open) {
-        // The module state is client-side presentation only. Container slots
-        // must remain active so manual insertion also works after reopening
-        // the GUI and while the server has not received the visual state.
+        chalkModuleOpen = open;
+    }
+
+    private boolean isChalkContainerSlotActive() {
+        return level == null || !level.isClientSide() || chalkModuleOpen;
     }
 
     private static final class ChalkInventorySlot extends BasicInventorySlot {
@@ -212,7 +215,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 }, this::setStackUnchecked) {
                 @Override
                 public boolean isActive() {
-                    return true;
+                    return tile.isChalkContainerSlotActive();
                 }
             };
         }

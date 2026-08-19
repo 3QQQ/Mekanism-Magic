@@ -2,7 +2,6 @@ package com.example.mekanismmagic.container;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
-import mekanism.common.registration.impl.ContainerTypeRegistryObject;
 import net.minecraft.world.entity.player.Inventory;
 
 public final class NativeMiniRitualAssemblerContainer
@@ -13,6 +12,16 @@ public final class NativeMiniRitualAssemblerContainer
         super(com.example.mekanismmagic.NativeMekanismRegistries
                         .MINI_RITUAL_ASSEMBLER_CONTAINER,
                 id, inventory, tile);
+    }
+
+    @Override
+    protected int getInventoryXOffset() {
+        return 25;
+    }
+
+    @Override
+    protected int getInventoryYOffset() {
+        return 126;
     }
 
     @Override
