@@ -973,6 +973,20 @@ public final class OccultismRecipeBridge {
         return id == null ? 0 : PENTACLE_MODEL_DATA.getOrDefault(id.getPath(), 0);
     }
 
+    public static net.minecraft.network.chat.Component pentacleDisplayName(
+            ResourceLocation pentacleId) {
+        if (pentacleId == null) {
+            return net.minecraft.network.chat.Component.translatable(
+                    "item.mekanism_magic.mini_ritual.pentacle_only");
+        }
+        String key = "pentacle.mekanism_magic." + pentacleId.getPath();
+        net.minecraft.network.chat.MutableComponent translated =
+                net.minecraft.network.chat.Component.translatable(key);
+        return translated.getString().equals(key)
+                ? net.minecraft.network.chat.Component.literal(pentacleId.getPath())
+                : translated;
+    }
+
     private static String entityId(ItemStack stack) {
         if (stack.getItem() instanceof SpawnEggItem egg) {
             ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(egg.getType(stack));

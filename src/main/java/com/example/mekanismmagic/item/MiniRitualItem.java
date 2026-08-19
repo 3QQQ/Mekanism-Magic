@@ -37,7 +37,8 @@ public final class MiniRitualItem extends Item {
                     OccultismRecipeBridge.bindMiniRitual(miniature, projection);
                     player.displayClientMessage(Component.translatable(
                             "item.mekanism_magic.mini_ritual.bound",
-                            projection.recipeId().toString()), true);
+                            OccultismRecipeBridge.pentacleDisplayName(
+                                    projection.pentacleId())), true);
                 });
             }
             return InteractionResultHolder.sidedSuccess(miniature, level.isClientSide());
@@ -74,7 +75,8 @@ public final class MiniRitualItem extends Item {
             }
             if (data.copyTag().contains("pentacle")) {
                 tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.pentacle",
-                        data.copyTag().getString("pentacle")));
+                        OccultismRecipeBridge.pentacleDisplayName(
+                                pentacleId(stack))));
             }
             tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.project"));
         } else {
