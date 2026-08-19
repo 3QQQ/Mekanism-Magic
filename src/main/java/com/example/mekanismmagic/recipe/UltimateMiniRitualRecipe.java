@@ -22,15 +22,18 @@ import java.util.List;
  * item-only Ingredient.
  */
 public final class UltimateMiniRitualRecipe extends CustomRecipe {
+    public static final UltimateMiniRitualRecipe INSTANCE =
+            new UltimateMiniRitualRecipe();
+
     public static final RecipeSerializer<UltimateMiniRitualRecipe> SERIALIZER =
             new RecipeSerializer<>() {
                 private final com.mojang.serialization.MapCodec<
                         UltimateMiniRitualRecipe> codec =
                         com.mojang.serialization.MapCodec.unit(
-                                UltimateMiniRitualRecipe::new);
+                                INSTANCE);
                 private final StreamCodec<RegistryFriendlyByteBuf,
                         UltimateMiniRitualRecipe> streamCodec =
-                        StreamCodec.unit(new UltimateMiniRitualRecipe());
+                        StreamCodec.unit(INSTANCE);
 
                 @Override
                 public com.mojang.serialization.MapCodec<
