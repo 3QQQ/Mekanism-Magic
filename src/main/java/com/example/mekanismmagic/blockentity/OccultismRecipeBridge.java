@@ -1110,10 +1110,21 @@ public final class OccultismRecipeBridge {
     }
 
     private static boolean isMachineSafeRitual(Object recipe) {
-        // Item-use rituals are emulated by consuming their item_to_use
-        // ingredient in the machine. Command rituals are executed from the
-        // machine position with the same permission level as Occultism.
+        Object typeValue = invoke(recipe, "getRitualType").orElse(null);
+        if (typeValue instanceof ResourceLocation type
+                && isSpecialEffectRitual(type.getPath())) {
+            return false;
+        }
         return true;
+    }
+
+    private static boolean isSpecialEffectRitual(String ritualType) {
+        return ritualType.equals("repair")
+                || ritualType.equals("upgrade")
+                || ritualType.equals("resurrect_familiar")
+                || ritualType.equals("craft_with_spirit_name")
+                || ritualType.equals("craft_miner_spirit")
+                || ritualType.equals("summon_with_chance_of_chicken_tamed");
     }
 
     private static boolean matchesActivation(Object recipe, ItemStack activation,
