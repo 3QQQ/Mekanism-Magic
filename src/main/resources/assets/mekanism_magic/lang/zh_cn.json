@@ -19,7 +19,7 @@
   "container.mekanism_magic.spirit_factory": "魔灵工厂",
   "item.mekanism_magic.mini_ritual": "微缩神秘仪式",
   "item.mekanism_magic.ultimate_mini_ritual": "终极微缩仪式",
-  "item.mekanism_magic.ultimate_mini_ritual.tooltip": "由四种最高等级 Marid 五芒星微缩仪式合成，可匹配全部神秘学仪式",
+  "item.mekanism_magic.ultimate_mini_ritual.tooltip": "由任意四个不同五芒星微缩仪式合成，可匹配全部神秘学仪式",
   "item.mekanism_magic.ritual_spawn_egg": "仪式刷怪蛋",
   "item.mekanism_magic.mini_ritual.unconfigured": "未配置仪式 ID",
   "item.mekanism_magic.mini_ritual.bind": "副手持有神秘学仪式投影物品后右键绑定",
