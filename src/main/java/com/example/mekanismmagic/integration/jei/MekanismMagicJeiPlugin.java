@@ -3,6 +3,7 @@ package com.example.mekanismmagic.integration.jei;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -42,6 +43,9 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         registration.addRecipeCategories(new MiniRitualJeiCategory(
                 registration.getJeiHelpers().getGuiHelper()),
                 new RitualJeiCategory(registration.getJeiHelpers().getGuiHelper()),
@@ -53,6 +57,9 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         if (Minecraft.getInstance().level != null) {
             List<OccultismRecipeBridge.PentacleJeiData> pentacles =
                     OccultismRecipeBridge.pentacleJeiRecipes(
@@ -83,6 +90,9 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem(),
                 MINI_RITUAL_TYPE);

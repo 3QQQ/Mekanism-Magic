@@ -32,7 +32,7 @@ side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="occultism"
-type="required"
+type="optional"
 versionRange="[1.222.0,)"
 ordering="AFTER"
 side="BOTH"

@@ -5,6 +5,7 @@ import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import com.example.mekanismmagic.recipe.SpecificPentacleIngredient;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -74,6 +75,9 @@ public final class MekanismMagic {
                     }).build());
 
     public MekanismMagic(IEventBus modBus) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
         RECIPE_SERIALIZERS.register(modBus);

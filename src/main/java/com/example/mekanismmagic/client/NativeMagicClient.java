@@ -3,6 +3,7 @@ package com.example.mekanismmagic.client;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.client.screen.NativeRitualScreen;
 import com.example.mekanismmagic.client.screen.NativeMiniRitualAssemblerScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritFactoryScreen;
@@ -24,6 +25,9 @@ public final class NativeMagicClient {
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         event.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(), NativeSpiritScreen::new);
         event.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
                 NativeDimensionMinerScreen::new);
@@ -36,6 +40,9 @@ public final class NativeMagicClient {
 
     @SubscribeEvent
     public static void registerItemProperties(FMLClientSetupEvent event) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         event.enqueueWork(() -> ItemProperties.register(
                 MekanismMagic.MINI_RITUAL.get(),
                 ResourceLocation.fromNamespaceAndPath(MekanismMagic.MOD_ID, "ritual"),

@@ -22,13 +22,27 @@
       "type": "mekanism_magic:specific_pentacle",
       "pentacle": "occultism:summon_unbound_marid"
     },
-    "E": {"item": "mekanism:alloy_atomic"},
-    "S": {"item": "occultism:spirit_attuned_crystal"},
-    "N": {"item": "minecraft:nether_star"},
-    "U": {"item": "mekanism:ultimate_control_circuit"}
+    "E": {
+      "item": "mekanism:alloy_atomic"
+    },
+    "S": {
+      "item": "occultism:spirit_attuned_crystal"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "U": {
+      "item": "mekanism:ultimate_control_circuit"
+    }
   },
   "result": {
     "id": "mekanism_magic:ultimate_mini_ritual",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ]
 }

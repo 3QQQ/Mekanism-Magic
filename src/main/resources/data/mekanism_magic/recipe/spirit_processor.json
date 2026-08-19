@@ -22,5 +22,11 @@
   "result": {
     "id": "mekanism_magic:spirit_processor",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ]
 }

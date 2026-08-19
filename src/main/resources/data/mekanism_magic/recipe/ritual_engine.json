@@ -28,5 +28,11 @@
   "result": {
     "id": "mekanism_magic:ritual_engine",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ]
 }

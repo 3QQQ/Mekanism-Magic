@@ -2,6 +2,20 @@
 
 ## 核心版本范围
 
+Occultism 是本模组的主可选集成目标。未加载 Occultism 时，Mekanism Magic 不注册
+任何方块、物品、容器、机器、配方、战利品表或 JEI 内容；模组本身可以随 NeoForge
+和 Mekanism 一起加载，但在游戏中不提供内容。
+
+开发环境可使用以下参数验证空内容模式：
+
+```text
+./gradlew runClient -Pmekanism_magic.occultism_runtime=false
+```
+
+如果使用已有包含 Occultism 方块或物品的世界进行测试，Minecraft 会报告未知注册表
+键并将旧存档内容替换为空气/默认物品。这是存档缺少依赖的正常提示，不代表本模组
+在无 Occultism 时注册了内容。
+
 本项目固定 Minecraft `1.21.1`，以较低依赖版本作为编译基线：
 
 * NeoForge `21.1.194` 或更高版本

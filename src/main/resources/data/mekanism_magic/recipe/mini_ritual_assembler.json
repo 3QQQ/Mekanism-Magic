@@ -22,5 +22,11 @@
   "result": {
     "id": "mekanism_magic:mini_ritual_assembler",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ]
 }

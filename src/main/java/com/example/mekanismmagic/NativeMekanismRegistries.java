@@ -8,6 +8,7 @@ import com.example.mekanismmagic.blockentity.NativeDimensionMinerBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritProcessorBlockEntity;
 import com.example.mekanismmagic.container.NativeSpiritFactoryContainer;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import mekanism.api.Upgrade;
 import mekanism.common.block.attribute.AttributeTier;
 import mekanism.common.block.attribute.AttributeUpgradeable;
@@ -238,6 +239,9 @@ public final class NativeMekanismRegistries {
     }
 
     public static void register(IEventBus bus) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         BLOCKS.register(bus);
         TILES.register(bus);
         CONTAINERS.register(bus);

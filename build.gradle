@@ -61,6 +61,9 @@ configurations {
 }
 
 def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
+def occultismRuntimeEnabled = project.hasProperty('mekanism_magic.occultism_runtime')
+        ? project.property('mekanism_magic.occultism_runtime').toString().toBoolean()
+        : true
 def mekExtrasRuntimeEnabled = compatRuntimeEnabled ||
         (project.findProperty('mekanism_magic.mekextras_runtime')?.toString()?.toBoolean() ?: false)
 def mekmmRuntimeEnabled = compatRuntimeEnabled ||
@@ -78,9 +81,13 @@ dependencies {
     // Recipe and mob-jar bridges use registry lookups/reflection so optional
     // implementation classes are not hard-linked into the addon.
     localRuntime files(
-            "libs/Mekanism-1.21.1-${mekanism_version}.jar",
-            "libs/occultism-1.21.1-neoforge-${occultism_version}.jar"
+            "libs/Mekanism-1.21.1-${mekanism_version}.jar"
     )
+    if (occultismRuntimeEnabled) {
+        localRuntime files(
+                "libs/occultism-1.21.1-neoforge-${occultism_version}.jar"
+        )
+    }
     if (arsRuntimeEnabled) {
         localRuntime files(
                 "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar"

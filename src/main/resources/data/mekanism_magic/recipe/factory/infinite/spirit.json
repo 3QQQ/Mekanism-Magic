@@ -1,14 +1,40 @@
 {
-  "neoforge:conditions": [{"type": "neoforge:mod_loaded", "modid": "mekanism_extras"}],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "mekanism_extras"
+    },
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ],
   "type": "mekanism:mek_data",
   "category": "misc",
-  "pattern": ["ACA", "IPJ", "ACA"],
+  "pattern": [
+    "ACA",
+    "IPJ",
+    "ACA"
+  ],
   "key": {
-    "A": {"tag": "mekanism_extras:alloys/spectrum"},
-    "C": {"tag": "c:circuits/infinite"},
-    "I": {"tag": "c:pellets/plutonium"},
-    "J": {"tag": "c:pellets/polonium"},
-    "P": {"item": "mekanism_magic:cosmic_spirit_factory"}
+    "A": {
+      "tag": "mekanism_extras:alloys/spectrum"
+    },
+    "C": {
+      "tag": "c:circuits/infinite"
+    },
+    "I": {
+      "tag": "c:pellets/plutonium"
+    },
+    "J": {
+      "tag": "c:pellets/polonium"
+    },
+    "P": {
+      "item": "mekanism_magic:cosmic_spirit_factory"
+    }
   },
-  "result": {"id": "mekanism_magic:infinite_spirit_factory", "count": 1}
+  "result": {
+    "id": "mekanism_magic:infinite_spirit_factory",
+    "count": 1
+  }
 }

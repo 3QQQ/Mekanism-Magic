@@ -6,16 +6,36 @@
     "BGM"
   ],
   "key": {
-    "O": {"item": "occultism:otherstone"},
-    "D": {"item": "occultism:spirit_attuned_crystal"},
-    "S": {"item": "mekanism:steel_casing"},
-    "C": {"item": "mekanism:advanced_control_circuit"},
-    "B": {"item": "occultism:golden_sacrificial_bowl"},
-    "G": {"item": "minecraft:diamond_block"},
-    "M": {"item": "occultism:dimensional_mineshaft"}
+    "O": {
+      "item": "occultism:otherstone"
+    },
+    "D": {
+      "item": "occultism:spirit_attuned_crystal"
+    },
+    "S": {
+      "item": "mekanism:steel_casing"
+    },
+    "C": {
+      "item": "mekanism:advanced_control_circuit"
+    },
+    "B": {
+      "item": "occultism:golden_sacrificial_bowl"
+    },
+    "G": {
+      "item": "minecraft:diamond_block"
+    },
+    "M": {
+      "item": "occultism:dimensional_mineshaft"
+    }
   },
   "result": {
     "id": "mekanism_magic:dimension_miner",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "occultism"
+    }
+  ]
 }
