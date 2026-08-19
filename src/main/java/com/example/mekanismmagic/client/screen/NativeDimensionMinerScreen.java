@@ -20,7 +20,7 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
     public NativeDimensionMinerScreen(
             MekanismTileContainer<NativeDimensionMinerBlockEntity> container,
             Inventory inventory, Component title) {
-        super(container, inventory, title, 166);
+        super(container, inventory, title, 208);
         imageWidth = 210;
         inventoryLabelX = 26;
         getTileEntity().setMinerModuleOpen(false);
