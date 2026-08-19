@@ -59,8 +59,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
                 OutputInventorySlot.at(listener, 176, 58));
-        inputs.addAll(chalkSlots);
-        configComponent.setupItemIOConfig(inputs, List.of(outputSlot), energySlot, true);
+        setupNativeItemIO(inputs, List.of(outputSlot), chalkSlots);
     }
 
     @Override

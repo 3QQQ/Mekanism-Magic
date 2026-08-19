@@ -1,7 +1,7 @@
 {
   "itemGroup.mekanism_magic": "Mekanism 魔法",
   "block.mekanism_magic.spirit_processor": "魔灵处理器",
-  "block.mekanism_magic.dimension_miner": "维度矿工处理机",
+  "block.mekanism_magic.dimension_miner": "维度矿机",
   "block.mekanism_magic.ritual_engine": "仪式引擎",
   "block.mekanism_magic.mini_ritual_assembler": "微缩仪式制作机",
   "block.mekanism_magic.basic_spirit_factory": "基础魔灵工厂",
@@ -13,7 +13,7 @@
   "block.mekanism_magic.cosmic_spirit_factory": "宇宙魔灵工厂",
   "block.mekanism_magic.infinite_spirit_factory": "无限魔灵工厂",
   "container.mekanism_magic.spirit_processor": "魔灵处理器",
-  "container.mekanism_magic.dimension_miner": "维度矿工处理机",
+  "container.mekanism_magic.dimension_miner": "维度矿机",
   "container.mekanism_magic.ritual_engine": "仪式引擎",
   "container.mekanism_magic.mini_ritual_assembler": "微缩仪式制作机",
   "container.mekanism_magic.spirit_factory": "魔灵工厂",

@@ -1,7 +1,7 @@
 {
   "itemGroup.mekanism_magic": "Mekanism Magic",
   "block.mekanism_magic.spirit_processor": "Spirit Processor",
-  "block.mekanism_magic.dimension_miner": "Dimensional Miner Processor",
+  "block.mekanism_magic.dimension_miner": "Dimensional Miner",
   "block.mekanism_magic.ritual_engine": "Ritual Engine",
   "block.mekanism_magic.mini_ritual_assembler": "Mini Ritual Assembler",
   "block.mekanism_magic.basic_spirit_factory": "Basic Spirit Factory",
@@ -13,7 +13,7 @@
   "block.mekanism_magic.cosmic_spirit_factory": "Cosmic Spirit Factory",
   "block.mekanism_magic.infinite_spirit_factory": "Infinite Spirit Factory",
   "container.mekanism_magic.spirit_processor": "Spirit Processor",
-  "container.mekanism_magic.dimension_miner": "Dimensional Miner Processor",
+  "container.mekanism_magic.dimension_miner": "Dimensional Miner",
   "container.mekanism_magic.ritual_engine": "Ritual Engine",
   "container.mekanism_magic.mini_ritual_assembler": "Mini Ritual Assembler",
   "container.mekanism_magic.spirit_factory": "Spirit Factory",

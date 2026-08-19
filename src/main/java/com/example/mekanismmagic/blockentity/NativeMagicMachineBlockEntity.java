@@ -19,6 +19,8 @@ import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentUpgrade;
+import mekanism.common.tile.component.config.DataType;
+import mekanism.common.tile.component.config.slot.InventorySlotInfo;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.interfaces.ISideConfiguration;
 import mekanism.common.tile.interfaces.IUpgradeTile;
@@ -56,7 +58,6 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public static final int MACHINE_INVENTORY_SIZE = 43;
     protected TileComponentConfig configComponent;
     protected TileComponentEjector ejectorComponent;
-    protected TileComponentUpgrade upgradeComponent;
     protected MachineEnergyContainer<? extends NativeMagicMachineBlockEntity> energyContainer;
     protected InputInventorySlot inputSlot;
     protected IInventorySlot outputSlot;
@@ -76,12 +77,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         super.presetVariables();
         configComponent = new TileComponentConfig(this,
                 EnumSet.of(TransmissionType.ITEM, TransmissionType.ENERGY));
-        addComponent(configComponent);
-        upgradeComponent = new TileComponentUpgrade(this);
-        addComponent(upgradeComponent);
         ejectorComponent = new TileComponentEjector(this)
                 .setOutputData(configComponent, TransmissionType.ITEM);
-        addComponent(ejectorComponent);
     }
 
     @Override
@@ -113,6 +110,21 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     protected abstract void createMachineSlots(InventorySlotHelper helper, IContentsListener listener);
 
+    protected final void setupNativeItemIO(
+            List<? extends IInventorySlot> inputs,
+            List<? extends IInventorySlot> outputs,
+            List<? extends IInventorySlot> extras) {
+        List<IInventorySlot> inputSlots = new java.util.ArrayList<>(inputs);
+        List<IInventorySlot> outputSlots = new java.util.ArrayList<>(outputs);
+        var itemConfig = configComponent.setupItemIOConfig(
+                inputSlots, outputSlots, energySlot, false);
+        if (!extras.isEmpty()) {
+            itemConfig.addSlotInfo(DataType.EXTRA,
+                    new InventorySlotInfo(true, true,
+                            new java.util.ArrayList<>(extras)));
+        }
+    }
+
     protected final <SLOT extends IInventorySlot> SLOT registerLogicalSlot(
             InventorySlotHelper helper, int index, SLOT slot) {
         if (logicalSlots == null) {
@@ -137,7 +149,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      * this without invoking the default single-output recipe loop again.
      */
     protected final boolean nativeBaseUpdate() {
-        return super.onUpdateServer();
+        return updateNativeBase();
     }
 
     protected ItemStack getSpiritSourceForUpgrade() {
@@ -243,7 +255,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     @Override
     protected boolean onUpdateServer() {
-        boolean changed = super.onUpdateServer();
+        boolean changed = updateNativeBase();
         if (level == null) {
             return changed;
         }
@@ -297,6 +309,14 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             progress = 0;
             activeRecipe = "";
             changed = true;
+        }
+        return changed;
+    }
+
+    private boolean updateNativeBase() {
+        boolean changed = super.onUpdateServer();
+        if (energySlot != null) {
+            energySlot.fillContainerOrConvert();
         }
         return changed;
     }

@@ -26,6 +26,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     @Override
     protected void createMachineSlots(InventorySlotHelper helper, IContentsListener listener) {
         List<mekanism.api.inventory.IInventorySlot> inputs = new ArrayList<>();
+        List<mekanism.api.inventory.IInventorySlot> extras = new ArrayList<>();
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 int index = row * 4 + column;
@@ -36,16 +37,19 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT, OutputInventorySlot.at(listener, 176, 58));
         InputInventorySlot ritual = registerLogicalSlot(helper, RITUAL_SLOT,
                 InputInventorySlot.at(OccultismRecipeBridge::isRitualSelector, listener, 20, 39));
+        extras.add(ritual);
         BasicInventorySlot activation = registerLogicalSlot(helper, ACTIVATION_SLOT,
                 BasicInventorySlot.at(OccultismRecipeBridge::isActivationItem, listener, 20, 62));
+        extras.add(activation);
         // Shared sacrifice slot: spawn eggs are consumed; supported filled
         // containment items remain and are emptied in place.
         BasicInventorySlot sacrifice = registerLogicalSlot(helper, SACRIFICE_SLOT,
                 BasicInventorySlot.at(OccultismRecipeBridge::isSacrificeItem, listener, 20, 85));
+        extras.add(sacrifice);
         dictionarySlot = registerLogicalSlot(helper, DICTIONARY_SLOT,
                 new DictionaryInventorySlot(this, listener, 240, 104));
-        inputs.add(dictionarySlot);
-        configComponent.setupItemIOConfig(inputs, List.of(outputSlot), energySlot, true);
+        extras.add(dictionarySlot);
+        setupNativeItemIO(inputs, List.of(outputSlot), extras);
     }
 
     @Override

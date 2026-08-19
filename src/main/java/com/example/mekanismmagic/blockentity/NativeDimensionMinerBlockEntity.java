@@ -62,8 +62,7 @@ public final class NativeDimensionMinerBlockEntity
                 outputSlot = slot;
             }
         }
-        configComponent.setupItemIOConfig(List.of(inputSlot),
-                List.copyOf(minerOutputs), energySlot, true);
+        setupNativeItemIO(List.of(inputSlot), minerOutputs, List.of());
     }
 
     @Override
@@ -207,7 +206,7 @@ public final class NativeDimensionMinerBlockEntity
             if (!existing.isEmpty()
                     && ItemStack.isSameItemSameComponents(existing, stack)) {
                 int moved = Math.min(remaining,
-                        existing.getMaxStackSize() - existing.getCount());
+                        MINER_OUTPUT_LIMIT - existing.getCount());
                 if (moved > 0) {
                     existing.grow(moved);
                     remaining -= moved;
@@ -219,7 +218,7 @@ public final class NativeDimensionMinerBlockEntity
         }
         for (int index = 0; index < targets.size() && remaining > 0; index++) {
             if (targets.get(index).isEmpty()) {
-                int moved = Math.min(remaining, stack.getMaxStackSize());
+                int moved = Math.min(remaining, MINER_OUTPUT_LIMIT);
                 targets.set(index, stack.copyWithCount(moved));
                 remaining -= moved;
             }
