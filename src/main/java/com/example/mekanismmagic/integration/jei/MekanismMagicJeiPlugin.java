@@ -3,6 +3,7 @@ package com.example.mekanismmagic.integration.jei;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
+import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.RecipeType;
@@ -28,6 +29,10 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     public static final RecipeType<OccultismRecipeBridge.MinerJeiData> MINER_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "miner",
                     OccultismRecipeBridge.MinerJeiData.class);
+    public static final RecipeType<UltimateMiniRitualRecipe>
+            ULTIMATE_MINI_RITUAL_TYPE = RecipeType.create(
+                    MekanismMagic.MOD_ID, "ultimate_mini_ritual",
+                    UltimateMiniRitualRecipe.class);
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -41,7 +46,9 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                 registration.getJeiHelpers().getGuiHelper()),
                 new RitualJeiCategory(registration.getJeiHelpers().getGuiHelper()),
                 new SpiritJeiCategory(registration.getJeiHelpers().getGuiHelper()),
-                new MinerJeiCategory(registration.getJeiHelpers().getGuiHelper()));
+                new MinerJeiCategory(registration.getJeiHelpers().getGuiHelper()),
+                new UltimateMiniRitualJeiCategory(
+                        registration.getJeiHelpers().getGuiHelper()));
     }
 
     @Override
@@ -60,6 +67,17 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             registration.addRecipes(MINER_TYPE,
                     OccultismRecipeBridge.minerJeiRecipes(
                             Minecraft.getInstance().level));
+            List<UltimateMiniRitualRecipe> ultimateRecipes =
+                    Minecraft.getInstance().level.getRecipeManager()
+                            .getAllRecipesFor(
+                                    net.minecraft.world.item.crafting.RecipeType.CRAFTING)
+                            .stream()
+                            .map(holder -> holder.value())
+                            .filter(UltimateMiniRitualRecipe.class::isInstance)
+                            .map(UltimateMiniRitualRecipe.class::cast)
+                            .toList();
+            registration.addRecipes(ULTIMATE_MINI_RITUAL_TYPE,
+                    ultimateRecipes);
         }
     }
 
