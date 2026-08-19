@@ -277,6 +277,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     protected boolean onUpdateServer() {
         boolean changed = updateNativeBase();
+        setActive(false);
         if (level == null) {
             return changed;
         }
@@ -305,6 +306,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             activeRecipe = recipeKey;
             progress = 0;
         }
+        setActive(true);
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
         progress++;
         if (progress >= progressRequired) {
@@ -313,10 +315,12 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                     && OccultismRecipeBridge.executeCommandRitual(
                     serverLevel, worldPosition, recipe.command()))) {
                 progress = 0;
+                setActive(false);
                 return changed;
             }
             if (!consumeSnapshot(snapshot, recipe)) {
                 progress = 0;
+                setActive(false);
                 return changed;
             }
             if (!recipe.output().isEmpty()) {

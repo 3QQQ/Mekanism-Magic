@@ -90,6 +90,7 @@ public final class NativeDimensionMinerBlockEntity
     @Override
     protected boolean onUpdateServer() {
         boolean changed = nativeBaseUpdate();
+        setActive(false);
         if (level == null) {
             return changed;
         }
@@ -114,6 +115,7 @@ public final class NativeDimensionMinerBlockEntity
         if (energyContainer == null || energyContainer.getEnergy() < usage) {
             return changed;
         }
+        setActive(true);
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
         int efficiency = enchantmentLevel(input, Enchantments.EFFICIENCY);
         progress += 1 + minimumRandomBonus(efficiency, 2);
