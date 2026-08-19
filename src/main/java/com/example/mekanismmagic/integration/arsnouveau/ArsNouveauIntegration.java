@@ -1,4 +1,4 @@
-package com.example.mekanismmagic.blockentity;
+package com.example.mekanismmagic.integration.arsnouveau;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;

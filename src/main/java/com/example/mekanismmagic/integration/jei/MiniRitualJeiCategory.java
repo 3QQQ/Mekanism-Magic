@@ -2,7 +2,7 @@ package com.example.mekanismmagic.integration.jei;
 
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
-import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.category.AbstractRecipeCategory;

@@ -1,4 +1,4 @@
-package com.example.mekanismmagic.blockentity;
+package com.example.mekanismmagic.integration.occultism;
 
 import mekanism.api.recipes.ItemStackToItemStackRecipe;
 import mekanism.api.recipes.basic.BasicItemStackToItemStackRecipe;

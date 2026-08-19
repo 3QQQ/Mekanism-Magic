@@ -1,4 +1,4 @@
-package com.example.mekanismmagic.blockentity;
+package com.example.mekanismmagic.integration.occultism;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

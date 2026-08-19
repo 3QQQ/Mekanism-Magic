@@ -2,7 +2,7 @@ package com.example.mekanismmagic.client;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.MekanismMagic;
-import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import com.example.mekanismmagic.client.screen.NativeRitualScreen;
 import com.example.mekanismmagic.client.screen.NativeMiniRitualAssemblerScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritFactoryScreen;

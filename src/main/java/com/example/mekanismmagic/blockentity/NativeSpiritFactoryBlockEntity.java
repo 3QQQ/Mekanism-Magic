@@ -1,6 +1,8 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
 import mekanism.api.Upgrade;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.recipes.cache.CachedRecipe;

@@ -1,7 +1,9 @@
-package com.example.mekanismmagic.blockentity;
+package com.example.mekanismmagic.integration.occultism;
 
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
+import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
+import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauIntegration;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;

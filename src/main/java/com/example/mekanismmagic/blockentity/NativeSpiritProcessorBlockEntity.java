@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.BasicInventorySlot;
