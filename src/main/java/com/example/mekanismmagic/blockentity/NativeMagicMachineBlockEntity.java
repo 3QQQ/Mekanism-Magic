@@ -16,6 +16,8 @@ import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.BasicInventorySlot;
+import mekanism.common.inventory.container.MekanismContainer;
+import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
@@ -111,6 +113,15 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     protected abstract void createMachineSlots(InventorySlotHelper helper, IContentsListener listener);
+
+    @Override
+    public void addContainerTrackers(MekanismContainer container) {
+        super.addContainerTrackers(container);
+        container.track(SyncableInt.create(() -> progress,
+                value -> progress = value));
+        container.track(SyncableInt.create(() -> progressRequired,
+                value -> progressRequired = Math.max(1, value)));
+    }
 
     protected final void setupNativeItemIO(
             List<? extends IInventorySlot> inputs,
