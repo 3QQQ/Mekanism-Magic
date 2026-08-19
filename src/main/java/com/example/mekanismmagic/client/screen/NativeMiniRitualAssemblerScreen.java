@@ -2,8 +2,9 @@ package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
 import com.example.mekanismmagic.client.gui.GuiChalkModuleTab;
+import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
 import mekanism.client.gui.element.slot.GuiSlot;
-import mekanism.common.inventory.container.tile.MekanismTileContainer;
+import mekanism.client.gui.element.button.MekanismButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
@@ -13,12 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class NativeMiniRitualAssemblerScreen
-        extends NativeMagicMachineScreen<NativeMiniRitualAssemblerBlockEntity> {
+        extends NativeMagicMachineScreen<NativeMiniRitualAssemblerBlockEntity,
+        NativeMiniRitualAssemblerContainer> {
     private final List<GuiSlot> chalkGuiSlots = new ArrayList<>();
     private boolean chalkModuleOpen;
 
     public NativeMiniRitualAssemblerScreen(
-            MekanismTileContainer<NativeMiniRitualAssemblerBlockEntity> container,
+            NativeMiniRitualAssemblerContainer container,
             Inventory inventory, Component title) {
         super(container, inventory, title, 208);
         imageWidth = 210;
@@ -55,6 +57,19 @@ public final class NativeMiniRitualAssemblerScreen
     protected void addMachineGuiElements() {
         addRenderableWidget(new GuiChalkModuleTab(this, getTileEntity(),
                 () -> chalkModuleOpen, this::toggleChalkModule));
+        addRenderableWidget(new MekanismButton(
+                this, 137, 78, 18, 18, Component.literal("<"),
+                () -> clickMachineButton(0), null));
+        addRenderableWidget(new MekanismButton(
+                this, 157, 78, 18, 18, Component.literal("✓"),
+                () -> clickMachineButton(1), null));
+        addRenderableWidget(new MekanismButton(
+                this, 177, 78, 18, 18, Component.literal(">"),
+                () -> clickMachineButton(2), null));
+    }
+
+    private void clickMachineButton(int id) {
+        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
     }
 
     @Override
@@ -74,7 +89,7 @@ public final class NativeMiniRitualAssemblerScreen
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (chalkModuleOpen) {
-            int left = leftPos + 216;
+            int left = leftPos + 236;
             int top = topPos + 88;
             graphics.fill(left, top, left + 80, top + 92, 0xFF151A21);
             graphics.fill(left, top, left + 80, top + 2, 0xFF78838F);
@@ -88,10 +103,12 @@ public final class NativeMiniRitualAssemblerScreen
     @Override
     protected void drawForegroundText(GuiGraphics graphics, int mouseX, int mouseY) {
         super.drawForegroundText(graphics, mouseX, mouseY);
+        graphics.drawString(font, getTileEntity().getPreviewLabel(),
+                4, 70, 0xD8DEE8, false);
         if (chalkModuleOpen) {
             graphics.drawString(font,
                     Component.translatable("gui.mekanism_magic.chalk"),
-                    220, 92, 0xD8DEE8, false);
+                    240, 92, 0xD8DEE8, false);
         }
     }
 
@@ -104,14 +121,14 @@ public final class NativeMiniRitualAssemblerScreen
     private void updateChalkSlotVisibility() {
         for (GuiSlot slot : chalkGuiSlots) {
             slot.visible = chalkModuleOpen;
-            slot.active = chalkModuleOpen;
+            slot.active = false;
         }
     }
 
     private static boolean isChalkGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x >= 220 && x <= 274 && (x - 220) % 18 == 0
-                && y >= 104 && y <= 158 && (y - 104) % 18 == 0;
+        return x >= 240 && x <= 294 && (x - 240) % 18 == 0
+                && y >= 104 && y <= 122 && (y - 104) % 18 == 0;
     }
 }

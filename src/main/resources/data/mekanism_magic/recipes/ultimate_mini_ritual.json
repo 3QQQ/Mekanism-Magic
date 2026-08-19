@@ -1,29 +1,4 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "MAM",
-    "SNS",
-    "MCM"
-  ],
-  "key": {
-    "M": {
-      "item": "mekanism_magic:mini_ritual"
-    },
-    "A": {
-      "item": "mekanism:alloy_atomic"
-    },
-    "S": {
-      "item": "occultism:spirit_attuned_crystal"
-    },
-    "N": {
-      "item": "minecraft:nether_star"
-    },
-    "C": {
-      "item": "mekanism:ultimate_control_circuit"
-    }
-  },
-  "result": {
-    "item": "mekanism_magic:ultimate_mini_ritual",
-    "count": 1
-  }
+  "type": "mekanism_magic:ultimate_mini_ritual",
+  "category": "misc"
 }

@@ -1,13 +1,13 @@
 {
   "parent": "mekanism:block/crusher",
   "textures": {
-    "particle": "mekanism_magic:block/spirit_processor/front",
-    "sides": "mekanism_magic:block/spirit_processor/side",
-    "front": "mekanism_magic:block/spirit_processor/front",
-    "west": "mekanism_magic:block/spirit_processor/side",
-    "east": "mekanism_magic:block/spirit_processor/side",
-    "south": "mekanism_magic:block/spirit_processor/back",
-    "up": "mekanism_magic:block/spirit_processor/top",
-    "down": "mekanism_magic:block/spirit_processor/bottom"
+    "particle": "mekanism_magic:block/dimension_miner/front",
+    "sides": "mekanism_magic:block/dimension_miner/side",
+    "front": "mekanism_magic:block/dimension_miner/front",
+    "west": "mekanism_magic:block/dimension_miner/side",
+    "east": "mekanism_magic:block/dimension_miner/side",
+    "south": "mekanism_magic:block/dimension_miner/back",
+    "up": "mekanism_magic:block/dimension_miner/top",
+    "down": "mekanism_magic:block/dimension_miner/bottom"
   }
 }

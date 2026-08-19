@@ -8,6 +8,7 @@ import com.example.mekanismmagic.client.screen.NativeMiniRitualAssemblerScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritFactoryScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritScreen;
 import com.example.mekanismmagic.client.screen.NativeDimensionMinerScreen;
+import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.resources.ResourceLocation;

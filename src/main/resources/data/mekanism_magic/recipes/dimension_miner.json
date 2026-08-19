@@ -3,7 +3,7 @@
   "pattern": [
     "ODO",
     "SCS",
-    "BGB"
+    "BGM"
   ],
   "key": {
     "O": {"item": "occultism:otherstone"},
@@ -11,7 +11,8 @@
     "S": {"item": "mekanism:steel_casing"},
     "C": {"item": "mekanism:advanced_control_circuit"},
     "B": {"item": "occultism:golden_sacrificial_bowl"},
-    "G": {"item": "minecraft:diamond_block"}
+    "G": {"item": "minecraft:diamond_block"},
+    "M": {"item": "occultism:dimensional_mineshaft"}
   },
   "result": {
     "item": "mekanism_magic:dimension_miner",

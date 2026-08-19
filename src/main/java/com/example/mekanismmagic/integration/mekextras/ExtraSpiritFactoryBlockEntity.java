@@ -11,6 +11,8 @@ import mekanism.api.providers.IBlockProvider;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.api.recipes.cache.OneInputCachedRecipe;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.inventory.container.MekanismContainer;
+import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.recipe.IMekanismRecipeTypeProvider;
@@ -41,6 +43,24 @@ public final class ExtraSpiritFactoryBlockEntity
                         CachedRecipe.OperationTracker.RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT),
                 Set.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_ENERGY));
         ensureProcessTickCapacity(tier.processes - 1);
+    }
+
+    @Override
+    public void addContainerTrackers(MekanismContainer container) {
+        super.addContainerTrackers(container);
+        for (int process = 0; process < tier.processes; process++) {
+            int index = process;
+            container.track(SyncableInt.create(
+                    () -> processRequiredTicks == null
+                            || index >= processRequiredTicks.length
+                            ? 0 : processRequiredTicks[index],
+                    value -> {
+                        if (processRequiredTicks != null
+                                && index < processRequiredTicks.length) {
+                            processRequiredTicks[index] = Math.max(1, value);
+                        }
+                    }));
+        }
     }
 
     @Override

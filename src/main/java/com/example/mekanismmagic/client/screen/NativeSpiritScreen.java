@@ -6,7 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
 public final class NativeSpiritScreen extends NativeMagicMachineScreen<
-        NativeSpiritProcessorBlockEntity> {
+        NativeSpiritProcessorBlockEntity,
+        MekanismTileContainer<NativeSpiritProcessorBlockEntity>> {
     public NativeSpiritScreen(MekanismTileContainer<NativeSpiritProcessorBlockEntity> container,
                               Inventory inventory, Component title) {
         super(container, inventory, title, 166);

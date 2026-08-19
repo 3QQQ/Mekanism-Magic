@@ -3,11 +3,13 @@ package com.example.mekanismmagic;
 import com.example.mekanismmagic.item.MiniRitualItem;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
+import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -24,6 +26,8 @@ public final class MekanismMagic {
             DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
+    public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
+            DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MOD_ID);
 
     public static final RegistryObject<MiniRitualItem> MINI_RITUAL =
             ITEMS.register("mini_ritual",
@@ -35,6 +39,10 @@ public final class MekanismMagic {
             ITEMS.register("ultimate_mini_ritual",
                     () -> new UltimateMiniRitualItem(
                             new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<RecipeSerializer<
+            UltimateMiniRitualRecipe>> ULTIMATE_MINI_RITUAL_RECIPE =
+            RECIPE_SERIALIZERS.register("ultimate_mini_ritual",
+                    () -> UltimateMiniRitualRecipe.SERIALIZER);
 
     public static final RegistryObject<CreativeModeTab> TAB =
             CREATIVE_TABS.register("main", () -> CreativeModeTab.builder()
@@ -61,6 +69,7 @@ public final class MekanismMagic {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
+        RECIPE_SERIALIZERS.register(modBus);
         NativeMekanismRegistries.register(modBus);
         registerMekanismExtrasIntegration(modBus);
     }

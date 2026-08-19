@@ -465,6 +465,17 @@ public final class OccultismRecipeBridge {
                 && id.getPath().equals("chalk_" + color);
     }
 
+    public static boolean isAnyChalk(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id != null && OCCULTISM.equals(id.getNamespace())
+                && (isUniversalChalk(stack)
+                || RITUAL_CHALK_COLORS.stream().anyMatch(
+                color -> id.getPath().equals("chalk_" + color)));
+    }
+
     public static boolean isUniversalChalk(ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
@@ -854,27 +865,83 @@ public final class OccultismRecipeBridge {
 
     public static Optional<RecipeResult> findMiniRitualRecipe(Level level,
                                                               ItemStackHandler inventory) {
+        List<RecipeResult> candidates =
+                findMiniRitualCandidates(level, inventory);
+        return candidates.isEmpty()
+                ? Optional.empty() : Optional.of(candidates.get(0));
+    }
+
+    public static List<RecipeResult> findMiniRitualCandidates(
+            Level level, ItemStackHandler inventory) {
+        Map<String, RecipeResult> candidates = new LinkedHashMap<>();
         RecipeType<?> type = recipeType("ritual");
         if (type == null) {
-            return Optional.empty();
+            return List.of();
         }
         for (Recipe<?> recipeHolder : recipes(level, type)) {
             Object recipe = recipeHolder;
-            Optional<List<InputUse>> materialSlots = matchRitualIngredients(recipe, inventory);
+            Optional<RitualProjection> projection =
+                    projection(recipeId(recipe), recipe);
+            if (projection.isEmpty()) {
+                continue;
+            }
+            Optional<List<InputUse>> materialSlots = matchPentacleMaterials(
+                    pentacleMaterialStacks(projection.get().multiblock()),
+                    inventory);
             if (materialSlots.isEmpty()) {
                 continue;
             }
-            Optional<RitualProjection> projection = projection(recipeId(recipe), recipe);
-            if (projection.isEmpty()
-                    || !matchesRitualProjectionChalk(projection.get(), inventory)) {
+            if (!matchesRitualProjectionChalk(projection.get(), inventory)) {
                 continue;
             }
-            List<InputUse> inputs = new ArrayList<>();
-            inputs.addAll(materialSlots.get());
-            return Optional.of(new RecipeResult(recipeId(recipe),
-                    createPentacleMiniRitual(projection.get()), 100, inputs, -1, -1));
+            RecipeResult candidate = new RecipeResult(recipeId(recipe),
+                    createPentacleMiniRitual(projection.get()), 100,
+                    new ArrayList<>(materialSlots.get()), -1, -1);
+            candidates.putIfAbsent(
+                    projection.get().pentacleId().toString(), candidate);
         }
-        return Optional.empty();
+        return List.copyOf(candidates.values());
+    }
+
+    private static Optional<List<InputUse>> matchPentacleMaterials(
+            List<ItemStack> required, ItemStackHandler inventory) {
+        int[] remaining = new int[NativeMagicMachineBlockEntity.INPUT_SLOTS];
+        for (int slot = 0; slot < remaining.length; slot++) {
+            remaining[slot] = inventory.getStackInSlot(slot).getCount();
+        }
+        List<InputUse> matched = new ArrayList<>();
+        for (ItemStack requirement : required) {
+            int needed = requirement.getCount();
+            for (int slot = 0; slot < remaining.length && needed > 0; slot++) {
+                ItemStack available = inventory.getStackInSlot(slot);
+                if (remaining[slot] <= 0
+                        || !ItemStack.isSameItemSameTags(
+                        available, requirement)) {
+                    continue;
+                }
+                int used = Math.min(needed, remaining[slot]);
+                remaining[slot] -= used;
+                needed -= used;
+                addInputUse(matched, slot, used);
+            }
+            if (needed > 0) {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(matched);
+    }
+
+    private static void addInputUse(List<InputUse> matched,
+                                    int slot, int count) {
+        for (int index = 0; index < matched.size(); index++) {
+            InputUse existing = matched.get(index);
+            if (existing.slot() == slot) {
+                matched.set(index, new InputUse(
+                        slot, existing.count() + count));
+                return;
+            }
+        }
+        matched.add(new InputUse(slot, count));
     }
 
     public static ItemStack createMiniRitual(RitualProjection projection) {
@@ -982,6 +1049,24 @@ public final class OccultismRecipeBridge {
         return id == null ? 0 : PENTACLE_MODEL_DATA.getOrDefault(id.getPath(), 0);
     }
 
+    public static Component pentacleDisplayName(ResourceLocation pentacleId) {
+        if (pentacleId == null) {
+            return Component.translatable(
+                    "item.mekanism_magic.mini_ritual.pentacle_only");
+        }
+        String key = "book.occultism.dictionary_of_spirits.pentacles."
+                + pentacleId.getPath() + ".name";
+        Component translated = Component.translatable(key);
+        if (!translated.getString().equals(key)) {
+            return translated;
+        }
+        String fallbackKey =
+                "pentacle.mekanism_magic." + pentacleId.getPath();
+        Component fallback = Component.translatable(fallbackKey);
+        return fallback.getString().equals(fallbackKey)
+                ? Component.literal(pentacleId.getPath()) : fallback;
+    }
+
     private static String entityId(ItemStack stack) {
         if (stack.getItem() instanceof SpawnEggItem egg) {
             ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(
@@ -1039,10 +1124,20 @@ public final class OccultismRecipeBridge {
     }
 
     private static boolean isMachineSafeRitual(Object recipe) {
-        // Item-use rituals are emulated by consuming their item_to_use
-        // ingredient in the machine. Command rituals are executed from the
-        // machine position with the same permission level as Occultism.
+        Object typeValue = invoke(recipe, "getRitualType").orElse(null);
+        if (typeValue instanceof ResourceLocation type
+                && isSpecialEffectRitual(type.getPath())) {
+            return false;
+        }
         return true;
+    }
+
+    private static boolean isSpecialEffectRitual(String ritualType) {
+        return ritualType.equals("repair")
+                || ritualType.equals("resurrect_familiar")
+                || ritualType.equals("craft_with_spirit_name")
+                || ritualType.equals(
+                "summon_with_chance_of_chicken_tamed");
     }
 
     private static boolean matchesActivation(Object recipe, ItemStack activation,

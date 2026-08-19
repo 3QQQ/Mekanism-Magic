@@ -3,6 +3,7 @@ package com.example.mekanismmagic.integration.jei;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
+import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.RecipeType;
@@ -19,6 +20,10 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     public static final RecipeType<OccultismRecipeBridge.PentacleJeiData> MINI_RITUAL_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "mini_ritual",
                     OccultismRecipeBridge.PentacleJeiData.class);
+    public static final RecipeType<UltimateMiniRitualRecipe>
+            ULTIMATE_MINI_RITUAL_TYPE =
+            RecipeType.create(MekanismMagic.MOD_ID, "ultimate_mini_ritual",
+                    UltimateMiniRitualRecipe.class);
     public static final RecipeType<OccultismRecipeBridge.RitualJeiData> RITUAL_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "ritual",
                     OccultismRecipeBridge.RitualJeiData.class);
@@ -39,6 +44,8 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         registration.addRecipeCategories(new MiniRitualJeiCategory(
                 registration.getJeiHelpers().getGuiHelper()),
+                new UltimateMiniRitualJeiCategory(
+                        registration.getJeiHelpers().getGuiHelper()),
                 new RitualJeiCategory(registration.getJeiHelpers().getGuiHelper()),
                 new SpiritJeiCategory(registration.getJeiHelpers().getGuiHelper()),
                 new MinerJeiCategory(registration.getJeiHelpers().getGuiHelper()));
@@ -51,6 +58,12 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                     OccultismRecipeBridge.pentacleJeiRecipes(
                             Minecraft.getInstance().level);
             registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
+            registration.addRecipes(ULTIMATE_MINI_RITUAL_TYPE,
+                    List.of(new UltimateMiniRitualRecipe(
+                            new ResourceLocation(MekanismMagic.MOD_ID,
+                                    "ultimate_mini_ritual"),
+                            net.minecraft.world.item.crafting
+                                    .CraftingBookCategory.MISC)));
             registration.addRecipes(RITUAL_TYPE,
                     OccultismRecipeBridge.ritualJeiRecipes(
                             Minecraft.getInstance().level));

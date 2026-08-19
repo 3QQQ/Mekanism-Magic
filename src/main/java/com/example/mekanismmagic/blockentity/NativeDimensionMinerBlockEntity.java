@@ -6,6 +6,8 @@ import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
 import mekanism.api.math.FloatingLong;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.inventory.container.slot.ContainerSlotType;
+import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import net.minecraft.core.BlockPos;
@@ -29,8 +31,9 @@ public final class NativeDimensionMinerBlockEntity
     public static final int MINER_INPUT_SLOT = 0;
     public static final int MINER_OUTPUT_START = 16;
     public static final int MINER_OUTPUT_COUNT = 27;
+    private static final int MINER_OUTPUT_LIMIT = 256;
 
-    private List<OutputInventorySlot> minerOutputs;
+    private List<BasicInventorySlot> minerOutputs;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
     private ItemStack pendingInput = ItemStack.EMPTY;
 
@@ -46,21 +49,20 @@ public final class NativeDimensionMinerBlockEntity
         minerOutputs = new ArrayList<>(MINER_OUTPUT_COUNT);
         inputSlot = registerLogicalSlot(helper, MINER_INPUT_SLOT,
                 InputInventorySlot.at(OccultismRecipeBridge::isMinerItem,
-                        listener, 20, 35));
+                        listener, 96, 16));
         for (int index = 0; index < MINER_OUTPUT_COUNT; index++) {
             int column = index % 9;
             int row = index / 9;
-            OutputInventorySlot slot = registerLogicalSlot(helper,
+            BasicInventorySlot slot = registerLogicalSlot(helper,
                     MINER_OUTPUT_START + index,
-                    OutputInventorySlot.at(listener,
-                            48 + column * 18, 8 + row * 18));
+                    new MinerOutputInventorySlot(listener,
+                            24 + column * 18, 40 + row * 18));
             minerOutputs.add(slot);
             if (index == 0) {
                 outputSlot = slot;
             }
         }
-        configComponent.setupItemIOConfig(List.of(inputSlot),
-                List.copyOf(minerOutputs), energySlot, true);
+        setupNativeItemIO(List.of(inputSlot), minerOutputs, List.of());
     }
 
     @Override
@@ -70,7 +72,7 @@ public final class NativeDimensionMinerBlockEntity
 
     @Override
     protected int energySlotY() {
-        return 35;
+        return 16;
     }
 
     @Override
@@ -88,6 +90,8 @@ public final class NativeDimensionMinerBlockEntity
     @Override
     protected void onUpdateServer() {
         nativeBaseUpdate();
+        tickEjectorAdditional(10);
+        setActive(false);
         if (level == null) {
             return;
         }
@@ -112,6 +116,7 @@ public final class NativeDimensionMinerBlockEntity
         if (energyContainer == null || energyContainer.getEnergy().smallerThan(usage)) {
             return;
         }
+        setActive(true);
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
         int efficiency = enchantmentLevel(input, Enchantments.BLOCK_EFFICIENCY);
         progress += 1 + minimumRandomBonus(efficiency, 2);
@@ -171,7 +176,7 @@ public final class NativeDimensionMinerBlockEntity
 
     private boolean canAccept(List<ItemStack> stacks) {
         List<ItemStack> simulated = new ArrayList<>(minerOutputs.size());
-        for (OutputInventorySlot slot : minerOutputs) {
+        for (BasicInventorySlot slot : minerOutputs) {
             simulated.add(slot.getStack().copy());
         }
         for (ItemStack stack : stacks) {
@@ -198,7 +203,7 @@ public final class NativeDimensionMinerBlockEntity
             if (!existing.isEmpty()
                     && ItemStack.isSameItemSameTags(existing, stack)) {
                 int moved = Math.min(remaining,
-                        existing.getMaxStackSize() - existing.getCount());
+                        MINER_OUTPUT_LIMIT - existing.getCount());
                 if (moved > 0) {
                     existing.grow(moved);
                     remaining -= moved;
@@ -210,7 +215,7 @@ public final class NativeDimensionMinerBlockEntity
         }
         for (int index = 0; index < targets.size() && remaining > 0; index++) {
             if (targets.get(index).isEmpty()) {
-                int moved = Math.min(remaining, stack.getMaxStackSize());
+                int moved = Math.min(remaining, MINER_OUTPUT_LIMIT);
                 ItemStack movedStack = stack.copy();
                 movedStack.setCount(moved);
                 targets.set(index, movedStack);
@@ -222,12 +227,12 @@ public final class NativeDimensionMinerBlockEntity
 
     private boolean insertOutput(ItemStack stack) {
         int remaining = stack.getCount();
-        for (OutputInventorySlot slot : minerOutputs) {
+        for (BasicInventorySlot slot : minerOutputs) {
             ItemStack existing = slot.getStack();
             if (!existing.isEmpty()
                     && ItemStack.isSameItemSameTags(existing, stack)) {
                 int moved = Math.min(remaining,
-                        existing.getMaxStackSize() - existing.getCount());
+                        MINER_OUTPUT_LIMIT - existing.getCount());
                 if (moved > 0) {
                     existing.grow(moved);
                     slot.setStack(existing);
@@ -238,12 +243,12 @@ public final class NativeDimensionMinerBlockEntity
                 }
             }
         }
-        for (OutputInventorySlot slot : minerOutputs) {
+        for (BasicInventorySlot slot : minerOutputs) {
             if (remaining <= 0) {
                 break;
             }
             if (slot.getStack().isEmpty()) {
-                int moved = Math.min(remaining, stack.getMaxStackSize());
+                int moved = Math.min(remaining, MINER_OUTPUT_LIMIT);
                 ItemStack movedStack = stack.copy();
                 movedStack.setCount(moved);
                 slot.setStack(movedStack);
@@ -251,6 +256,19 @@ public final class NativeDimensionMinerBlockEntity
             }
         }
         return remaining == 0;
+    }
+
+    private static final class MinerOutputInventorySlot
+            extends BasicInventorySlot {
+        private MinerOutputInventorySlot(IContentsListener listener, int x, int y) {
+            super(MINER_OUTPUT_LIMIT,
+                    BasicInventorySlot.alwaysTrueBi,
+                    BasicInventorySlot.internalOnly,
+                    BasicInventorySlot.alwaysTrue,
+                    listener, x, y);
+            obeyStackLimit = false;
+            setSlotType(ContainerSlotType.OUTPUT);
+        }
     }
 
     private void resetPending() {

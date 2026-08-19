@@ -1,21 +1,21 @@
 {
   "loader": "forge:composite",
   "parent": "block/block",
-  "textures": {"particle": "mekanism_magic:block/spirit_factory/ultimate/front"},
+  "textures": {"particle": "mekanism_magic:block/spirit_factory/infinite/front"},
   "children": {
     "opaque_core": {
       "parent": "mekanism_magic:block/spirit_factory/opaque_core",
-      "textures": {"core": "mekanism_magic:block/spirit_factory/ultimate/side"}
+      "textures": {"core": "mekanism_magic:block/spirit_factory/infinite/side"}
     },
     "base": {
       "parent": "mekanism_magic:block/spirit_factory/base",
       "textures": {
-        "particle": "mekanism_magic:block/spirit_factory/ultimate/front",
-        "front": "mekanism_magic:block/spirit_factory/ultimate/front",
-        "top": "mekanism_magic:block/spirit_factory/ultimate/top",
-        "back_panel": "mekanism_magic:block/spirit_factory/ultimate/back",
-        "side": "mekanism_magic:block/spirit_factory/ultimate/side",
-        "bottom": "mekanism_magic:block/spirit_factory/ultimate/bottom"
+        "particle": "mekanism_magic:block/spirit_factory/infinite/front",
+        "front": "mekanism_magic:block/spirit_factory/infinite/front",
+        "top": "mekanism_magic:block/spirit_factory/infinite/top",
+        "back_panel": "mekanism_magic:block/spirit_factory/infinite/back",
+        "side": "mekanism_magic:block/spirit_factory/infinite/side",
+        "bottom": "mekanism_magic:block/spirit_factory/infinite/bottom"
       }
     },
     "front_led": {"parent": "mekanism_extras:block/factory/front_led/infinite"}

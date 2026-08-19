@@ -15,10 +15,11 @@ import net.minecraft.world.entity.player.Inventory;
  * machine-specific slot widgets.
  */
 public abstract class NativeMagicMachineScreen<
-        TILE extends NativeMagicMachineBlockEntity>
-        extends GuiConfigurableTile<TILE, MekanismTileContainer<TILE>> {
+        TILE extends NativeMagicMachineBlockEntity,
+        CONTAINER extends MekanismTileContainer<TILE>>
+        extends GuiConfigurableTile<TILE, CONTAINER> {
 
-    protected NativeMagicMachineScreen(MekanismTileContainer<TILE> container,
+    protected NativeMagicMachineScreen(CONTAINER container,
                                        Inventory inventory, Component title,
                                        int imageHeight) {
         super(container, inventory, title);
@@ -37,8 +38,10 @@ public abstract class NativeMagicMachineScreen<
         addRenderableWidget(new GuiVerticalPowerBar(this,
                 getTileEntity().getNativeEnergyContainer(), energyBarX(), 16,
                 energyBarHeight()));
-        addRenderableWidget(new GuiProgress(getTileEntity()::getProgress,
-                progressType(), this, workProgressX(), workProgressY()));
+        if (showProgress()) {
+            addRenderableWidget(new GuiProgress(getTileEntity()::getProgress,
+                    progressType(), this, workProgressX(), workProgressY()));
+        }
         addMachineGuiElements();
     }
 
@@ -54,6 +57,10 @@ public abstract class NativeMagicMachineScreen<
     }
 
     protected boolean showUpArrow() {
+        return true;
+    }
+
+    protected boolean showProgress() {
         return true;
     }
 

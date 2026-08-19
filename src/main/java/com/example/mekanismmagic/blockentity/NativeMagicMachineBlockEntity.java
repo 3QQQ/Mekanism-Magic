@@ -17,10 +17,14 @@ import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.BasicInventorySlot;
+import mekanism.common.inventory.container.MekanismContainer;
+import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentUpgrade;
+import mekanism.common.tile.component.config.DataType;
+import mekanism.common.tile.component.config.slot.InventorySlotInfo;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.interfaces.ISideConfiguration;
 import mekanism.common.tile.interfaces.IUpgradeTile;
@@ -60,7 +64,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected TileComponentUpgrade upgradeComponent;
     protected MachineEnergyContainer<? extends NativeMagicMachineBlockEntity> energyContainer;
     protected InputInventorySlot inputSlot;
-    protected OutputInventorySlot outputSlot;
+    protected IInventorySlot outputSlot;
     protected EnergyInventorySlot energySlot;
     protected BasicInventorySlot containmentSlot;
     private Map<Integer, IInventorySlot> logicalSlots;
@@ -122,6 +126,30 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     protected abstract void createMachineSlots(InventorySlotHelper helper, IContentsListener listener);
 
+    @Override
+    public void addContainerTrackers(MekanismContainer container) {
+        super.addContainerTrackers(container);
+        container.track(SyncableInt.create(() -> progress,
+                value -> progress = value));
+        container.track(SyncableInt.create(() -> progressRequired,
+                value -> progressRequired = Math.max(1, value)));
+    }
+
+    protected final void setupNativeItemIO(
+            List<? extends IInventorySlot> inputs,
+            List<? extends IInventorySlot> outputs,
+            List<? extends IInventorySlot> extras) {
+        List<IInventorySlot> inputSlots = new java.util.ArrayList<>(inputs);
+        List<IInventorySlot> outputSlots = new java.util.ArrayList<>(outputs);
+        var itemConfig = configComponent.setupItemIOConfig(
+                inputSlots, outputSlots, energySlot, false);
+        if (!extras.isEmpty()) {
+            itemConfig.addSlotInfo(DataType.EXTRA,
+                    new InventorySlotInfo(true, true,
+                            new java.util.ArrayList<>(extras)));
+        }
+    }
+
     protected final <SLOT extends IInventorySlot> SLOT registerLogicalSlot(
             InventorySlotHelper helper, int index, SLOT slot) {
         if (logicalSlots == null) {
@@ -147,6 +175,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      */
     protected final void nativeBaseUpdate() {
         super.onUpdateServer();
+        if (energySlot != null) {
+            energySlot.fillContainerOrConvert();
+        }
     }
 
     protected ItemStack getSpiritSourceForUpgrade() {
@@ -201,6 +232,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected void onNativeUpgradeChanged(Upgrade upgrade) {
     }
 
+    protected void onRecipeFinished(
+            OccultismRecipeBridge.RecipeResult recipe) {
+    }
+
     public int getProgress() {
         return progress;
     }
@@ -212,6 +247,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     protected void onUpdateServer() {
         nativeBaseUpdate();
+        setActive(false);
         if (level == null) {
             return;
         }
@@ -241,6 +277,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             activeRecipe = recipeKey;
             progress = 0;
         }
+        setActive(true);
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
         progress++;
         if (progress >= progressRequired) {
@@ -249,10 +286,12 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                     && OccultismRecipeBridge.executeCommandRitual(
                     serverLevel, worldPosition, recipe.command()))) {
                 progress = 0;
+                setActive(false);
                 return;
             }
             if (!consumeSnapshot(snapshot, recipe)) {
                 progress = 0;
+                setActive(false);
                 return;
             }
             if (!recipe.output().isEmpty()) {
@@ -265,16 +304,27 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             copyBack(snapshot);
             progress = 0;
             activeRecipe = "";
+            onRecipeFinished(recipe);
             setChanged();
         }
     }
 
-    private ItemStackHandler snapshotInventory() {
+    protected final ItemStackHandler snapshotInventory() {
         ItemStackHandler snapshot = new ItemStackHandler(MACHINE_INVENTORY_SIZE);
         if (logicalSlots != null) {
             logicalSlots.forEach((index, slot) -> snapshot.setStackInSlot(index, slot.getStack().copy()));
         }
         return snapshot;
+    }
+
+    protected final void tickEjectorAdditional(int calls) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel)
+                || ejectorComponent == null) {
+            return;
+        }
+        for (int index = 0; index < calls; index++) {
+            ejectorComponent.tickServer();
+        }
     }
 
     private void copyBack(ItemStackHandler snapshot) {
