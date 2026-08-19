@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 public final class NativeMiniRitualAssemblerBlockEntity
         extends NativeMagicMachineBlockEntity {
     private List<mekanism.api.inventory.IInventorySlot> chalkSlots;
-    private boolean chalkModuleOpen;
 
     public NativeMiniRitualAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.get()
@@ -56,7 +55,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 chalkSlots.add(registerLogicalSlot(helper, CHALK_SLOT_START + index,
                         new ChalkInventorySlot(this,
                                 stack -> OccultismRecipeBridge.isChalkForColor(stack, color),
-                                listener, 220 + column * 18, 104 + row * 18)));
+                                listener, 240 + column * 18, 104 + row * 18)));
             }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
@@ -92,11 +91,9 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     public void setChalkModuleOpen(boolean open) {
-        chalkModuleOpen = open;
-    }
-
-    private boolean isChalkContainerSlotActive() {
-        return level == null || !level.isClientSide() || chalkModuleOpen;
+        // The module state is client-side presentation only. Container slots
+        // must remain active so manual insertion also works after reopening
+        // the GUI and while the server has not received the visual state.
     }
 
     private static final class ChalkInventorySlot extends BasicInventorySlot {
@@ -118,10 +115,10 @@ public final class NativeMiniRitualAssemblerBlockEntity
         public InventoryContainerSlot createContainerSlot() {
             return new InventoryContainerSlot(this, x, y, getSlotType(),
                     getSlotOverlay(), warning -> {
-            }, this::setStackUnchecked) {
+                }, this::setStackUnchecked) {
                 @Override
                 public boolean isActive() {
-                    return tile.isChalkContainerSlotActive();
+                    return true;
                 }
             };
         }

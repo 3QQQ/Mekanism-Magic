@@ -78,7 +78,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (dictionaryModuleOpen) {
-            int left = leftPos + 216;
+            int left = leftPos + 236;
             int top = topPos + 88;
             graphics.fill(left, top, left + 58, top + 52, 0xFF151A21);
             graphics.fill(left, top, left + 58, top + 2, 0xFF78838F);
@@ -95,7 +95,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         if (dictionaryModuleOpen) {
             graphics.drawString(font,
                     Component.translatable("gui.mekanism_magic.dictionary"),
-                    220, 92, 0xD8DEE8, false);
+                    240, 92, 0xD8DEE8, false);
         }
     }
 
@@ -115,6 +115,6 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     private static boolean isDictionaryGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x == 220 && y == 104;
+        return x == 240 && y == 104;
     }
 }

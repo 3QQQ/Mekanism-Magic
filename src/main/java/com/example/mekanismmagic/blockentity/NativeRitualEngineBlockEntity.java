@@ -18,7 +18,6 @@ import java.util.Optional;
 
 public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlockEntity {
     private DictionaryInventorySlot dictionarySlot;
-    private boolean dictionaryModuleOpen;
 
     public NativeRitualEngineBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.RITUAL_BLOCK.get().builtInRegistryHolder(), pos, state);
@@ -44,7 +43,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
         BasicInventorySlot sacrifice = registerLogicalSlot(helper, SACRIFICE_SLOT,
                 BasicInventorySlot.at(OccultismRecipeBridge::isSacrificeItem, listener, 20, 85));
         dictionarySlot = registerLogicalSlot(helper, DICTIONARY_SLOT,
-                new DictionaryInventorySlot(this, listener, 220, 104));
+                new DictionaryInventorySlot(this, listener, 240, 104));
         inputs.add(dictionarySlot);
         configComponent.setupItemIOConfig(inputs, List.of(outputSlot), energySlot, true);
     }
@@ -74,11 +73,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     }
 
     public void setDictionaryModuleOpen(boolean open) {
-        dictionaryModuleOpen = open;
-    }
-
-    private boolean isDictionaryContainerSlotActive() {
-        return level == null || !level.isClientSide() || dictionaryModuleOpen;
+        // The module state is client-side presentation only. Keep the
+        // container slot active independently of the visual side panel.
     }
 
     private static final class DictionaryInventorySlot extends BasicInventorySlot {
@@ -99,10 +95,10 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
         public InventoryContainerSlot createContainerSlot() {
             return new InventoryContainerSlot(this, x, y, getSlotType(),
                     getSlotOverlay(), warning -> {
-            }, this::setStackUnchecked) {
+                }, this::setStackUnchecked) {
                 @Override
                 public boolean isActive() {
-                    return tile.isDictionaryContainerSlotActive();
+                    return true;
                 }
             };
         }

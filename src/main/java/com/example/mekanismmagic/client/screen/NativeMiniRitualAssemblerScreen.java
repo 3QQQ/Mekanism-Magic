@@ -74,7 +74,7 @@ public final class NativeMiniRitualAssemblerScreen
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (chalkModuleOpen) {
-            int left = leftPos + 216;
+            int left = leftPos + 236;
             int top = topPos + 88;
             graphics.fill(left, top, left + 80, top + 92, 0xFF151A21);
             graphics.fill(left, top, left + 80, top + 2, 0xFF78838F);
@@ -91,7 +91,7 @@ public final class NativeMiniRitualAssemblerScreen
         if (chalkModuleOpen) {
             graphics.drawString(font,
                     Component.translatable("gui.mekanism_magic.chalk"),
-                    220, 92, 0xD8DEE8, false);
+                    240, 92, 0xD8DEE8, false);
         }
     }
 
@@ -111,7 +111,7 @@ public final class NativeMiniRitualAssemblerScreen
     private static boolean isChalkGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x >= 220 && x <= 274 && (x - 220) % 18 == 0
+        return x >= 240 && x <= 294 && (x - 240) % 18 == 0
                 && y >= 104 && y <= 158 && (y - 104) % 18 == 0;
     }
 }
