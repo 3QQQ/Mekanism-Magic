@@ -1,4 +1,7 @@
-package com.example.mekanismmagic.blockentity;
+package com.example.mekanismmagic.integration.occultism;
+
+import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
+import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauIntegration;
 
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;

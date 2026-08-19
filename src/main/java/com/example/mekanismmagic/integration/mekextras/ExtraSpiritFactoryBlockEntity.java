@@ -1,8 +1,8 @@
 package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
-import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
-import com.example.mekanismmagic.blockentity.SpiritFactoryRecipe;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
 import com.example.mekanismmagic.blockentity.SpiritMachineUpgradeData;
 import com.jerry.mekanism_extras.common.tile.factory.TileEntityExtraItemToItemFactory;
 import mekanism.api.inventory.IInventorySlot;

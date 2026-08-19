@@ -1,5 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;

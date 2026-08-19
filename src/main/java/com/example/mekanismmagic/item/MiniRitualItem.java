@@ -1,6 +1,6 @@
 package com.example.mekanismmagic.item;
 
-import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;

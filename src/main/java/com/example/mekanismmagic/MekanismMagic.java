@@ -4,6 +4,7 @@ import com.example.mekanismmagic.item.MiniRitualItem;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -11,7 +12,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.DeferredRegister;
@@ -83,7 +83,7 @@ public final class MekanismMagic {
     }
 
     private static void registerMekanismExtrasIntegration(IEventBus modBus) {
-        if (!ModList.get().isLoaded("mekanism_extras")) {
+        if (!ModCompatibility.loaded(ModCompatibility.MEKANISM_EXTRAS)) {
             return;
         }
         try {
