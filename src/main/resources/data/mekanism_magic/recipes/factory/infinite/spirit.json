@@ -5,9 +5,9 @@
   "pattern": ["ACA", "IPJ", "ACA"],
   "key": {
     "A": {"tag": "mekanism_extras:alloys/spectrum"},
-    "C": {"tag": "c:circuits/infinite"},
-    "I": {"tag": "c:pellets/plutonium"},
-    "J": {"tag": "c:pellets/polonium"},
+    "C": {"tag": "forge:circuits/infinite"},
+    "I": {"tag": "forge:pellets/plutonium"},
+    "J": {"tag": "forge:pellets/polonium"},
     "P": {"item": "mekanism_magic:cosmic_spirit_factory"}
   },
   "result": {"item": "mekanism_magic:infinite_spirit_factory", "count": 1}

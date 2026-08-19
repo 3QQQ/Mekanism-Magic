@@ -5,8 +5,8 @@
   "pattern": ["ACA", "IPI", "ACA"],
   "key": {
     "A": {"tag": "mekanism_extras:alloys/radiance"},
-    "C": {"tag": "c:circuits/absolute"},
-    "I": {"tag": "c:gems/emerald"},
+    "C": {"tag": "forge:circuits/absolute"},
+    "I": {"tag": "forge:gems/emerald"},
     "P": {"item": "mekanism_magic:ultimate_spirit_factory"}
   },
   "result": {"item": "mekanism_magic:absolute_spirit_factory", "count": 1}

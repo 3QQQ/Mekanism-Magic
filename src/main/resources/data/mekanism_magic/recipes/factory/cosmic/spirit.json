@@ -5,8 +5,8 @@
   "pattern": ["ACA", "IPI", "ACA"],
   "key": {
     "A": {"tag": "mekanism_extras:alloys/shining"},
-    "C": {"tag": "c:circuits/cosmic"},
-    "I": {"tag": "c:ingots/refined_obsidian"},
+    "C": {"tag": "forge:circuits/cosmic"},
+    "I": {"tag": "forge:ingots/refined_obsidian"},
     "P": {"item": "mekanism_magic:supreme_spirit_factory"}
   },
   "result": {"item": "mekanism_magic:cosmic_spirit_factory", "count": 1}
