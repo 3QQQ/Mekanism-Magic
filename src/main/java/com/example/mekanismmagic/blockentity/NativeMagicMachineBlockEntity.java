@@ -353,6 +353,15 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected void onRecipeFinished(OccultismRecipeBridge.RecipeResult recipe) {
     }
 
+    protected final void tickEjectorAdditional(int calls) {
+        if (!(level instanceof ServerLevel) || ejectorComponent == null) {
+            return;
+        }
+        for (int index = 0; index < calls; index++) {
+            ejectorComponent.tickServer();
+        }
+    }
+
     private ItemStackHandler snapshotInventory() {
         ItemStackHandler snapshot = new ItemStackHandler(MACHINE_INVENTORY_SIZE);
         if (logicalSlots != null) {
