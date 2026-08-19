@@ -80,10 +80,7 @@ public final class OccultismRecipeBridge {
             Map.entry("summon_unbound_marid", 18)
     );
     private static final List<String> RITUAL_CHALK_COLORS = List.of(
-            "black", "blue", "brown", "cyan",
-            "gray", "green", "light_blue", "light_gray",
-            "lime", "magenta", "orange", "pink",
-            "purple", "red", "white", "gold"
+            "gold", "purple", "red", "white"
     );
     private static final Map<String, Set<String>> DEFAULT_PENTACLE_CHALK_COLORS =
             Map.ofEntries(
@@ -520,7 +517,9 @@ public final class OccultismRecipeBridge {
                                                  String pentaclePath) {
         Object sizeValue = invoke(pentacle, "getSize").orElse(null);
         if (!(sizeValue instanceof net.minecraft.core.Vec3i size)) {
-            return DEFAULT_PENTACLE_CHALK_COLORS.getOrDefault(pentaclePath, Set.of());
+            return availableChalkColors(
+                    DEFAULT_PENTACLE_CHALK_COLORS.getOrDefault(
+                            pentaclePath, Set.of()));
         }
         Set<String> colors = new LinkedHashSet<>();
         // The all-otherstone/otherrock layer in Occultism's dense preview is
@@ -551,7 +550,16 @@ public final class OccultismRecipeBridge {
         if (!colors.isEmpty()) {
             return colors;
         }
-        return DEFAULT_PENTACLE_CHALK_COLORS.getOrDefault(pentaclePath, Set.of());
+        return availableChalkColors(
+                DEFAULT_PENTACLE_CHALK_COLORS.getOrDefault(
+                        pentaclePath, Set.of()));
+    }
+
+    private static Set<String> availableChalkColors(Set<String> colors) {
+        return colors.stream()
+                .filter(RITUAL_CHALK_COLORS::contains)
+                .collect(java.util.stream.Collectors.toCollection(
+                        LinkedHashSet::new));
     }
 
     public static Optional<RitualProjection> findProjection(Level level, ItemStack ritualDummy) {
