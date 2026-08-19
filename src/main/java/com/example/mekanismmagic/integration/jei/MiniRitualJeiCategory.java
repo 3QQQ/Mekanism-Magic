@@ -5,11 +5,12 @@ import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.blockentity.OccultismRecipeBridge;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+
 public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
         OccultismRecipeBridge.PentacleJeiData> {
     private static final int SLOT_SPACING = 18;
@@ -31,13 +32,13 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
             int column = index % 8;
             builder.addInputSlot(4 + column * SLOT_SPACING, 4 + row * SLOT_SPACING)
                     .setStandardSlotBackground()
-                    .addIngredients(recipe.materials().get(index));
+                    .addItemStack(recipe.materials().get(index));
         }
 
         for (int index = 0; index < recipe.chalkColors().size()
                 && index < 16; index++) {
             String color = recipe.chalkColors().get(index);
-            var chalk = new net.minecraft.world.item.ItemStack(
+            ItemStack chalk = new ItemStack(
                     BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(
                             "occultism", "chalk_" + color)));
             int row = index / 8;

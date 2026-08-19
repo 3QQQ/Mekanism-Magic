@@ -150,7 +150,7 @@ public final class OccultismRecipeBridge {
     }
 
     public record PentacleJeiData(ResourceLocation pentacleId,
-                                  List<Ingredient> materials,
+                                  List<ItemStack> materials,
                                   List<String> chalkColors,
                                   ItemStack output) {
     }
@@ -641,7 +641,7 @@ public final class OccultismRecipeBridge {
             String key = projection.get().pentacleId().toString();
             grouped.putIfAbsent(key, new PentacleJeiData(
                     projection.get().pentacleId(),
-                    List.copyOf(ingredients(recipe)),
+                    pentacleMaterialStacks(projection.get().multiblock()),
                     List.copyOf(ritualChalkColors(recipe)),
                     createPentacleMiniRitual(projection.get())));
         }
@@ -865,13 +865,16 @@ public final class OccultismRecipeBridge {
         }
         for (RecipeHolder<?> holder : recipes(level, type)) {
             Object recipe = holder.value();
-            Optional<List<InputUse>> materialSlots = matchRitualIngredients(recipe, inventory);
+            Optional<RitualProjection> projection = projection(holder.id(), recipe);
+            if (projection.isEmpty()) {
+                continue;
+            }
+            Optional<List<InputUse>> materialSlots = matchPentacleMaterials(
+                    pentacleMaterialStacks(projection.get().multiblock()), inventory);
             if (materialSlots.isEmpty()) {
                 continue;
             }
-            Optional<RitualProjection> projection = projection(holder.id(), recipe);
-            if (projection.isEmpty()
-                    || !matchesRitualProjectionChalk(projection.get(), inventory)) {
+            if (!matchesRitualProjectionChalk(projection.get(), inventory)) {
                 continue;
             }
             List<InputUse> inputs = new ArrayList<>();
@@ -880,6 +883,44 @@ public final class OccultismRecipeBridge {
                     createPentacleMiniRitual(projection.get()), 100, inputs, -1, -1));
         }
         return Optional.empty();
+    }
+
+    private static Optional<List<InputUse>> matchPentacleMaterials(
+            List<ItemStack> required, ItemStackHandler inventory) {
+        int[] remaining = new int[NativeMagicMachineBlockEntity.INPUT_SLOTS];
+        for (int slot = 0; slot < remaining.length; slot++) {
+            remaining[slot] = inventory.getStackInSlot(slot).getCount();
+        }
+        List<InputUse> matched = new ArrayList<>();
+        for (ItemStack requirement : required) {
+            int needed = requirement.getCount();
+            for (int slot = 0; slot < remaining.length && needed > 0; slot++) {
+                ItemStack available = inventory.getStackInSlot(slot);
+                if (remaining[slot] <= 0
+                        || !ItemStack.isSameItemSameComponents(available, requirement)) {
+                    continue;
+                }
+                int used = Math.min(needed, remaining[slot]);
+                remaining[slot] -= used;
+                needed -= used;
+                addInputUse(matched, slot, used);
+            }
+            if (needed > 0) {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(matched);
+    }
+
+    private static void addInputUse(List<InputUse> matched, int slot, int count) {
+        for (int index = 0; index < matched.size(); index++) {
+            InputUse existing = matched.get(index);
+            if (existing.slot() == slot) {
+                matched.set(index, new InputUse(slot, existing.count() + count));
+                return;
+            }
+        }
+        matched.add(new InputUse(slot, count));
     }
 
     public static ItemStack createMiniRitual(RitualProjection projection) {
