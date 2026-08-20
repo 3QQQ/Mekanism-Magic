@@ -31,7 +31,7 @@ jobs:
           cache: gradle
 
       - name: Build mod jar
-        run: bash ./gradlew --no-daemon clean build
+        run: bash ./gradlew --no-daemon clean build -Pmekanism_magic.compile_mekextras=false
 
       - name: Publish to CurseForge
         uses: Kir-Antipov/mc-publish@v3.3
