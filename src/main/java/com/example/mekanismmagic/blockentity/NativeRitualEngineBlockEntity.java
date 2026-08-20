@@ -50,7 +50,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 BasicInventorySlot.at(OccultismRecipeBridge::isSacrificeItem, listener, 20, 85));
         extras.add(sacrifice);
         dictionarySlot = registerLogicalSlot(helper, DICTIONARY_SLOT,
-                new DictionaryInventorySlot(this, listener, 220, 104));
+                new DictionaryInventorySlot(this, listener, 240, 104));
         extras.add(dictionarySlot);
         setupNativeItemIO(inputs, List.of(outputSlot), extras);
     }
@@ -84,6 +84,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     }
 
     private boolean isDictionaryContainerSlotActive() {
+        // Keep server-side slot validation available while hiding the client
+        // slot and item stack with the collapsible module.
         return level == null || !level.isClientSide() || dictionaryModuleOpen;
     }
 

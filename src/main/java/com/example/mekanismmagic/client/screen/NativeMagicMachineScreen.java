@@ -87,7 +87,10 @@ public abstract class NativeMagicMachineScreen<
     @Override
     protected void drawForegroundText(net.minecraft.client.gui.GuiGraphics gui,
                                       int mouseX, int mouseY) {
-        renderTitleText(gui);
+        Component machineTitle = Component.translatable(
+                getTileEntity().getBlockState().getBlock()
+                        .getDescriptionId());
+        drawTitleText(gui, machineTitle, titleLabelY);
         gui.drawString(font, playerInventoryTitle, inventoryLabelX,
                 inventoryLabelY, titleTextColor(), false);
     }

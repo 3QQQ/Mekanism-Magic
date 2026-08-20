@@ -98,6 +98,19 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes(
+                'Implementation-Title': mod_name,
+                'Implementation-Version': mod_version,
+                'Implementation-Vendor': 'Mekanism Magic contributors'
+        )
+    }
+    from('LICENSE') {
+        into 'META-INF'
+    }
+}
+
 processResources {
     var replaceProperties = [
             minecraft_version      : minecraft_version,

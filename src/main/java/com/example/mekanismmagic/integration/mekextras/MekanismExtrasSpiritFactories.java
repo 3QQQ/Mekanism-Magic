@@ -11,8 +11,12 @@ import mekanism.common.registration.impl.BlockRegistryObject;
 import mekanism.common.registration.impl.TileEntityTypeDeferredRegister;
 import mekanism.common.registration.impl.TileEntityTypeRegistryObject;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraftforge.eventbus.api.IEventBus;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -45,22 +49,22 @@ public final class MekanismExtrasSpiritFactories {
             BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
             BlockItem> ABSOLUTE_BLOCK =
             BLOCKS.register("absolute_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(ABSOLUTE_TYPE));
+                    () -> new SpiritExtraFactoryBlock(ABSOLUTE_TYPE));
     public static final BlockRegistryObject<
             BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
             BlockItem> SUPREME_BLOCK =
             BLOCKS.register("supreme_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(SUPREME_TYPE));
+                    () -> new SpiritExtraFactoryBlock(SUPREME_TYPE));
     public static final BlockRegistryObject<
             BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
             BlockItem> COSMIC_BLOCK =
             BLOCKS.register("cosmic_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(COSMIC_TYPE));
+                    () -> new SpiritExtraFactoryBlock(COSMIC_TYPE));
     public static final BlockRegistryObject<
             BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
             BlockItem> INFINITE_BLOCK =
             BLOCKS.register("infinite_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(INFINITE_TYPE));
+                    () -> new SpiritExtraFactoryBlock(INFINITE_TYPE));
 
     public static final TileEntityTypeRegistryObject<ExtraSpiritFactoryBlockEntity>
             ABSOLUTE_TILE = tile(ABSOLUTE_BLOCK);
@@ -130,5 +134,25 @@ public final class MekanismExtrasSpiritFactories {
 
     private static BlockRegistryObject<?, ?> infiniteBlock() {
         return INFINITE_BLOCK;
+    }
+
+    /**
+     * Optional factory blocks are registered only when Mekanism Extras is
+     * present. Returning the block item directly avoids shipping loot tables
+     * that reference absent registry entries in installations without Extras.
+     */
+    private static final class SpiritExtraFactoryBlock
+            extends BlockExtraFactoryMachine.BlockExtraFactory<
+            ExtraSpiritFactoryBlockEntity> {
+        private SpiritExtraFactoryBlock(
+                ExtraFactory<ExtraSpiritFactoryBlockEntity> type) {
+            super(type);
+        }
+
+        @Override
+        public List<ItemStack> getDrops(BlockState state,
+                                       LootParams.Builder builder) {
+            return List.of(new ItemStack(this));
+        }
     }
 }

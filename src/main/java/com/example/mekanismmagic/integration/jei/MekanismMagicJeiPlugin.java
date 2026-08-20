@@ -4,7 +4,6 @@ import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import com.example.mekanismmagic.integration.ModCompatibility;
-import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.RecipeType;
@@ -21,10 +20,6 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     public static final RecipeType<OccultismRecipeBridge.PentacleJeiData> MINI_RITUAL_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "mini_ritual",
                     OccultismRecipeBridge.PentacleJeiData.class);
-    public static final RecipeType<UltimateMiniRitualRecipe>
-            ULTIMATE_MINI_RITUAL_TYPE =
-            RecipeType.create(MekanismMagic.MOD_ID, "ultimate_mini_ritual",
-                    UltimateMiniRitualRecipe.class);
     public static final RecipeType<OccultismRecipeBridge.RitualJeiData> RITUAL_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "ritual",
                     OccultismRecipeBridge.RitualJeiData.class);
@@ -37,7 +32,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(
+        return ResourceLocation.fromNamespaceAndPath(
                 MekanismMagic.MOD_ID, "jei_plugin");
     }
 
@@ -48,8 +43,6 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         }
         registration.addRecipeCategories(new MiniRitualJeiCategory(
                 registration.getJeiHelpers().getGuiHelper()),
-                new UltimateMiniRitualJeiCategory(
-                        registration.getJeiHelpers().getGuiHelper()),
                 new RitualJeiCategory(registration.getJeiHelpers().getGuiHelper()),
                 new SpiritJeiCategory(registration.getJeiHelpers().getGuiHelper()),
                 new MinerJeiCategory(registration.getJeiHelpers().getGuiHelper()));
@@ -65,12 +58,6 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                     OccultismRecipeBridge.pentacleJeiRecipes(
                             Minecraft.getInstance().level);
             registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
-            registration.addRecipes(ULTIMATE_MINI_RITUAL_TYPE,
-                    List.of(new UltimateMiniRitualRecipe(
-                            new ResourceLocation(MekanismMagic.MOD_ID,
-                                    "ultimate_mini_ritual"),
-                            net.minecraft.world.item.crafting
-                                    .CraftingBookCategory.MISC)));
             registration.addRecipes(RITUAL_TYPE,
                     OccultismRecipeBridge.ritualJeiRecipes(
                             Minecraft.getInstance().level));
@@ -126,7 +113,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             IRecipeCatalystRegistration registration, String path) {
         net.minecraft.world.item.Item item =
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                        new ResourceLocation(
+                        ResourceLocation.fromNamespaceAndPath(
                                 MekanismMagic.MOD_ID, path));
         if (item != net.minecraft.world.item.Items.AIR) {
             registration.addRecipeCatalyst(item, SPIRIT_TYPE);

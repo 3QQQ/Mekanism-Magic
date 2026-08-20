@@ -57,15 +57,16 @@ public final class NativeMiniRitualAssemblerBlockEntity
         }
         chalkSlots = new ArrayList<>();
         List<String> chalkColors = OccultismRecipeBridge.ritualChalkColors();
-        for (int index = 0; index < chalkColors.size(); index++) {
-            int column = index % 4;
-            int row = index / 4;
-            chalkSlots.add(registerLogicalSlot(helper,
-                    CHALK_SLOT_START + index,
-                    new ChalkInventorySlot(this,
-                            OccultismRecipeBridge::isAnyChalk,
-                            listener, 240 + column * 18,
-                            104 + row * 18)));
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 4; column++) {
+                int index = row * 4 + column;
+                chalkSlots.add(registerLogicalSlot(helper,
+                        CHALK_SLOT_START + index,
+                        new ChalkInventorySlot(this,
+                                OccultismRecipeBridge::isAnyChalk,
+                                listener, 240 + column * 18,
+                                104 + row * 18)));
+            }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
                 OutputInventorySlot.at(listener, 176, 58));
@@ -173,6 +174,8 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     private boolean isChalkContainerSlotActive() {
+        // The server must always accept the slot. On the client it follows
+        // the collapsible module so hidden stacks and hit boxes disappear.
         return level == null || !level.isClientSide() || chalkModuleOpen;
     }
 

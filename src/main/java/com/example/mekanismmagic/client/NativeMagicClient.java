@@ -42,7 +42,8 @@ public final class NativeMagicClient {
             MenuScreens.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
                     NativeSpiritFactoryScreen::new);
             ItemProperties.register(MekanismMagic.MINI_RITUAL.get(),
-                    new ResourceLocation(MekanismMagic.MOD_ID, "ritual"),
+                    ResourceLocation.fromNamespaceAndPath(
+                            MekanismMagic.MOD_ID, "ritual"),
                     (stack, level, entity, seed) ->
                             OccultismRecipeBridge.miniRitualModelData(stack));
         });

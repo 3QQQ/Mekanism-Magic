@@ -125,10 +125,21 @@ public final class NativeMiniRitualAssemblerScreen
         }
     }
 
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY,
+                                        int left, int top, int button) {
+        if (chalkModuleOpen
+                && mouseX >= leftPos + 236 && mouseX < leftPos + 316
+                && mouseY >= topPos + 88 && mouseY < topPos + 180) {
+            return false;
+        }
+        return super.hasClickedOutside(mouseX, mouseY, left, top, button);
+    }
+
     private static boolean isChalkGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
         return x >= 240 && x <= 294 && (x - 240) % 18 == 0
-                && y >= 104 && y <= 122 && (y - 104) % 18 == 0;
+                && y >= 104 && y <= 158 && (y - 104) % 18 == 0;
     }
 }

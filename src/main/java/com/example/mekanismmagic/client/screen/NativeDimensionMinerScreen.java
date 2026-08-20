@@ -47,8 +47,4 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
         return 38;
     }
 
-    @Override
-    protected int energyBarX() {
-        return 4;
-    }
 }

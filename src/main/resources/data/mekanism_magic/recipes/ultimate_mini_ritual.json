@@ -1,3 +1,61 @@
-{"forge:conditions":[{"type":"forge:mod_loaded","modid":"occultism"}],"type": "mekanism_magic:ultimate_mini_ritual",
-  "category": "misc"
+{
+  "forge:conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "occultism"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ABC",
+    "DED",
+    "FGH"
+  ],
+  "key": {
+    "A": {
+      "type": "forge:partial_nbt",
+      "item": "mekanism_magic:mini_ritual",
+      "nbt": {
+        "pentacle": "occultism:craft_marid"
+      }
+    },
+    "B": {
+      "item": "mekanism:alloy_atomic"
+    },
+    "C": {
+      "type": "forge:partial_nbt",
+      "item": "mekanism_magic:mini_ritual",
+      "nbt": {
+        "pentacle": "occultism:possess_afrit"
+      }
+    },
+    "D": {
+      "item": "occultism:spirit_attuned_crystal"
+    },
+    "E": {
+      "item": "minecraft:nether_star"
+    },
+    "F": {
+      "type": "forge:partial_nbt",
+      "item": "mekanism_magic:mini_ritual",
+      "nbt": {
+        "pentacle": "occultism:summon_marid"
+      }
+    },
+    "G": {
+      "item": "mekanism:ultimate_control_circuit"
+    },
+    "H": {
+      "type": "forge:partial_nbt",
+      "item": "mekanism_magic:mini_ritual",
+      "nbt": {
+        "pentacle": "occultism:summon_wild_greater_spirit"
+      }
+    }
+  },
+  "result": {
+    "item": "mekanism_magic:ultimate_mini_ritual",
+    "count": 1
+  }
 }

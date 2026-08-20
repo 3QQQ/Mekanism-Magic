@@ -79,7 +79,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (dictionaryModuleOpen) {
-            int left = leftPos + 216;
+            int left = leftPos + 236;
             int top = topPos + 88;
             graphics.fill(left, top, left + 58, top + 52, 0xFF151A21);
             graphics.fill(left, top, left + 58, top + 2, 0xFF78838F);
@@ -96,7 +96,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         if (dictionaryModuleOpen) {
             graphics.drawString(font,
                     Component.translatable("gui.mekanism_magic.dictionary"),
-                    220, 92, 0xD8DEE8, false);
+                    240, 92, 0xD8DEE8, false);
         }
     }
 
@@ -109,13 +109,24 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     private void updateDictionarySlotVisibility() {
         for (GuiSlot slot : dictionaryGuiSlots) {
             slot.visible = dictionaryModuleOpen;
-            slot.active = dictionaryModuleOpen;
+            slot.active = false;
         }
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY,
+                                        int left, int top, int button) {
+        if (dictionaryModuleOpen
+                && mouseX >= leftPos + 236 && mouseX < leftPos + 294
+                && mouseY >= topPos + 88 && mouseY < topPos + 140) {
+            return false;
+        }
+        return super.hasClickedOutside(mouseX, mouseY, left, top, button);
     }
 
     private static boolean isDictionaryGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x == 220 && y == 104;
+        return x == 240 && y == 104;
     }
 }

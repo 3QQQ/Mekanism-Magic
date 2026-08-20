@@ -7,8 +7,6 @@ ROOT = Path(__file__).resolve().parents[1]
 TEXTURES = ROOT / "src/main/resources/assets/mekanism_magic/textures/item/mini_ritual"
 
 PENTACLES = {
-    "contact_eldritch_spirit": ("contact", (104, 89, 170)),
-    "contact_wild_spirit": ("contact", (72, 135, 174)),
     "craft_afrit": ("craft", (202, 76, 77)),
     "craft_djinni": ("craft", (67, 172, 199)),
     "craft_foliot": ("craft", (75, 171, 91)),
@@ -16,15 +14,12 @@ PENTACLES = {
     "possess_afrit": ("possess", (202, 76, 77)),
     "possess_djinni": ("possess", (67, 172, 199)),
     "possess_foliot": ("possess", (75, 171, 91)),
-    "possess_marid": ("possess", (152, 74, 197)),
-    "possess_unbound_afrit": ("possess", (234, 135, 66)),
-    "resurrect_spirit": ("resurrect", (70, 183, 133)),
     "summon_afrit": ("summon", (202, 76, 77)),
     "summon_djinni": ("summon", (67, 172, 199)),
     "summon_foliot": ("summon", (75, 171, 91)),
     "summon_marid": ("summon", (152, 74, 197)),
-    "summon_unbound_afrit": ("summon", (234, 135, 66)),
-    "summon_unbound_marid": ("summon", (211, 87, 175)),
+    "summon_wild_afrit": ("summon", (234, 135, 66)),
+    "summon_wild_greater_spirit": ("summon", (211, 87, 175)),
 }
 
 

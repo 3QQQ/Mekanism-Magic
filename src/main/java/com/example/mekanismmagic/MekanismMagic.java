@@ -3,14 +3,12 @@ package com.example.mekanismmagic;
 import com.example.mekanismmagic.item.MiniRitualItem;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
-import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import com.example.mekanismmagic.integration.ModCompatibility;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -26,8 +24,6 @@ public final class MekanismMagic {
             DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
-    public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
-            DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MOD_ID);
 
     public static final RegistryObject<MiniRitualItem> MINI_RITUAL =
             ITEMS.register("mini_ritual",
@@ -39,10 +35,6 @@ public final class MekanismMagic {
             ITEMS.register("ultimate_mini_ritual",
                     () -> new UltimateMiniRitualItem(
                             new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<RecipeSerializer<
-            UltimateMiniRitualRecipe>> ULTIMATE_MINI_RITUAL_RECIPE =
-            RECIPE_SERIALIZERS.register("ultimate_mini_ritual",
-                    () -> UltimateMiniRitualRecipe.SERIALIZER);
 
     public static final RegistryObject<CreativeModeTab> TAB =
             CREATIVE_TABS.register("main", () -> CreativeModeTab.builder()
@@ -65,21 +57,21 @@ public final class MekanismMagic {
                         output.accept(RITUAL_SPAWN_EGG.get());
                     }).build());
 
-    public MekanismMagic() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public MekanismMagic(FMLJavaModLoadingContext context) {
+        IEventBus modBus = context.getModEventBus();
         if (!ModCompatibility.occultismLoaded()) {
             return;
         }
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
-        RECIPE_SERIALIZERS.register(modBus);
         NativeMekanismRegistries.register(modBus);
         registerMekanismExtrasIntegration(modBus);
     }
 
     private static void acceptOptional(CreativeModeTab.Output output, String path) {
         Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                new net.minecraft.resources.ResourceLocation(MOD_ID, path));
+                net.minecraft.resources.ResourceLocation
+                        .fromNamespaceAndPath(MOD_ID, path));
         if (item != net.minecraft.world.item.Items.AIR) {
             output.accept(item);
         }

@@ -34,6 +34,7 @@ import mekanism.common.tile.interfaces.IUpgradeTile;
 import mekanism.common.upgrade.IUpgradeData;
 import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -65,7 +66,6 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public static final int MACHINE_INVENTORY_SIZE = 43;
     protected TileComponentConfig configComponent;
     protected TileComponentEjector ejectorComponent;
-    protected TileComponentUpgrade upgradeComponent;
     protected MachineEnergyContainer<? extends NativeMagicMachineBlockEntity> energyContainer;
     protected InputInventorySlot inputSlot;
     protected IInventorySlot outputSlot;
@@ -81,22 +81,21 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     @Override
-    public net.minecraft.network.chat.Component getName() {
-        return net.minecraft.network.chat.Component.translatable(
+    public Component getName() {
+        return Component.translatable(
                 getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
     protected void presetVariables() {
         super.presetVariables();
+        // Both component constructors register themselves with the tile.
+        // Calling addComponent a second time replaces Mekanism's capability
+        // mappings and leaves the machine with duplicated component state.
         configComponent = new TileComponentConfig(this,
                 TransmissionType.ITEM, TransmissionType.ENERGY);
-        addComponent(configComponent);
-        upgradeComponent = new TileComponentUpgrade(this);
-        addComponent(upgradeComponent);
         ejectorComponent = new TileComponentEjector(this)
                 .setOutputData(configComponent, TransmissionType.ITEM);
-        addComponent(ejectorComponent);
     }
 
     @Override

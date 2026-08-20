@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 public final class GuiDictionaryModuleTab
         extends GuiInsetElement<NativeRitualEngineBlockEntity> {
     private static final ResourceLocation ICON =
-            new ResourceLocation(
+            ResourceLocation.fromNamespaceAndPath(
                     "occultism", "textures/item/dictionary_of_spirits.png");
 
     private final Runnable toggle;

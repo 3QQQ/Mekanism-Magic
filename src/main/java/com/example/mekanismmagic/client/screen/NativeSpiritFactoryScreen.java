@@ -64,16 +64,11 @@ public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
 
     @Override
     protected void drawForegroundText(GuiGraphics gui, int mouseX, int mouseY) {
-        renderTitleText(gui);
+        Component machineTitle = Component.translatable(
+                getTileEntity().getBlockState().getBlock()
+                        .getDescriptionId());
+        drawTitleText(gui, machineTitle, titleLabelY);
         gui.drawString(font, playerInventoryTitle, inventoryLabelX,
                 inventoryLabelY, titleTextColor(), false);
-        super.drawForegroundText(gui, mouseX, mouseY);
-    }
-
-    @Override
-    protected void renderBg(GuiGraphics gui, float partialTick,
-                            int mouseX, int mouseY) {
-        gui.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight,
-                0xFF20262D);
     }
 }

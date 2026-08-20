@@ -46,9 +46,13 @@ import java.util.Set;
  */
 public final class OccultismRecipeBridge {
     private static final String OCCULTISM = "occultism";
-    private static final TagKey<net.minecraft.world.item.Item> MINER_ITEM_TAG =
-            TagKey.create(net.minecraft.core.registries.Registries.ITEM,
-                    new ResourceLocation(OCCULTISM, "miners"));
+    private static final List<TagKey<net.minecraft.world.item.Item>> MINER_ITEM_TAGS =
+            List.of(
+                    itemTag("miners/basic_resources"),
+                    itemTag("miners/ores"),
+                    itemTag("miners/deeps"),
+                    itemTag("miners/master")
+            );
     private static final Set<String> OCCULTISM_CONTAINMENT_PATHS = Set.of(
             "soul_gem",
             "fragile_soul_gem",
@@ -63,8 +67,6 @@ public final class OccultismRecipeBridge {
             "occultism:trader_gem"
     );
     private static final Map<String, Integer> PENTACLE_MODEL_DATA = Map.ofEntries(
-            Map.entry("contact_eldritch_spirit", 1),
-            Map.entry("contact_wild_spirit", 2),
             Map.entry("craft_afrit", 3),
             Map.entry("craft_djinni", 4),
             Map.entry("craft_foliot", 5),
@@ -72,25 +74,18 @@ public final class OccultismRecipeBridge {
             Map.entry("possess_afrit", 7),
             Map.entry("possess_djinni", 8),
             Map.entry("possess_foliot", 9),
-            Map.entry("possess_marid", 10),
-            Map.entry("possess_unbound_afrit", 11),
-            Map.entry("resurrect_spirit", 12),
             Map.entry("summon_afrit", 13),
             Map.entry("summon_djinni", 14),
             Map.entry("summon_foliot", 15),
             Map.entry("summon_marid", 16),
-            Map.entry("summon_unbound_afrit", 17),
-            Map.entry("summon_unbound_marid", 18)
+            Map.entry("summon_wild_afrit", 17),
+            Map.entry("summon_wild_greater_spirit", 18)
     );
     private static final List<String> RITUAL_CHALK_COLORS = List.of(
             "gold", "purple", "red", "white"
     );
     private static final Map<String, Set<String>> DEFAULT_PENTACLE_CHALK_COLORS =
             Map.ofEntries(
-                    Map.entry("contact_eldritch_spirit",
-                            Set.of("light_blue", "brown", "cyan", "green", "magenta", "pink")),
-                    Map.entry("contact_wild_spirit",
-                            Set.of("light_blue", "green", "pink")),
                     Map.entry("craft_afrit",
                             Set.of("gray", "lime", "orange", "red", "white", "purple")),
                     Map.entry("craft_djinni",
@@ -105,11 +100,6 @@ public final class OccultismRecipeBridge {
                             Set.of("lime", "light_gray", "white", "gold")),
                     Map.entry("possess_foliot",
                             Set.of("white", "gold")),
-                    Map.entry("possess_marid",
-                            Set.of("black", "lime", "orange", "red", "blue", "white", "gold")),
-                    Map.entry("possess_unbound_afrit",
-                            Set.of("gray", "lime", "orange", "white", "gold")),
-                    Map.entry("resurrect_spirit", Set.of("white")),
                     Map.entry("summon_afrit",
                             Set.of("gray", "lime", "orange", "red", "white")),
                     Map.entry("summon_djinni",
@@ -117,9 +107,9 @@ public final class OccultismRecipeBridge {
                     Map.entry("summon_foliot", Set.of("white")),
                     Map.entry("summon_marid",
                             Set.of("black", "lime", "orange", "red", "blue", "white")),
-                    Map.entry("summon_unbound_afrit",
+                    Map.entry("summon_wild_afrit",
                             Set.of("gray", "lime", "orange", "white")),
-                    Map.entry("summon_unbound_marid",
+                    Map.entry("summon_wild_greater_spirit",
                             Set.of("black", "lime", "orange", "red", "white"))
             );
 
@@ -174,7 +164,17 @@ public final class OccultismRecipeBridge {
     }
 
     public static boolean isMinerItem(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(MINER_ITEM_TAG);
+        if (stack.isEmpty()) {
+            return false;
+        }
+        // Occultism 1.20.1 does not expose a parent "occultism:miners" tag.
+        // Its miner recipes target four leaf tags instead.
+        if (MINER_ITEM_TAGS.stream().anyMatch(stack::is)) {
+            return true;
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id != null && OCCULTISM.equals(id.getNamespace())
+                && id.getPath().startsWith("miner_");
     }
 
     public static int minerDuration(ItemStack miner) {
@@ -188,6 +188,12 @@ public final class OccultismRecipeBridge {
     private static int minerProperty(ItemStack miner, String method, int fallback) {
         if (!isMinerItem(miner)) {
             return fallback;
+        }
+        CompoundTag tag = miner.getTag();
+        String tagName = "getMaxMiningTime".equals(method)
+                ? "maxMiningTime" : "rollsPerOperation";
+        if (tag != null && tag.contains(tagName)) {
+            return Math.max(1, tag.getInt(tagName));
         }
         try {
             Class<?> mineshaft = Class.forName(
@@ -388,7 +394,11 @@ public final class OccultismRecipeBridge {
         if (stack.isEmpty() || spiritTier(stack) <= 0) {
             return false;
         }
-        return stack.getItem() instanceof SpawnEggItem || isFilledContainment(stack);
+        // 1.20.1 uses both SpawnEggItem and filled Soul Gem / magic lamp
+        // containers. Ars Nouveau jars are handled by isFilledContainment.
+        return stack.getItem() instanceof SpawnEggItem
+                || isFilledContainment(stack)
+                || !spiritItemEntityId(stack).isEmpty();
     }
 
     private static boolean isFilledOccultismContainment(ItemStack stack) {
@@ -768,7 +778,8 @@ public final class OccultismRecipeBridge {
     }
 
     private static ItemStack spiritSource(String entityPath, String job) {
-        ResourceLocation id = new ResourceLocation(OCCULTISM, entityPath);
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
+                OCCULTISM, entityPath);
         EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.get(id);
         SpawnEggItem egg = SpawnEggItem.byId(entity);
         if (egg == null) {
@@ -795,7 +806,8 @@ public final class OccultismRecipeBridge {
         for (int y = 0; y < size.getY(); y++) {
             Map<net.minecraft.world.item.Item, Integer> layerCounts =
                     new LinkedHashMap<>();
-            boolean hasRealMaterial = false;
+            boolean hasProjectionPlatform = false;
+            int possiblePlatformStone = 0;
             for (int z = 0; z < size.getZ(); z++) {
                 for (int x = 0; x < size.getX(); x++) {
                     Object value = invoke(multiblock, "getBlockState",
@@ -809,18 +821,40 @@ public final class OccultismRecipeBridge {
                         continue;
                     }
                     net.minecraft.world.item.Item item = state.getBlock().asItem();
-                    if (item != net.minecraft.world.item.Items.AIR) {
-                        String path = id.getPath();
-                        boolean platformMaterial = OCCULTISM.equals(id.getNamespace())
-                                && (path.equals("otherstone") || path.equals("otherrock"));
-                        if (!platformMaterial) {
-                            hasRealMaterial = true;
-                        }
-                        layerCounts.merge(item, 1, Integer::sum);
+                    if (item == net.minecraft.world.item.Items.AIR) {
+                        continue;
                     }
+                    String path = id.getPath();
+                    // Otherstone/otherrock is the projection platform, not a
+                    // pentacle formation ingredient. It must never appear in
+                    // miniature-ritual machine inputs, even on a mixed layer.
+                    boolean platformMaterial = OCCULTISM.equals(id.getNamespace())
+                            && (path.equals("otherstone") || path.equals("otherrock"));
+                    if (platformMaterial) {
+                        hasProjectionPlatform = true;
+                        continue;
+                    }
+                    // Occultism 1.20.1's projection base alternates
+                    // otherstone and vanilla stone. Delay counting stone
+                    // until we know this is not the pure projection layer.
+                    if ("minecraft".equals(id.getNamespace())
+                            && "stone".equals(path)) {
+                        possiblePlatformStone++;
+                        continue;
+                    }
+                    layerCounts.merge(item, 1, Integer::sum);
                 }
             }
-            if (hasRealMaterial) {
+            if (hasProjectionPlatform && layerCounts.isEmpty()) {
+                // Pure projection base: discard both otherstone and its
+                // alternating vanilla-stone filler.
+                continue;
+            }
+            if (possiblePlatformStone > 0) {
+                layerCounts.merge(Items.STONE, possiblePlatformStone,
+                        Integer::sum);
+            }
+            if (!layerCounts.isEmpty()) {
                 layerCounts.forEach((item, count) ->
                         counts.merge(item, count, Integer::sum));
             }
@@ -1080,7 +1114,8 @@ public final class OccultismRecipeBridge {
         if (!arsNouveauEntity.isEmpty()) {
             return arsNouveauEntity;
         }
-        return entityDataId(stack);
+        String entityData = entityDataId(stack);
+        return entityData.isEmpty() ? spiritItemEntityId(stack) : entityData;
     }
 
     private static String entityDataId(ItemStack stack) {
@@ -1097,17 +1132,63 @@ public final class OccultismRecipeBridge {
         if (tag == null) {
             tag = ArsNouveauIntegration.entityTag(stack);
         }
-        if (tag == null) {
+        if (tag != null) {
+            net.minecraft.nbt.CompoundTag spiritJob = tag.getCompound("spiritJob");
+            String factoryId = spiritJob.getString("factoryId");
+            if (!factoryId.isBlank()) {
+                return factoryId;
+            }
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null || !OCCULTISM.equals(id.getNamespace())) {
             return "";
         }
-        net.minecraft.nbt.CompoundTag spiritJob = tag.getCompound("spiritJob");
-        return spiritJob.getString("factoryId");
+        return switch (id.getPath()) {
+            case "book_of_calling_foliot_otherstone_trader" ->
+                    "occultism:trader_otherstone";
+            case "book_of_calling_foliot_sapling_trader" ->
+                    "occultism:trader_otherworld_saplings";
+            case "book_of_calling_foliot_gambler" ->
+                    "occultism:gambler";
+            case "book_of_calling_foliot_gem_trader" ->
+                    "occultism:trader_gem";
+            default -> "";
+        };
+    }
+
+    private static String spiritItemEntityId(ItemStack stack) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null || !OCCULTISM.equals(id.getNamespace())) {
+            return "";
+        }
+        return switch (id.getPath()) {
+            case "book_of_binding_bound_foliot",
+                    "miner_foliot_unspecialized" -> "occultism:foliot";
+            case "book_of_binding_bound_djinni",
+                    "miner_djinni_ores" -> "occultism:djinni";
+            case "book_of_binding_bound_afrit",
+                    "miner_afrit_deeps" -> "occultism:afrit";
+            case "book_of_binding_bound_marid",
+                    "miner_marid_master" -> "occultism:marid";
+            default -> "";
+        };
     }
 
     private static net.minecraft.nbt.CompoundTag entityDataTag(ItemStack stack) {
         CompoundTag root = stack.getTag();
-        return root == null || !root.contains("EntityTag")
-                ? null : root.getCompound("EntityTag").copy();
+        if (root == null) {
+            return null;
+        }
+        // Vanilla/Ars-compatible containment and Occultism spawn eggs use
+        // EntityTag. Occultism 1.20.1 Soul Gem stores the captured entity at
+        // the root key entityData instead.
+        if (root.contains("EntityTag")) {
+            return root.getCompound("EntityTag").copy();
+        }
+        if (root.contains("entityData")) {
+            return root.getCompound("entityData").copy();
+        }
+        return null;
     }
 
     private static String customRitualId(ItemStack stack) {
@@ -1237,8 +1318,9 @@ public final class OccultismRecipeBridge {
     }
 
     private static ItemStack commandResult(Level level, Object recipe) {
-        ResourceLocation flameAutomation = new ResourceLocation(
-                OCCULTISM, "flame_automation");
+        ResourceLocation flameAutomation =
+                ResourceLocation.fromNamespaceAndPath(
+                        OCCULTISM, "flame_automation");
         net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(flameAutomation);
         if (item != Items.AIR) {
             return new ItemStack(item);
@@ -1375,33 +1457,64 @@ public final class OccultismRecipeBridge {
             return Optional.empty();
         }
         try {
-            Object recipeInput = new net.minecraft.world.SimpleContainer(input.copy());
-            Method matches = findMethod(recipe, "matches", recipeInput.getClass(), Level.class);
-            if (matches != null && (boolean) matches.invoke(recipe, recipeInput, level)) {
+            String recipeClassName = recipe.getClass().getName();
+            Class<?> fakeInventory = Class.forName(
+                    "com.klikli_dev.occultism.crafting.recipe.ItemStackFakeInventory");
+            Object recipeInput = fakeInventory.getConstructor(ItemStack.class)
+                    .newInstance(input.copy());
+            Method matches = findMethod(recipe, "matches",
+                    fakeInventory, Level.class);
+            boolean tieredRecipe = recipeClassName.contains("CrushingRecipe")
+                    || recipeClassName.contains("CrystallizeRecipe");
+            if (!tieredRecipe && matches != null
+                    && (boolean) matches.invoke(recipe, recipeInput, level)) {
                 return Optional.of(new Match());
             }
             if ("spirit_trade".equals(typeId)) {
-                Class<?> traderInput = Class.forName(
-                        "com.klikli_dev.occultism.crafting.recipe.TraderRecipeInput");
-                Constructor<?> constructor = traderInput.getConstructor(ItemStack.class, String.class);
-                String trader = stringValue(recipe, "getTrader");
-                if (trader.isBlank() || !canUseTrader(sourceJob, trader)) {
-                    return Optional.empty();
-                }
-                Object trade = constructor.newInstance(input.copy(), trader);
-                Method tradeMatches = findMethod(recipe, "matches", trade.getClass(), Level.class);
-                if (tradeMatches != null && (boolean) tradeMatches.invoke(recipe, trade, level)) {
+                // 1.20.1 SpiritTradeRecipe validates its shapeless ingredient
+                // list directly. Newer versions expose TraderRecipeInput;
+                // support both without linking either implementation.
+                Method validArray = findMethod(recipe, "isValid",
+                        ItemStack[].class);
+                if (validArray != null && (boolean) validArray.invoke(
+                        recipe, (Object) new ItemStack[]{input.copy()})) {
                     return Optional.of(new Match());
                 }
+                Method validList = findMethod(recipe, "isValid", List.class);
+                if (validList != null && (boolean) validList.invoke(
+                        recipe, List.of(input.copy()))) {
+                    return Optional.of(new Match());
+                }
+                try {
+                    Class<?> traderInput = Class.forName(
+                            "com.klikli_dev.occultism.crafting.recipe.TraderRecipeInput");
+                    Constructor<?> constructor = traderInput.getConstructor(
+                            ItemStack.class, String.class);
+                    String trader = stringValue(recipe, "getTrader");
+                    if (!trader.isBlank() && canUseTrader(sourceJob, trader)) {
+                        Object trade = constructor.newInstance(input.copy(), trader);
+                        Method tradeMatches = findMethod(recipe, "matches",
+                                trade.getClass(), Level.class);
+                        if (tradeMatches != null && (boolean) tradeMatches.invoke(
+                                recipe, trade, level)) {
+                            return Optional.of(new Match());
+                        }
+                    }
+                } catch (ClassNotFoundException ignored) {
+                    // Forge 1.20.1 uses the isValid overloads above.
+                }
             }
-            // Occultism's crushing/crystallize recipes use (ItemStack, tier).
-            String name = recipe.getClass().getName();
-            if (name.contains("CrushingRecipe") || name.contains("CrystallizeRecipe")) {
+            // Occultism 1.20.1 crushing recipes require the tier-aware
+            // ItemStackFakeInventory subtype. A missing class used to make
+            // every crushing recipe silently fail here.
+            if (tieredRecipe) {
                 Class<?> tiered = Class.forName(
-                        "com.klikli_dev.occultism.crafting.recipe.TieredSingleRecipeInput");
+                        "com.klikli_dev.occultism.crafting.recipe."
+                                + "TieredItemStackFakeInventory");
                 Constructor<?> constructor = tiered.getConstructor(ItemStack.class, int.class);
                 Object tieredInput = constructor.newInstance(input.copy(), spiritTier);
-                Method tieredMatches = findMethod(recipe, "matches", tiered, Level.class);
+                Method tieredMatches = findMethod(recipe, "matches",
+                        fakeInventory, Level.class);
                 if (tieredMatches != null && (boolean) tieredMatches.invoke(recipe, tieredInput, level)) {
                     return Optional.of(new Match());
                 }
@@ -1521,14 +1634,20 @@ public final class OccultismRecipeBridge {
     }
 
     private static RecipeType<?> recipeType(String path) {
-        return BuiltInRegistries.RECIPE_TYPE.get(new ResourceLocation(OCCULTISM, path));
+        return BuiltInRegistries.RECIPE_TYPE.get(
+                ResourceLocation.fromNamespaceAndPath(OCCULTISM, path));
+    }
+
+    private static TagKey<net.minecraft.world.item.Item> itemTag(String path) {
+        return TagKey.create(net.minecraft.core.registries.Registries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(OCCULTISM, path));
     }
 
     private static ResourceLocation recipeId(Object recipe) {
         return invoke(recipe, "getId")
                 .filter(ResourceLocation.class::isInstance)
                 .map(ResourceLocation.class::cast)
-                .orElse(new ResourceLocation(
+                .orElse(ResourceLocation.fromNamespaceAndPath(
                         "mekanism_magic", "runtime_occultism_recipe"));
     }
 

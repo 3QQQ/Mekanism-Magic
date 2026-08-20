@@ -35,8 +35,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Native Mekanism registration layer. It is kept separate while the legacy
- * prototype is migrated, so all future machines can share these definitions.
+ * Shared Forge 1.20.1 registration layer for Mekanism-native machines,
+ * containers, factory tiers and block entities.
  */
 public final class NativeMekanismRegistries {
     public static final BlockDeferredRegister BLOCKS = new BlockDeferredRegister(MekanismMagic.MOD_ID);
@@ -50,7 +50,7 @@ public final class NativeMekanismRegistries {
             NativeSpiritProcessorBlockEntity.class).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeDimensionMinerBlockEntity>>
             DIMENSION_MINER_CONTAINER = CONTAINERS.custom("dimension_miner",
-            NativeDimensionMinerBlockEntity.class).build();
+            NativeDimensionMinerBlockEntity.class).offset(16, 42).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeRitualEngineBlockEntity>>
             RITUAL_CONTAINER = CONTAINERS.custom("ritual_engine",
             NativeRitualEngineBlockEntity.class).offset(17, 42).build();

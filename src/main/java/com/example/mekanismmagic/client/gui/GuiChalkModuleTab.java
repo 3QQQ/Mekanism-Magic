@@ -17,9 +17,11 @@ import java.util.function.BooleanSupplier;
 public final class GuiChalkModuleTab
         extends GuiInsetElement<NativeMiniRitualAssemblerBlockEntity> {
     private static final ResourceLocation CLOSED_ICON =
-            new ResourceLocation("occultism", "textures/item/chalk_white.png");
+            ResourceLocation.fromNamespaceAndPath(
+                    "occultism", "textures/item/chalk_white.png");
     private static final ResourceLocation OPEN_ICON =
-            new ResourceLocation("occultism", "textures/item/chalk_purple.png");
+            ResourceLocation.fromNamespaceAndPath(
+                    "occultism", "textures/item/chalk_purple.png");
 
     private final BooleanSupplier open;
     private final Runnable toggle;

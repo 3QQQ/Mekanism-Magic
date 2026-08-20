@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class ArsNouveauIntegration {
     private static final ResourceLocation MOB_JAR_ITEM =
-            new ResourceLocation("ars_nouveau", "mob_jar");
+            ResourceLocation.fromNamespaceAndPath("ars_nouveau", "mob_jar");
     private static final String BLOCK_ENTITY_TAG = "BlockEntityTag";
     private static final String ENTITY_TAG = "entityTag";
     private static final String ENTITY_ID = "entityId";

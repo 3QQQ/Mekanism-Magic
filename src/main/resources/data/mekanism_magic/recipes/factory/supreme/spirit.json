@@ -1,13 +1,26 @@
 {
-  "forge:conditions": [{"type":"forge:mod_loaded","modid":"occultism"},{"type": "forge:mod_loaded", "modid": "mekanism_extras"}],
-  "type": "mekanism:mek_data",
-  "category": "misc",
-  "pattern": ["ACA", "IPI", "ACA"],
-  "key": {
-    "A": {"tag": "mekanism_extras:alloys/thermonuclear"},
-    "C": {"tag": "forge:circuits/supreme"},
-    "I": {"tag": "forge:ingots/netherite"},
-    "P": {"item": "mekanism_magic:absolute_spirit_factory"}
-  },
-  "result": {"item": "mekanism_magic:supreme_spirit_factory", "count": 1}
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {"type": "forge:mod_loaded", "modid": "occultism"},
+        {"type": "forge:mod_loaded", "modid": "mekanism_extras"}
+      ],
+      "recipe": {
+        "type": "mekanism:mek_data",
+        "category": "misc",
+        "pattern": ["ACA", "IPI", "ACA"],
+        "key": {
+          "A": {"tag": "mekanism_extras:alloys/thermonuclear"},
+          "C": {"tag": "forge:circuits/supreme"},
+          "I": {"tag": "forge:ingots/netherite"},
+          "P": {"item": "mekanism_magic:absolute_spirit_factory"}
+        },
+        "result": {
+          "item": "mekanism_magic:supreme_spirit_factory",
+          "count": 1
+        }
+      }
+    }
+  ]
 }
