@@ -21,6 +21,8 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 - 维度矿工处理机：单个不消耗矿工输入，三行九槽输出，支持附魔和自动输出。
 - Mekanism 风格 GUI、能量槽、侧面配置、速度/能量升级和 JEI 配方分类。
 - Ars Nouveau 收容罐、Occultism 灵魂容器、刷怪蛋和魔灵职业数据兼容。
+- Ars Nouveau 收容罐兼容；魔源增幅器、灌注处理机、附魔装置处理机和
+  魔源电力替代插件在完成全部适配验证前不在发布版中启用。
 
 ## 1.21.1 NeoForge
 
@@ -72,11 +74,12 @@ Forge 分支已验证 Mekanism Generators、Mekanism Extras 1.5.0、MoreMachine 
 
 - [Forge 1.20.1 移植状态](docs/FORGE_1201_PORT.md)
 - [附属模组兼容性](docs/COMPATIBILITY.md)
+- [Ars Nouveau 适配准备](docs/ARS_NOUVEAU_ADAPTATION.md)
 
 构建产物位于：
 
 ```text
-build/libs/mekanism_magic-0.1.0.jar
+build/libs/mekanism_magic-1.0.1-neoforge-1.21.1.jar
 ```
 
 请使用与 Minecraft/加载器版本匹配的分支和 JAR；不要将 NeoForge 1.21.1 构建产物放入 Forge 1.20.1。

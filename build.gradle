@@ -19,6 +19,10 @@ repositories {
     maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
     maven { name = 'ModMaven'; url = uri('https://modmaven.dev') }
     maven { name = 'Jared'; url = uri('https://maven.blamejared.com') }
+    maven {
+        name = 'GeckoLib'
+        url = uri('https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/')
+    }
     mavenCentral()
 }
 
@@ -86,8 +90,9 @@ def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toSt
 dependencies {
     compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
+    compileOnly "com.hollingsworth.ars_nouveau:ars_nouveau-1.21.1:${ars_nouveau_maven_version}"
+    compileOnly "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_compile_version}"
     compileOnly files(
-            "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar",
             mekanismExtrasJar,
             'libs/mekmm-1.21.1-1.4.0.jar'
     )

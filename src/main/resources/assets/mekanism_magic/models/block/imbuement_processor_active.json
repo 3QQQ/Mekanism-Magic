@@ -1,0 +1,8 @@
+{
+  "parent": "mekanism_magic:block/imbuement_processor",
+  "textures": {
+    "front": "mekanism_magic:block/imbuement_processor/front_active",
+    "west": "mekanism_magic:block/imbuement_processor/side_active",
+    "east": "mekanism_magic:block/imbuement_processor/side_active"
+  }
+}

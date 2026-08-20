@@ -1,5 +1,8 @@
 {
   "itemGroup.mekanism_magic": "Mekanism Magic",
+  "block.mekanism_magic.source_generator": "Source Amplifier",
+  "block.mekanism_magic.imbuement_processor": "Imbuement Processor",
+  "block.mekanism_magic.enchanting_apparatus_processor": "Enchanting Apparatus Processor",
   "block.mekanism_magic.spirit_processor": "Spirit Processor",
   "block.mekanism_magic.dimension_miner": "Dimensional Miner",
   "block.mekanism_magic.ritual_engine": "Ritual Engine",
@@ -25,6 +28,11 @@
   "container.mekanism_magic.supreme_spirit_factory": "Supreme Spirit Factory",
   "container.mekanism_magic.cosmic_spirit_factory": "Cosmic Spirit Factory",
   "container.mekanism_magic.infinite_spirit_factory": "Infinite Spirit Factory",
+  "container.mekanism_magic.source_generator": "Source Amplifier",
+  "container.mekanism_magic.imbuement_processor": "Imbuement Processor",
+  "container.mekanism_magic.enchanting_apparatus_processor": "Enchanting Apparatus Processor",
+  "item.mekanism_magic.source_conversion_module": "Source Conversion Module",
+  "item.mekanism_magic.source_conversion_module.tooltip": "Replaces recipe Source consumption with additional energy usage (200 FE per Source)",
   "item.mekanism_magic.mini_ritual": "Mini Ritual",
   "item.mekanism_magic.ultimate_mini_ritual": "Ultimate Mini Ritual",
   "item.mekanism_magic.ultimate_mini_ritual.tooltip": "Requires the four highest-tier Marid pentacles: craft, possess, summon, and summon unbound Marid",
@@ -78,6 +86,9 @@
   "gui.mekanism_magic.config_hint": "Use the configurator to change side modes",
   "gui.mekanism_magic.upgrade_hint": "Insert Mekanism speed/energy upgrades",
   "gui.mekanism_magic.energy": "Energy",
+  "gui.mekanism_magic.source": "Source",
+  "gui.mekanism_magic.source_amount": "Source: %s / %s",
+  "gui.mekanism_magic.source_conversion": "Source conversion",
   "gui.mekanism_magic.spirit_required": "Requires an Occultism spirit egg, filled soul gem, or Ars Nouveau mob jar",
   "gui.mekanism_magic.ritual_hint": "Safe rituals only"
 }

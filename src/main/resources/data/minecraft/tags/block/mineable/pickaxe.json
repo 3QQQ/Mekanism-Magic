@@ -1,0 +1,64 @@
+{
+  "values": [
+    {
+      "id": "mekanism_magic:spirit_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:dimension_miner",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:basic_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:advanced_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:elite_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:ultimate_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:absolute_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:supreme_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:cosmic_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:infinite_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:ritual_engine",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:mini_ritual_assembler",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:source_generator",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:imbuement_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:enchanting_apparatus_processor",
+      "required": false
+    }
+  ]
+}

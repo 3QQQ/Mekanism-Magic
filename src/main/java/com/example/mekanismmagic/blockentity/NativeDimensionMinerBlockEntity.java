@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
@@ -82,7 +83,7 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     @Override
-    protected java.util.Optional<OccultismRecipeBridge.RecipeResult> findRecipe(
+    protected java.util.Optional<MachineRecipeResult> findRecipe(
             ItemStackHandler inventory) {
         // The machine uses its own weighted multi-output loop.
         return java.util.Optional.empty();
@@ -95,7 +96,9 @@ public final class NativeDimensionMinerBlockEntity
         // one transfer roughly every ten ticks. The dimensional miner can
         // produce many output stacks per cycle, so spend the remaining calls
         // in this tick to keep its output bus from lagging behind production.
-        tickEjectorAdditional(10);
+        if (hasStoredOutput()) {
+            tickEjectorAdditional(10);
+        }
         setActive(false);
         if (level == null) {
             return changed;
@@ -196,6 +199,18 @@ public final class NativeDimensionMinerBlockEntity
             }
         }
         return true;
+    }
+
+    private boolean hasStoredOutput() {
+        if (minerOutputs == null) {
+            return false;
+        }
+        for (BasicInventorySlot slot : minerOutputs) {
+            if (!slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean insertOutputs(List<ItemStack> stacks) {

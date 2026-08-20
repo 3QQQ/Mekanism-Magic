@@ -1,7 +1,8 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.integration.common.recipe.InputUse;
+import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
-import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.RelativeSide;
@@ -83,6 +84,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         configComponent = new TileComponentConfig(this,
                 EnumSet.of(TransmissionType.ITEM, TransmissionType.ENERGY));
         ejectorComponent = new TileComponentEjector(this)
+                .setCanEject(type -> level instanceof ServerLevel)
                 .setOutputData(configComponent, TransmissionType.ITEM);
     }
 
@@ -91,7 +93,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         EnergyContainerHelper helper = EnergyContainerHelper.forSideWithConfig(this);
         energyContainer = MachineEnergyContainer.input(this, listener);
         helper.addContainer(energyContainer);
-        configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
+        var energyConfig = configComponent.setupInputConfig(
+                TransmissionType.ENERGY, energyContainer);
+        if (energyConfig != null) {
+            for (RelativeSide side : RelativeSide.values()) {
+                energyConfig.setDataType(DataType.INPUT, side);
+            }
+        }
         return helper.build();
     }
 
@@ -161,9 +169,23 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return logicalSlots;
     }
 
-    protected abstract Optional<OccultismRecipeBridge.RecipeResult> findRecipe(ItemStackHandler inventory);
+    protected abstract Optional<MachineRecipeResult> findRecipe(
+            ItemStackHandler inventory);
 
     protected abstract int baseEnergyPerTick();
+
+    protected long energyUsagePerTick(MachineRecipeResult recipe) {
+        return mekanism.common.util.MekanismUtils.getEnergyPerTick(
+                this, baseEnergyPerTick());
+    }
+
+    protected boolean hasRecipeResources(MachineRecipeResult recipe) {
+        return true;
+    }
+
+    protected boolean consumeRecipeResources(MachineRecipeResult recipe) {
+        return true;
+    }
 
     /**
      * Runs only Mekanism's common tile update. Specialized machines with a
@@ -283,14 +305,14 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             return changed;
         }
         ItemStackHandler snapshot = snapshotInventory();
-        Optional<OccultismRecipeBridge.RecipeResult> found = findRecipe(snapshot);
+        Optional<MachineRecipeResult> found = findRecipe(snapshot);
         if (found.isEmpty()) {
             progress = 0;
             progressRequired = 1;
             activeRecipe = "";
             return changed;
         }
-        OccultismRecipeBridge.RecipeResult recipe = found.get();
+        MachineRecipeResult recipe = found.get();
         progressRequired = Math.max(1, mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()));
         ItemStack output = snapshot.getStackInSlot(OUTPUT_SLOT);
         if (!recipe.output().isEmpty() && !output.isEmpty()
@@ -298,8 +320,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 || output.getCount() + recipe.output().getCount() > output.getMaxStackSize())) {
             return changed;
         }
-        long usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(this, baseEnergyPerTick());
-        if (energyContainer == null || energyContainer.getEnergy() < usage) {
+        long usage = energyUsagePerTick(recipe);
+        if (!hasRecipeResources(recipe)
+                || energyContainer == null
+                || energyContainer.getEnergy() < usage) {
             return changed;
         }
         String recipeKey = recipeKey(recipe);
@@ -311,15 +335,18 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
         progress++;
         if (progress >= progressRequired) {
-            if (recipe.isCommand()
-                    && !(level instanceof net.minecraft.server.level.ServerLevel serverLevel
-                    && OccultismRecipeBridge.executeCommandRitual(
-                    serverLevel, worldPosition, recipe.command()))) {
+            if (level instanceof ServerLevel serverLevel
+                    && !recipe.complete(serverLevel, worldPosition)) {
                 progress = 0;
                 setActive(false);
                 return changed;
             }
             if (!consumeSnapshot(snapshot, recipe)) {
+                progress = 0;
+                setActive(false);
+                return changed;
+            }
+            if (!consumeRecipeResources(recipe)) {
                 progress = 0;
                 setActive(false);
                 return changed;
@@ -351,7 +378,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return changed;
     }
 
-    protected void onRecipeFinished(OccultismRecipeBridge.RecipeResult recipe) {
+    protected void onRecipeFinished(MachineRecipeResult recipe) {
     }
 
     protected final void tickEjectorAdditional(int calls) {
@@ -377,30 +404,31 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
     }
 
-    private boolean consumeSnapshot(ItemStackHandler snapshot, OccultismRecipeBridge.RecipeResult recipe) {
+    private boolean consumeSnapshot(ItemStackHandler snapshot,
+                                    MachineRecipeResult recipe) {
         if (recipe.activationSlot() >= 0 && snapshot.getStackInSlot(recipe.activationSlot()).isEmpty()) {
             return false;
         }
-        if (recipe.sacrificeSlot() >= 0
-                && !OccultismRecipeBridge.isSacrificeItem(snapshot.getStackInSlot(recipe.sacrificeSlot()))) {
+        if (recipe.specialInputSlot() >= 0
+                && !recipe.matchesSpecialInput(
+                snapshot.getStackInSlot(recipe.specialInputSlot()))) {
             return false;
         }
-        for (OccultismRecipeBridge.InputUse input : recipe.inputs()) {
+        for (InputUse input : recipe.inputs()) {
             if (snapshot.getStackInSlot(input.slot()).getCount() < input.count()) {
                 return false;
             }
         }
-        for (OccultismRecipeBridge.InputUse input : recipe.inputs()) {
+        for (InputUse input : recipe.inputs()) {
             snapshot.extractItem(input.slot(), input.count(), false);
         }
         if (recipe.activationSlot() >= 0) {
             snapshot.extractItem(recipe.activationSlot(), 1, false);
         }
-        return recipe.sacrificeSlot() < 0
-                || OccultismRecipeBridge.consumeSacrifice(snapshot, recipe.sacrificeSlot());
+        return recipe.consumeSpecialInput(snapshot);
     }
 
-    private static String recipeKey(OccultismRecipeBridge.RecipeResult recipe) {
+    private static String recipeKey(MachineRecipeResult recipe) {
         return recipe.id() + "|" + recipe.output().getCount() + "|"
                 + recipe.duration() + "|" + recipe.inputs();
     }

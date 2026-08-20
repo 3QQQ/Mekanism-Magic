@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
@@ -33,6 +34,8 @@ public final class NativeMiniRitualAssemblerBlockEntity
     private int previewIndex;
     private boolean craftRequested;
     private String requestedPentacle = "";
+    private List<MachineRecipeResult> cachedPreviewCandidates;
+    private Component cachedPreviewLabel;
 
     public NativeMiniRitualAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.get()
@@ -42,12 +45,17 @@ public final class NativeMiniRitualAssemblerBlockEntity
     @Override
     protected void createMachineSlots(InventorySlotHelper helper,
                                       IContentsListener listener) {
+        IContentsListener previewListener = () -> {
+            cachedPreviewCandidates = null;
+            cachedPreviewLabel = null;
+            listener.onContentsChanged();
+        };
         List<mekanism.api.inventory.IInventorySlot> inputs = new ArrayList<>();
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 int index = row * 4 + column;
                 InputInventorySlot slot = registerLogicalSlot(helper, index,
-                        InputInventorySlot.at(listener,
+                        InputInventorySlot.at(previewListener,
                                 69 + column * 18, 31 + row * 18));
                 inputs.add(slot);
                 if (index == 0) {
@@ -63,7 +71,8 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 chalkSlots.add(registerLogicalSlot(helper, CHALK_SLOT_START + index,
                         new ChalkInventorySlot(this,
                                 OccultismRecipeBridge::isAnyChalk,
-                                listener, 240 + column * 18, 104 + row * 18)));
+                                previewListener, 240 + column * 18,
+                                104 + row * 18)));
             }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
@@ -72,13 +81,12 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     @Override
-    protected Optional<OccultismRecipeBridge.RecipeResult> findRecipe(
+    protected Optional<MachineRecipeResult> findRecipe(
             ItemStackHandler inventory) {
         if (!craftRequested) {
             return Optional.empty();
         }
-        List<OccultismRecipeBridge.RecipeResult> candidates =
-                OccultismRecipeBridge.findMiniRitualCandidates(level, inventory);
+        List<MachineRecipeResult> candidates = previewCandidates(inventory);
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
@@ -91,20 +99,17 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     public void cyclePreview(int direction) {
-        List<OccultismRecipeBridge.RecipeResult> candidates =
-                OccultismRecipeBridge.findMiniRitualCandidates(level,
-                        snapshotForPreview());
+        List<MachineRecipeResult> candidates = previewCandidates();
         if (!candidates.isEmpty()) {
             previewIndex = Math.floorMod(previewIndex + direction,
                     candidates.size());
+            cachedPreviewLabel = null;
             setChanged();
         }
     }
 
     public void requestCraft() {
-        List<OccultismRecipeBridge.RecipeResult> candidates =
-                OccultismRecipeBridge.findMiniRitualCandidates(level,
-                        snapshotForPreview());
+        List<MachineRecipeResult> candidates = previewCandidates();
         if (candidates.isEmpty()) {
             return;
         }
@@ -124,6 +129,29 @@ public final class NativeMiniRitualAssemblerBlockEntity
         return inventory;
     }
 
+    private List<MachineRecipeResult> previewCandidates() {
+        if (level == null) {
+            return List.of();
+        }
+        if (cachedPreviewCandidates != null) {
+            return cachedPreviewCandidates;
+        }
+        return previewCandidates(snapshotForPreview());
+    }
+
+    private List<MachineRecipeResult> previewCandidates(
+            ItemStackHandler inventory) {
+        if (level == null) {
+            return List.of();
+        }
+        if (cachedPreviewCandidates == null) {
+            cachedPreviewCandidates =
+                    OccultismRecipeBridge.findMiniRitualCandidates(
+                            level, inventory);
+        }
+        return cachedPreviewCandidates;
+    }
+
     public int getPreviewIndex() {
         return previewIndex;
     }
@@ -132,24 +160,36 @@ public final class NativeMiniRitualAssemblerBlockEntity
     public void addContainerTrackers(MekanismContainer container) {
         super.addContainerTrackers(container);
         container.track(SyncableInt.create(() -> previewIndex,
-                value -> previewIndex = Math.max(0, value)));
+                this::setPreviewIndex));
     }
 
     public Component getPreviewLabel() {
-        List<OccultismRecipeBridge.RecipeResult> candidates =
-                OccultismRecipeBridge.findMiniRitualCandidates(level,
-                        snapshotForPreview());
-        if (candidates.isEmpty()) {
-            return Component.translatable("gui.mekanism_magic.mini_ritual.none");
+        if (cachedPreviewLabel != null) {
+            return cachedPreviewLabel;
         }
-        return OccultismRecipeBridge.pentacleDisplayName(
+        List<MachineRecipeResult> candidates = previewCandidates();
+        if (candidates.isEmpty()) {
+            cachedPreviewLabel = Component.translatable(
+                    "gui.mekanism_magic.mini_ritual.none");
+            return cachedPreviewLabel;
+        }
+        cachedPreviewLabel = OccultismRecipeBridge.pentacleDisplayName(
                 ResourceLocation.tryParse(candidatePentacle(
                         candidates.get(Math.floorMod(previewIndex,
                                 candidates.size())))));
+        return cachedPreviewLabel;
+    }
+
+    private void setPreviewIndex(int value) {
+        int normalized = Math.max(0, value);
+        if (previewIndex != normalized) {
+            previewIndex = normalized;
+            cachedPreviewLabel = null;
+        }
     }
 
     private static String candidatePentacle(
-            OccultismRecipeBridge.RecipeResult candidate) {
+            MachineRecipeResult candidate) {
         net.minecraft.world.item.component.CustomData data =
                 candidate.output().get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         return data == null ? "" : data.copyTag().getString("pentacle");
@@ -158,11 +198,11 @@ public final class NativeMiniRitualAssemblerBlockEntity
     @Override
     protected void onNativeUpgradeChanged(mekanism.api.Upgrade upgrade) {
         previewIndex = 0;
+        cachedPreviewLabel = null;
     }
 
     @Override
-    protected void onRecipeFinished(
-            OccultismRecipeBridge.RecipeResult recipe) {
+    protected void onRecipeFinished(MachineRecipeResult recipe) {
         craftRequested = false;
         requestedPentacle = "";
     }

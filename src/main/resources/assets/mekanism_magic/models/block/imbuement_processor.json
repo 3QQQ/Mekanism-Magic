@@ -1,0 +1,13 @@
+{
+  "parent": "mekanism:block/enrichment_chamber",
+  "textures": {
+    "particle": "mekanism_magic:block/imbuement_processor/front",
+    "sides": "mekanism_magic:block/imbuement_processor/side",
+    "front": "mekanism_magic:block/imbuement_processor/front",
+    "west": "mekanism_magic:block/imbuement_processor/side",
+    "east": "mekanism_magic:block/imbuement_processor/side",
+    "south": "mekanism_magic:block/imbuement_processor/back",
+    "up": "mekanism_magic:block/imbuement_processor/top",
+    "down": "mekanism_magic:block/imbuement_processor/bottom"
+  }
+}

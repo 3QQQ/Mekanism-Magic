@@ -47,6 +47,17 @@ public final class NativeSpiritFactoryBlockEntity
                         CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_OUTPUT_SPACE,
                         CachedRecipe.OperationTracker.RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT),
                 Set.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_ENERGY));
+        ejectorComponent.setCanEject(
+                type -> level instanceof net.minecraft.server.level.ServerLevel);
+        var energyConfig = configComponent.getConfig(TransmissionType.ENERGY);
+        if (energyConfig != null) {
+            for (mekanism.api.RelativeSide side :
+                    mekanism.api.RelativeSide.values()) {
+                energyConfig.setDataType(
+                        mekanism.common.tile.component.config.DataType.INPUT,
+                        side);
+            }
+        }
         ensureProcessTickCapacity(tier.processes - 1);
     }
 
@@ -105,10 +116,13 @@ public final class NativeSpiritFactoryBlockEntity
 
     @Override
     protected SpiritFactoryRecipe getRecipeForInput(int process, ItemStack input,
-                                                    IInventorySlot extra,
                                                     IInventorySlot output,
+                                                    IInventorySlot secondaryOutput,
                                                     boolean recheck) {
-        return findRecipe(process, input, extra, output);
+        // TileEntityFactory calls this overload from its auto-sort path with
+        // output and secondary-output slots. The spirit source is this
+        // factory's shared extra slot, not either of those output slots.
+        return findRecipe(process, input, spiritSlot, output);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

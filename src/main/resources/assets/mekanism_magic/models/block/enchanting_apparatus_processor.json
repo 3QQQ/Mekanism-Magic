@@ -1,0 +1,13 @@
+{
+  "parent": "mekanism:block/enrichment_chamber",
+  "textures": {
+    "particle": "mekanism_magic:block/enchanting_apparatus_processor/front",
+    "sides": "mekanism_magic:block/enchanting_apparatus_processor/side",
+    "front": "mekanism_magic:block/enchanting_apparatus_processor/front",
+    "west": "mekanism_magic:block/enchanting_apparatus_processor/side",
+    "east": "mekanism_magic:block/enchanting_apparatus_processor/side",
+    "south": "mekanism_magic:block/enchanting_apparatus_processor/back",
+    "up": "mekanism_magic:block/enchanting_apparatus_processor/top",
+    "down": "mekanism_magic:block/enchanting_apparatus_processor/bottom"
+  }
+}

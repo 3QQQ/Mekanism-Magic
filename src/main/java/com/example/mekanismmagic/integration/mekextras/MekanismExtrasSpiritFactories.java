@@ -97,7 +97,7 @@ public final class MekanismExtrasSpiritFactories {
         return TILES.mekBuilder(block, (pos, state) ->
                         new ExtraSpiritFactoryBlockEntity(
                                 block.get().builtInRegistryHolder(), pos, state))
-                .commonTicker((level, pos, state, tile) ->
+                .serverTicker((level, pos, state, tile) ->
                         mekanism.common.tile.base.TileEntityMekanism.tickServer(
                                 level, pos, state, tile))
                 .build();

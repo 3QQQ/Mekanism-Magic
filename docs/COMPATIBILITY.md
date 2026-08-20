@@ -67,7 +67,8 @@ NeoForge loader 和 Minecraft 1.21.1。
 
 Ars Nouveau 的实体收容罐注册名为 `ars_nouveau:mob_jar`。其捕获实体不使用原版
 `ENTITY_DATA`，而是保存在同名数据组件的 `MobJarData#entityTag()` 中。本项目通过
-数据组件注册表和反射读取该字段，因此 Ars Nouveau 未安装时不会硬加载其类。
+数据组件注册表和反射读取该字段，并通过通用 `EntityContainerRegistry` 暴露给机器，
+因此 Ars Nouveau 未安装时不会硬加载其类。
 
 Occultism 的 `soul_gem`、`fragile_soul_gem`、`trinity_gem` 和 `magic_lamp_empty`
 使用原版 `ENTITY_DATA` 保存实体。魔灵处理器会像处理 Ars 收容罐一样接受其中的
@@ -76,6 +77,29 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 魔灵处理器仅接受装有 Occultism Foliot、Djinni、Afrit 或 Marid 系实体的收容罐；
 仪式引擎则可按献祭实体标签接受任意匹配的已填充收容罐。献祭完成后只移除
 `ars_nouveau:mob_jar` 数据组件，空罐会保留。
+
+## Ars Nouveau 机器与 Source
+
+开发树中包含以下 Ars Nouveau `5.13.0` 机器实现：
+
+- `mekanism_magic:source_generator`：增强附近原版魔源连接器的 Source 产量；
+- `mekanism_magic:imbuement_processor`：处理灌注室配方；
+- `mekanism_magic:enchanting_apparatus_processor`：处理附魔装置体系配方；
+- `mekanism_magic:source_conversion_module`：用额外 FE 替代配方 Source 消耗。
+
+这些机器和插件在 `1.0.1` 发布版中暂不注册，对应配方、掉落和 JEI 催化剂也不会
+加载。当前发布版仅保留已经验证的 Ars Nouveau 收容罐兼容；完成全部特殊配方和
+多人服务器测试后再启用机器内容。
+
+三台机器均公开 Ars Nouveau `SOURCE_CAPABILITY`，容量为 `10,000 Source`。
+灌注机和附魔装置机支持每次 `1,000 Source` 的双向传输；魔源增幅器只允许输出。
+灌注机提供三个材料槽，附魔装置机提供八个材料槽；
+物品可在槽内堆叠，实际处理时按配方数量消耗。
+
+魔源增幅器每轮从半径 4 格内的原版魔源连接器抽取 `100 Source`，消耗
+`10,000 FE` 后输出 `150 Source`，不会脱离原版生产条件凭空生成魔源。
+电力替代插件按 `200 FE / Source` 计算。
+Mekanism 速度和能量升级继续正常生效。
 
 ## Occultism 灵火与交易配方
 
@@ -150,3 +174,13 @@ Mekanism 的 `speed_upgrade` / `energy_upgrade` 是普通机器的升级物品�
 品红、橙、粉、紫、红、白、金。槽位不包含彩虹粉笔或虚空粉笔专用槽，但这两种
 通用粉笔放入任意颜色槽后会满足所有法阵颜色判定；粉笔槽只用于检查，不参与消耗。
 客户端主工作界面默认收起粉笔槽，可通过右侧粉笔 Tab 展开 4×4 粉笔模块。
+
+## 可选适配代码约束
+
+通用机器循环只接受 `integration/common/recipe/MachineRecipeResult`，不直接依赖
+Occultism 或 Ars Nouveau 的配方实现。可复用实体容器统一通过
+`integration/common/entity/EntityContainerAdapter` 注册。
+
+后续新增 Ars Nouveau 配方兼容时，应在 `integration/arsnouveau/` 中建立独立桥接，
+将第三方配方转换为通用结果；不得把 Ars Nouveau 类型或配方判断写入
+`NativeMagicMachineBlockEntity`、GUI 或 Occultism 桥接。

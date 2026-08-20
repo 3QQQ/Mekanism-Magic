@@ -25,17 +25,23 @@ public final class NativeMagicClient {
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
-        if (!ModCompatibility.occultismLoaded()) {
-            return;
+        if (ModCompatibility.occultismLoaded()) {
+            event.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(),
+                    NativeSpiritScreen::new);
+            event.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
+                    NativeDimensionMinerScreen::new);
+            event.register(NativeMekanismRegistries.RITUAL_CONTAINER.get(),
+                    NativeRitualScreen::new);
+            event.register(
+                    NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_CONTAINER.get(),
+                    NativeMiniRitualAssemblerScreen::new);
+            event.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
+                    NativeSpiritFactoryScreen::new);
         }
-        event.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(), NativeSpiritScreen::new);
-        event.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
-                NativeDimensionMinerScreen::new);
-        event.register(NativeMekanismRegistries.RITUAL_CONTAINER.get(), NativeRitualScreen::new);
-        event.register(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_CONTAINER.get(),
-                NativeMiniRitualAssemblerScreen::new);
-        event.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
-                NativeSpiritFactoryScreen::new);
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            registerOptionalScreens(event,
+                    "arsnouveau.client.ArsNouveauClient");
+        }
     }
 
     @SubscribeEvent
@@ -48,5 +54,20 @@ public final class NativeMagicClient {
                 ResourceLocation.fromNamespaceAndPath(MekanismMagic.MOD_ID, "ritual"),
                 (stack, level, entity, seed) ->
                         OccultismRecipeBridge.miniRitualModelData(stack)));
+    }
+
+    private static void registerOptionalScreens(
+            RegisterMenuScreensEvent event, String className) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + className)
+                    .getMethod("registerScreens",
+                            RegisterMenuScreensEvent.class)
+                    .invoke(null, event);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional integration screens",
+                    failure);
+        }
     }
 }

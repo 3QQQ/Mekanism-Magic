@@ -1,5 +1,8 @@
 {
   "itemGroup.mekanism_magic": "Mekanism 魔法",
+  "block.mekanism_magic.source_generator": "魔源增幅器",
+  "block.mekanism_magic.imbuement_processor": "灌注处理机",
+  "block.mekanism_magic.enchanting_apparatus_processor": "附魔装置处理机",
   "block.mekanism_magic.spirit_processor": "魔灵处理器",
   "block.mekanism_magic.dimension_miner": "维度矿机",
   "block.mekanism_magic.ritual_engine": "仪式引擎",
@@ -25,6 +28,11 @@
   "container.mekanism_magic.supreme_spirit_factory": "至尊魔灵工厂",
   "container.mekanism_magic.cosmic_spirit_factory": "宇宙魔灵工厂",
   "container.mekanism_magic.infinite_spirit_factory": "无限魔灵工厂",
+  "container.mekanism_magic.source_generator": "魔源增幅器",
+  "container.mekanism_magic.imbuement_processor": "灌注处理机",
+  "container.mekanism_magic.enchanting_apparatus_processor": "附魔装置处理机",
+  "item.mekanism_magic.source_conversion_module": "魔源电力替代插件",
+  "item.mekanism_magic.source_conversion_module.tooltip": "以额外电力替代配方魔源消耗（每点魔源消耗 200 FE）",
   "item.mekanism_magic.mini_ritual": "微缩神秘仪式",
   "item.mekanism_magic.ultimate_mini_ritual": "终极微缩仪式",
   "item.mekanism_magic.ultimate_mini_ritual.tooltip": "需要四个最高等级 Marid 五芒星：锻造、附身、召唤和召唤未绑定 Marid",
@@ -78,6 +86,9 @@
   "gui.mekanism_magic.config_hint": "点击 C 返回；侧面模式由配置器调整",
   "gui.mekanism_magic.upgrade_hint": "放入 Mekanism 速度/能量升级",
   "gui.mekanism_magic.energy": "能量",
+  "gui.mekanism_magic.source": "魔源",
+  "gui.mekanism_magic.source_amount": "魔源：%s / %s",
+  "gui.mekanism_magic.source_conversion": "魔源电力替代",
   "gui.mekanism_magic.spirit_required": "需要神秘学魔灵刷怪蛋、已装入魔灵的灵魂宝石或新生魔艺收容罐",
   "gui.mekanism_magic.ritual_hint": "仅处理安全仪式"
 }

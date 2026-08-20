@@ -90,9 +90,17 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        if (!ModCompatibility.occultismLoaded()) {
-            return;
+        if (ModCompatibility.occultismLoaded()) {
+            registerOccultismCatalysts(registration);
         }
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            invokeOptionalJeiRegistration(registration,
+                    "arsnouveau.client.ArsNouveauJeiIntegration");
+        }
+    }
+
+    private static void registerOccultismCatalysts(
+            IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem(),
                 MINI_RITUAL_TYPE);
@@ -125,6 +133,20 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem(),
                 MINER_TYPE);
+    }
+
+    private static void invokeOptionalJeiRegistration(
+            IRecipeCatalystRegistration registration, String className) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + className)
+                    .getMethod("registerCatalysts",
+                            IRecipeCatalystRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional JEI catalysts", failure);
+        }
     }
 
     private static void addOptionalSpiritFactoryCatalyst(

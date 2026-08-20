@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
@@ -65,7 +66,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
     }
 
     @Override
-    protected Optional<OccultismRecipeBridge.RecipeResult> findRecipe(ItemStackHandler inventory) {
+    protected Optional<MachineRecipeResult> findRecipe(
+            ItemStackHandler inventory) {
         return OccultismRecipeBridge.findRitualRecipe(level, inventory,
                 inventory.getStackInSlot(RITUAL_SLOT),
                 inventory.getStackInSlot(ACTIVATION_SLOT),

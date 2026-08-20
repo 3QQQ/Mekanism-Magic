@@ -41,6 +41,18 @@ public final class ExtraSpiritFactoryBlockEntity
                         CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_OUTPUT_SPACE,
                         CachedRecipe.OperationTracker.RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT),
                 Set.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_ENERGY));
+        ejectorComponent.setCanEject(
+                type -> level instanceof net.minecraft.server.level.ServerLevel);
+        var energyConfig = configComponent.getConfig(
+                mekanism.common.lib.transmitter.TransmissionType.ENERGY);
+        if (energyConfig != null) {
+            for (mekanism.api.RelativeSide side :
+                    mekanism.api.RelativeSide.values()) {
+                energyConfig.setDataType(
+                        mekanism.common.tile.component.config.DataType.INPUT,
+                        side);
+            }
+        }
         ensureProcessTickCapacity(tier.processes - 1);
     }
 
@@ -100,10 +112,12 @@ public final class ExtraSpiritFactoryBlockEntity
 
     @Override
     protected SpiritFactoryRecipe getRecipeForInput(int process, ItemStack input,
-                                                    IInventorySlot extra,
                                                     IInventorySlot output,
+                                                    IInventorySlot secondaryOutput,
                                                     boolean recheck) {
-        return findRecipe(process, input, extra, output);
+        // The factory sorting API passes output slots here. Use the shared
+        // spirit source slot as the recipe's extra input.
+        return findRecipe(process, input, spiritSlot, output);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

@@ -1,5 +1,8 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.ModCompatibility;
+import com.example.mekanismmagic.integration.common.entity.CapturedEntity;
+import com.example.mekanismmagic.integration.common.entity.EntityContainerAdapter;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -14,7 +17,9 @@ import java.util.Optional;
  * implementation classes. Filled mob jars store their captured entity in the
  * ars_nouveau:mob_jar data component as MobJarData#entityTag().
  */
-public final class ArsNouveauIntegration {
+public final class ArsNouveauIntegration implements EntityContainerAdapter {
+    public static final ArsNouveauIntegration INSTANCE =
+            new ArsNouveauIntegration();
     private static final ResourceLocation MOB_JAR_ITEM =
             ResourceLocation.fromNamespaceAndPath("ars_nouveau", "mob_jar");
     private static final ResourceLocation MOB_JAR_COMPONENT =
@@ -23,24 +28,33 @@ public final class ArsNouveauIntegration {
     private ArsNouveauIntegration() {
     }
 
-    public static boolean isFilledMobJar(ItemStack stack) {
-        return isMobJar(stack) && !entityId(stack).isEmpty();
+    @Override
+    public String modId() {
+        return ModCompatibility.ARS_NOUVEAU;
     }
 
-    public static String entityId(ItemStack stack) {
+    @Override
+    public Optional<CapturedEntity> capturedEntity(ItemStack stack) {
         CompoundTag tag = entityTag(stack);
         if (tag == null) {
-            return "";
+            return Optional.empty();
         }
-        ResourceLocation entityId = ResourceLocation.tryParse(tag.getString("id"));
-        return entityId == null ? "" : entityId.toString();
+        ResourceLocation entityId =
+                ResourceLocation.tryParse(tag.getString("id"));
+        return entityId == null ? Optional.empty()
+                : Optional.of(new CapturedEntity(entityId, tag));
+    }
+
+    @Override
+    public boolean empty(ItemStack stack) {
+        return emptyMobJar(stack);
     }
 
     /**
      * Returns a defensive copy of the captured entity data, including
      * Occultism's optional spiritJob.factoryId field.
      */
-    public static CompoundTag entityTag(ItemStack stack) {
+    private static CompoundTag entityTag(ItemStack stack) {
         if (!isMobJar(stack)) {
             return null;
         }
@@ -59,8 +73,8 @@ public final class ArsNouveauIntegration {
      * Removes only the captured mob component, leaving the empty jar item in
      * place for ritual sacrifice processing.
      */
-    public static boolean emptyMobJar(ItemStack stack) {
-        if (!isFilledMobJar(stack)) {
+    private static boolean emptyMobJar(ItemStack stack) {
+        if (INSTANCE.capturedEntity(stack).isEmpty()) {
             return false;
         }
         DataComponentType<?> component = mobJarComponent();

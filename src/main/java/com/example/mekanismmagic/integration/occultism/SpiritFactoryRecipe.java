@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.occultism;
 
+import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.recipes.ItemStackToItemStackRecipe;
 import mekanism.api.recipes.basic.BasicItemStackToItemStackRecipe;
 import mekanism.api.recipes.ingredients.ItemStackIngredient;
@@ -29,7 +30,7 @@ public final class SpiritFactoryRecipe extends BasicItemStackToItemStackRecipe {
     private final ItemStack source;
 
     public SpiritFactoryRecipe(ItemStack input, ItemStack source,
-                               OccultismRecipeBridge.RecipeResult result) {
+                               MachineRecipeResult result) {
         super(ItemStackIngredient.of(new SizedIngredient(
                         Ingredient.of(input.getItem()),
                         result.inputs().isEmpty() ? 1 : result.inputs().getFirst().count())),

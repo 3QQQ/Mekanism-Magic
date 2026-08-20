@@ -5,7 +5,7 @@ import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import com.example.mekanismmagic.recipe.SpecificPentacleIngredient;
-import com.example.mekanismmagic.integration.ModCompatibility;
+import com.example.mekanismmagic.integration.IntegrationBootstrap;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -15,14 +15,16 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.crafting.IngredientType;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mod(MekanismMagic.MOD_ID)
 public final class MekanismMagic {
     public static final String MOD_ID = "mekanism_magic";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
@@ -56,34 +58,31 @@ public final class MekanismMagic {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB =
             CREATIVE_TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.mekanism_magic"))
-                    .icon(() -> new ItemStack(NativeMekanismRegistries.SPIRIT_BLOCK.asItem()))
+                    .icon(MekanismMagic::creativeIcon)
                     .displayItems((parameters, output) -> {
-                        output.accept(NativeMekanismRegistries.SPIRIT_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.asItem());
+                        acceptOptional(output, "source_generator");
+                        acceptOptional(output, "imbuement_processor");
+                        acceptOptional(output, "enchanting_apparatus_processor");
+                        acceptOptional(output, "source_conversion_module");
+                        acceptOptional(output, "spirit_processor");
+                        acceptOptional(output, "dimension_miner");
+                        acceptOptional(output, "basic_spirit_factory");
+                        acceptOptional(output, "advanced_spirit_factory");
+                        acceptOptional(output, "elite_spirit_factory");
+                        acceptOptional(output, "ultimate_spirit_factory");
                         acceptOptional(output, "absolute_spirit_factory");
                         acceptOptional(output, "supreme_spirit_factory");
                         acceptOptional(output, "cosmic_spirit_factory");
                         acceptOptional(output, "infinite_spirit_factory");
-                        output.accept(NativeMekanismRegistries.RITUAL_BLOCK.asItem());
-                        output.accept(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem());
-                        output.accept(ULTIMATE_MINI_RITUAL.get());
-                        output.accept(RITUAL_SPAWN_EGG.get());
+                        acceptOptional(output, "ritual_engine");
+                        acceptOptional(output, "mini_ritual_assembler");
+                        acceptOptional(output, "ultimate_mini_ritual");
+                        acceptOptional(output, "ritual_spawn_egg");
                     }).build());
 
     public MekanismMagic(IEventBus modBus) {
-        if (!ModCompatibility.occultismLoaded()) {
-            return;
-        }
-        ITEMS.register(modBus);
-        CREATIVE_TABS.register(modBus);
-        RECIPE_SERIALIZERS.register(modBus);
-        INGREDIENT_TYPES.register(modBus);
-        NativeMekanismRegistries.register(modBus);
-        registerMekanismExtrasIntegration(modBus);
+        IntegrationBootstrap.initialize();
+        IntegrationBootstrap.registerContent(modBus);
     }
 
     private static void acceptOptional(CreativeModeTab.Output output, String path) {
@@ -95,19 +94,19 @@ public final class MekanismMagic {
         }
     }
 
-    private static void registerMekanismExtrasIntegration(IEventBus modBus) {
-        if (!ModList.get().isLoaded("mekanism_extras")) {
-            return;
+    private static ItemStack creativeIcon() {
+        Item sourceGenerator = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        MOD_ID, "source_generator"));
+        if (sourceGenerator != net.minecraft.world.item.Items.AIR) {
+            return new ItemStack(sourceGenerator);
         }
-        try {
-            Class.forName("com.example.mekanismmagic.integration.mekextras."
-                            + "MekanismExtrasSpiritFactories")
-                    .getMethod("register", IEventBus.class)
-                    .invoke(null, modBus);
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException(
-                    "Failed to initialize Mekanism Extras spirit factories",
-                    failure);
-        }
+        Item spiritProcessor = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        MOD_ID, "spirit_processor"));
+        return spiritProcessor == net.minecraft.world.item.Items.AIR
+                ? new ItemStack(net.minecraft.world.item.Items.NETHER_STAR)
+                : new ItemStack(spiritProcessor);
     }
+
 }
