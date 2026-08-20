@@ -15,23 +15,59 @@ permissions:
 
 jobs:
   publish:
-    name: Build and publish
+    name: Publish release
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Resolve release target
+        id: target
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+        run: |
+          if [[ "$RELEASE_TAG" == *"-forge-1.20.1" ]]; then
+            echo "loader=forge" >> "$GITHUB_OUTPUT"
+            echo "game_version=1.20.1" >> "$GITHUB_OUTPUT"
+            echo "java_version=17" >> "$GITHUB_OUTPUT"
+            echo "build_from_source=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "loader=neoforge" >> "$GITHUB_OUTPUT"
+            echo "game_version=1.21.1" >> "$GITHUB_OUTPUT"
+            echo "java_version=21" >> "$GITHUB_OUTPUT"
+            echo "build_from_source=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Set up Java 21
+      - name: Checkout
+        if: steps.target.outputs.build_from_source == 'true'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+
+      - name: Set up Java
+        if: steps.target.outputs.build_from_source == 'true'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ steps.target.outputs.java_version }}
           cache: gradle
 
       - name: Build mod jar
+        if: steps.target.outputs.build_from_source == 'true'
         run: bash ./gradlew --no-daemon clean build -Pmekanism_magic.compile_mekextras=false
+
+      - name: Download Forge release asset
+        if: steps.target.outputs.build_from_source == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+        run: |
+          mkdir -p build/libs
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "*.jar" \
+            --dir build/libs
 
       - name: Publish to CurseForge
         uses: Kir-Antipov/mc-publish@v3.3
@@ -39,10 +75,10 @@ jobs:
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           files: build/libs/*.jar
-          loaders: neoforge
+          loaders: ${{ steps.target.outputs.loader }}
           game-versions: |
-            1.21.1
-          java: 21
+            ${{ steps.target.outputs.game_version }}
+          java: ${{ steps.target.outputs.java_version }}
           version: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
           name: Mekanism Magic ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
           changelog: ${{ github.event.release.body || 'Automated CurseForge publication.' }}
