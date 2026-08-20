@@ -42,6 +42,8 @@ public final class ExtraSpiritFactoryBlockEntity
                         CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_OUTPUT_SPACE,
                         CachedRecipe.OperationTracker.RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT),
                 Set.of(CachedRecipe.OperationTracker.RecipeError.NOT_ENOUGH_ENERGY));
+        ejectorComponent.setCanEject(
+                type -> level instanceof net.minecraft.server.level.ServerLevel);
         ensureProcessTickCapacity(tier.processes - 1);
     }
 

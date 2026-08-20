@@ -21,6 +21,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -32,12 +33,14 @@ import net.minecraftforge.items.ItemStackHandler;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Optional integration boundary. Occultism is deliberately not on the compile
@@ -112,6 +115,8 @@ public final class OccultismRecipeBridge {
                     Map.entry("summon_wild_greater_spirit",
                             Set.of("black", "lime", "orange", "red", "white"))
             );
+    private static final Map<RecipeManager, PentacleCatalog> PENTACLE_CATALOGS =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private OccultismRecipeBridge() {
     }
@@ -140,6 +145,17 @@ public final class OccultismRecipeBridge {
                                   List<ItemStack> materials,
                                     List<String> chalkColors,
                                     ItemStack output) {
+    }
+
+    private record PentacleDefinition(ResourceLocation recipeId,
+                                      ResourceLocation pentacleId,
+                                      List<ItemStack> materials,
+                                      Set<String> chalkColors,
+                                      ItemStack output) {
+    }
+
+    private record PentacleCatalog(long recipeFingerprint,
+                                   List<PentacleDefinition> definitions) {
     }
 
     public record RitualJeiData(ResourceLocation recipeId,
@@ -546,6 +562,8 @@ public final class OccultismRecipeBridge {
                             pentaclePath, Set.of()));
         }
         Set<String> colors = new LinkedHashSet<>();
+        Method getBlockState = findMethod(
+                pentacle, "getBlockState", BlockPos.class);
         // The all-otherstone/otherrock layer in Occultism's dense preview is
         // only the visual platform. Modonomicon's internal Y orientation can
         // differ between data and runtime, so identify and skip that layer by
@@ -556,8 +574,12 @@ public final class OccultismRecipeBridge {
             boolean hasRealMaterial = false;
             for (int z = 0; z < size.getZ(); z++) {
                 for (int x = 0; x < size.getX(); x++) {
-                    Object stateValue = invoke(pentacle, "getBlockState",
-                            new BlockPos(x, y, z)).orElse(null);
+                    BlockPos position = new BlockPos(x, y, z);
+                    Object stateValue = getBlockState == null
+                            ? invoke(pentacle, "getBlockState", position)
+                            .orElse(null)
+                            : invokeMethod(getBlockState, pentacle, position)
+                            .orElse(null);
                     if (stateValue instanceof BlockState state) {
                         ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
                         if (id != null && OCCULTISM.equals(id.getNamespace())
@@ -645,25 +667,15 @@ public final class OccultismRecipeBridge {
         if (level == null) {
             return List.of();
         }
-        RecipeType<?> type = recipeType("ritual");
-        if (type == null) {
-            return List.of();
+        List<PentacleJeiData> result = new ArrayList<>();
+        for (PentacleDefinition definition : pentacleDefinitions(level)) {
+            result.add(new PentacleJeiData(
+                    definition.pentacleId(),
+                    copyStacks(definition.materials()),
+                    List.copyOf(definition.chalkColors()),
+                    definition.output().copy()));
         }
-        Map<String, PentacleJeiData> grouped = new LinkedHashMap<>();
-        for (Recipe<?> recipeHolder : recipes(level, type)) {
-            Object recipe = recipeHolder;
-            Optional<RitualProjection> projection = projection(recipeId(recipe), recipe);
-            if (projection.isEmpty()) {
-                continue;
-            }
-            String key = projection.get().pentacleId().toString();
-            grouped.putIfAbsent(key, new PentacleJeiData(
-                    projection.get().pentacleId(),
-                    pentacleMaterialStacks(projection.get().multiblock()),
-                    List.copyOf(ritualChalkColors(recipe)),
-                    createPentacleMiniRitual(projection.get())));
-        }
-        return List.copyOf(grouped.values());
+        return List.copyOf(result);
     }
 
     public static List<RitualJeiData> ritualJeiRecipes(Level level) {
@@ -803,6 +815,8 @@ public final class OccultismRecipeBridge {
             return List.of();
         }
         Map<net.minecraft.world.item.Item, Integer> counts = new LinkedHashMap<>();
+        Method getBlockState = findMethod(
+                multiblock, "getBlockState", BlockPos.class);
         for (int y = 0; y < size.getY(); y++) {
             Map<net.minecraft.world.item.Item, Integer> layerCounts =
                     new LinkedHashMap<>();
@@ -810,8 +824,12 @@ public final class OccultismRecipeBridge {
             int possiblePlatformStone = 0;
             for (int z = 0; z < size.getZ(); z++) {
                 for (int x = 0; x < size.getX(); x++) {
-                    Object value = invoke(multiblock, "getBlockState",
-                            new BlockPos(x, y, z)).orElse(null);
+                    BlockPos position = new BlockPos(x, y, z);
+                    Object value = getBlockState == null
+                            ? invoke(multiblock, "getBlockState", position)
+                            .orElse(null)
+                            : invokeMethod(getBlockState, multiblock, position)
+                            .orElse(null);
                     if (!(value instanceof BlockState state)) {
                         continue;
                     }
@@ -900,6 +918,62 @@ public final class OccultismRecipeBridge {
         return Optional.empty();
     }
 
+    private static List<PentacleDefinition> pentacleDefinitions(Level level) {
+        if (level == null) {
+            return List.of();
+        }
+        RecipeType<?> type = recipeType("ritual");
+        if (type == null) {
+            return List.of();
+        }
+        List<Recipe<?>> ritualRecipes = recipes(level, type);
+        long fingerprint = recipeFingerprint(ritualRecipes);
+        RecipeManager recipeManager = level.getRecipeManager();
+        PentacleCatalog cached = PENTACLE_CATALOGS.get(recipeManager);
+        if (cached != null && cached.recipeFingerprint() == fingerprint) {
+            return cached.definitions();
+        }
+
+        Map<ResourceLocation, PentacleDefinition> grouped =
+                new LinkedHashMap<>();
+        for (Recipe<?> recipe : ritualRecipes) {
+            ResourceLocation id = recipeId(recipe);
+            Optional<RitualProjection> projection =
+                    projection(id, recipe);
+            if (projection.isEmpty()
+                    || grouped.containsKey(projection.get().pentacleId())) {
+                continue;
+            }
+            RitualProjection value = projection.get();
+            grouped.put(value.pentacleId(), new PentacleDefinition(
+                    id, value.pentacleId(),
+                    List.copyOf(pentacleMaterialStacks(value.multiblock())),
+                    Collections.unmodifiableSet(new LinkedHashSet<>(
+                            ritualChalkColors(value.multiblock(),
+                                    value.pentacleId().getPath()))),
+                    createPentacleMiniRitual(value)));
+        }
+        List<PentacleDefinition> definitions =
+                List.copyOf(grouped.values());
+        PENTACLE_CATALOGS.put(recipeManager,
+                new PentacleCatalog(fingerprint, definitions));
+        return definitions;
+    }
+
+    private static long recipeFingerprint(List<Recipe<?>> recipes) {
+        long fingerprint = recipes.size();
+        for (Recipe<?> recipe : recipes) {
+            fingerprint = 31 * fingerprint + recipeId(recipe).hashCode();
+            fingerprint = 31 * fingerprint
+                    + System.identityHashCode(recipe);
+        }
+        return fingerprint;
+    }
+
+    private static List<ItemStack> copyStacks(List<ItemStack> stacks) {
+        return stacks.stream().map(ItemStack::copy).toList();
+    }
+
     public static Optional<RecipeResult> findMiniRitualRecipe(Level level,
                                                               ItemStackHandler inventory) {
         List<RecipeResult> candidates =
@@ -910,34 +984,21 @@ public final class OccultismRecipeBridge {
 
     public static List<RecipeResult> findMiniRitualCandidates(
             Level level, ItemStackHandler inventory) {
-        Map<String, RecipeResult> candidates = new LinkedHashMap<>();
-        RecipeType<?> type = recipeType("ritual");
-        if (type == null) {
-            return List.of();
-        }
-        for (Recipe<?> recipeHolder : recipes(level, type)) {
-            Object recipe = recipeHolder;
-            Optional<RitualProjection> projection =
-                    projection(recipeId(recipe), recipe);
-            if (projection.isEmpty()) {
-                continue;
-            }
+        List<RecipeResult> candidates = new ArrayList<>();
+        for (PentacleDefinition definition : pentacleDefinitions(level)) {
             Optional<List<InputUse>> materialSlots = matchPentacleMaterials(
-                    pentacleMaterialStacks(projection.get().multiblock()),
-                    inventory);
+                    definition.materials(), inventory);
             if (materialSlots.isEmpty()) {
                 continue;
             }
-            if (!matchesRitualProjectionChalk(projection.get(), inventory)) {
+            if (!matchesChalkColors(definition.chalkColors(), inventory)) {
                 continue;
             }
-            RecipeResult candidate = new RecipeResult(recipeId(recipe),
-                    createPentacleMiniRitual(projection.get()), 100,
-                    new ArrayList<>(materialSlots.get()), -1, -1);
-            candidates.putIfAbsent(
-                    projection.get().pentacleId().toString(), candidate);
+            candidates.add(new RecipeResult(definition.recipeId(),
+                    definition.output().copy(), 100,
+                    new ArrayList<>(materialSlots.get()), -1, -1));
         }
-        return List.copyOf(candidates.values());
+        return List.copyOf(candidates);
     }
 
     private static Optional<List<InputUse>> matchPentacleMaterials(
@@ -1661,6 +1722,19 @@ public final class OccultismRecipeBridge {
             return target.getClass().getMethod(name, parameterTypes);
         } catch (NoSuchMethodException ignored) {
             return null;
+        }
+    }
+
+    private static Optional<Object> invokeMethod(Method method,
+                                                 Object target,
+                                                 Object... args) {
+        if (method == null || target == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.ofNullable(method.invoke(target, args));
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return Optional.empty();
         }
     }
 

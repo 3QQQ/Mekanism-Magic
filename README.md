@@ -63,7 +63,7 @@ E:\IdeaProjects\Mekanism Magic Forge 1.20.1
 
 Forge 分支已验证 Mekanism Generators、Mekanism Extras 1.5.0、MoreMachine 1.2.1、Ars Nouveau 4.12.7、Occultism 和 JEI 的联合加载。
 
-## 正式版 1.0.0
+## 修复版 1.0.1
 
 Forge 1.20.1 分支已完成实际世界测试，包括机器放置、GUI、槽位显隐、配方处理、
 维度矿工输出、工作台终极微缩仪式、侧面配置以及速度/能量升级。
@@ -87,7 +87,7 @@ Forge 1.20.1 分支已完成实际世界测试，包括机器放置、GUI、槽�
 构建产物位于：
 
 ```text
-build/libs/mekanism_magic-1.0.0-forge-1.20.1.jar
+build/libs/mekanism_magic-1.0.1-forge-1.20.1.jar
 ```
 
 请使用与 Minecraft/加载器版本匹配的分支和 JAR；不要将 NeoForge 1.21.1 构建产物放入 Forge 1.20.1。

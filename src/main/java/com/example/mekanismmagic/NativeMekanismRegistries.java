@@ -326,9 +326,12 @@ public final class NativeMekanismRegistries {
                 }
             };
             return (Attribute) constructor.newInstance(target);
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException(
-                    "Unable to attach Mekanism Extras factory upgrade", failure);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            MekanismMagic.LOGGER.warn(
+                    "Mekanism Extras factory upgrade is unavailable; "
+                            + "continuing with the four base factory tiers",
+                    failure);
+            return null;
         }
     }
 

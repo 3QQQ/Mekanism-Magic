@@ -15,10 +15,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mod(MekanismMagic.MOD_ID)
 public final class MekanismMagic {
     public static final String MOD_ID = "mekanism_magic";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
@@ -86,10 +89,9 @@ public final class MekanismMagic {
                             + "MekanismExtrasSpiritFactories")
                     .getMethod("register", IEventBus.class)
                     .invoke(null, modBus);
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException(
-                    "Failed to initialize Mekanism Extras spirit factories",
-                    failure);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            LOGGER.warn("Skipping optional Mekanism Extras spirit factories "
+                    + "because their runtime API is incompatible", failure);
         }
     }
 }

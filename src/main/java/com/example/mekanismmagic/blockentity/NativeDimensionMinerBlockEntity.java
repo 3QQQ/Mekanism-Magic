@@ -92,7 +92,9 @@ public final class NativeDimensionMinerBlockEntity
     @Override
     protected void onUpdateServer() {
         nativeBaseUpdate();
-        tickEjectorAdditional(10);
+        if (hasStoredOutput()) {
+            tickEjectorAdditional(10);
+        }
         setActive(false);
         if (level == null) {
             return;
@@ -189,6 +191,18 @@ public final class NativeDimensionMinerBlockEntity
         return true;
     }
 
+    private boolean hasStoredOutput() {
+        if (minerOutputs == null) {
+            return false;
+        }
+        for (BasicInventorySlot slot : minerOutputs) {
+            if (!slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean insertOutputs(List<ItemStack> stacks) {
         for (ItemStack stack : stacks) {
             if (!insertOutput(stack)) {
@@ -278,6 +292,46 @@ public final class NativeDimensionMinerBlockEntity
         pendingInput = ItemStack.EMPTY;
         progress = 0;
         progressRequired = 1;
+    }
+
+    @Override
+    public void saveAdditional(net.minecraft.nbt.CompoundTag tag) {
+        super.saveAdditional(tag);
+        if (!pendingInput.isEmpty()) {
+            tag.put("miner_pending_input",
+                    pendingInput.save(new net.minecraft.nbt.CompoundTag()));
+        }
+        net.minecraft.nbt.ListTag outputs = new net.minecraft.nbt.ListTag();
+        for (ItemStack output : pendingOutputs) {
+            outputs.add(output.save(new net.minecraft.nbt.CompoundTag()));
+        }
+        if (!outputs.isEmpty()) {
+            tag.put("miner_pending_outputs", outputs);
+        }
+    }
+
+    @Override
+    public void load(net.minecraft.nbt.CompoundTag tag) {
+        super.load(tag);
+        pendingInput = tag.contains("miner_pending_input",
+                net.minecraft.nbt.Tag.TAG_COMPOUND)
+                ? ItemStack.of(tag.getCompound("miner_pending_input"))
+                : ItemStack.EMPTY;
+        pendingOutputs.clear();
+        net.minecraft.nbt.ListTag outputs = tag.getList(
+                "miner_pending_outputs",
+                net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int index = 0; index < outputs.size(); index++) {
+            ItemStack output = ItemStack.of(outputs.getCompound(index));
+            if (!output.isEmpty()) {
+                pendingOutputs.add(output);
+            }
+        }
+        if (pendingOutputs.isEmpty()) {
+            pendingInput = ItemStack.EMPTY;
+            progress = 0;
+            progressRequired = 1;
+        }
     }
 }
 

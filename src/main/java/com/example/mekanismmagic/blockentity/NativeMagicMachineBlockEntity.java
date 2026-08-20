@@ -95,6 +95,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         configComponent = new TileComponentConfig(this,
                 TransmissionType.ITEM, TransmissionType.ENERGY);
         ejectorComponent = new TileComponentEjector(this)
+                .setCanEject(type -> level instanceof ServerLevel)
                 .setOutputData(configComponent, TransmissionType.ITEM);
     }
 

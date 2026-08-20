@@ -1,0 +1,29 @@
+{
+  "replace": false,
+  "values": [
+    "mekanism_magic:spirit_processor",
+    "mekanism_magic:dimension_miner",
+    "mekanism_magic:basic_spirit_factory",
+    "mekanism_magic:advanced_spirit_factory",
+    "mekanism_magic:elite_spirit_factory",
+    "mekanism_magic:ultimate_spirit_factory",
+    {
+      "id": "mekanism_magic:absolute_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:supreme_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:cosmic_spirit_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:infinite_spirit_factory",
+      "required": false
+    },
+    "mekanism_magic:ritual_engine",
+    "mekanism_magic:mini_ritual_assembler"
+  ]
+}
