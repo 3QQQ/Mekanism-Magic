@@ -17,6 +17,8 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories {
     maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
     maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
+    maven { name = 'ModMaven'; url = uri('https://modmaven.dev') }
+    maven { name = 'Jared'; url = uri('https://maven.blamejared.com') }
     mavenCentral()
 }
 
@@ -71,8 +73,8 @@ def mekmmRuntimeEnabled = compatRuntimeEnabled ||
 def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
-    compileOnly files("libs/Mekanism-1.21.1-${mekanism_version}.jar")
-    compileOnly files("run/mods/jei-1.21.1-neoforge-${jei_version}.jar")
+    compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
     compileOnly files(
             "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar",
             'libs/mekanism_extras-1.21.1-1.4.0.jar',
