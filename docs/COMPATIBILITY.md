@@ -16,6 +16,18 @@ Occultism 是本模组的主可选集成目标。未加载 Occultism 时，Mekan
 键并将旧存档内容替换为空气/默认物品。这是存档缺少依赖的正常提示，不代表本模组
 在无 Occultism 时注册了内容。
 
+## CurseForge 自动发布
+
+项目使用 `.github/workflows/publish-curseforge.yml` 通过 `mc-publish` 发布 CurseForge。
+首次启用前，需要在 GitHub 仓库设置：
+
+* Repository variable：`CURSEFORGE_PROJECT_ID`，填写 CurseForge 项目数字 ID。
+* Repository secret：`CURSEFORGE_TOKEN`，填写 CurseForge API Token。
+
+发布工作流默认只处理正式 GitHub Release；手动运行 `workflow_dispatch` 可用于测试。
+版本号来自 Release tag，上传文件来自 `build/libs/*.jar`。工作流使用 Java 21、
+NeoForge loader 和 Minecraft 1.21.1。
+
 本项目固定 Minecraft `1.21.1`，以较低依赖版本作为编译基线：
 
 * NeoForge `21.1.194` 或更高版本
