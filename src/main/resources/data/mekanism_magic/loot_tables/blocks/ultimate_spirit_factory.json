@@ -1,5 +1,4 @@
-{
-  "type": "minecraft:block",
+{"forge:conditions":[{"type":"forge:mod_loaded","modid":"occultism"}],"type": "minecraft:block",
   "pools": [
     {
       "rolls": 1,

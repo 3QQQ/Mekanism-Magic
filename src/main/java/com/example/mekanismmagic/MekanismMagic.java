@@ -67,6 +67,9 @@ public final class MekanismMagic {
 
     public MekanismMagic() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         ITEMS.register(modBus);
         CREATIVE_TABS.register(modBus);
         RECIPE_SERIALIZERS.register(modBus);

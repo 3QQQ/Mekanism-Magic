@@ -1,5 +1,4 @@
-{
-  "type": "minecraft:crafting_shaped",
+{"forge:conditions":[{"type":"forge:mod_loaded","modid":"occultism"}],"type": "minecraft:crafting_shaped",
   "pattern": [
     "CSC",
     "IAI",

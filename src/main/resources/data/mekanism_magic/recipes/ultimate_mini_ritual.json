@@ -1,4 +1,3 @@
-{
-  "type": "mekanism_magic:ultimate_mini_ritual",
+{"forge:conditions":[{"type":"forge:mod_loaded","modid":"occultism"}],"type": "mekanism_magic:ultimate_mini_ritual",
   "category": "misc"
 }

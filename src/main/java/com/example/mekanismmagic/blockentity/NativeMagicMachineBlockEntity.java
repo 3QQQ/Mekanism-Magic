@@ -5,6 +5,7 @@ import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
+import mekanism.api.RelativeSide;
 import mekanism.api.Upgrade;
 import mekanism.api.math.FloatingLong;
 import mekanism.api.providers.IBlockProvider;
@@ -33,6 +34,7 @@ import mekanism.common.tile.interfaces.IUpgradeTile;
 import mekanism.common.upgrade.IUpgradeData;
 import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
@@ -150,6 +152,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                     new InventorySlotInfo(true, true,
                             new java.util.ArrayList<>(extras)));
         }
+        for (RelativeSide side : RelativeSide.values()) {
+            itemConfig.setDataType(DataType.INPUT_OUTPUT, side);
+        }
+        itemConfig.setEjecting(true);
     }
 
     protected final <SLOT extends IInventorySlot> SLOT registerLogicalSlot(
@@ -179,6 +185,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         super.onUpdateServer();
         if (energySlot != null) {
             energySlot.fillContainerOrConvert();
+        }
+        if (ejectorComponent != null && level instanceof ServerLevel) {
+            ejectorComponent.tickServer();
         }
     }
 

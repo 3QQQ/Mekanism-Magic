@@ -1,5 +1,4 @@
-{
-  "type": "mekanism:mek_data",
+{"forge:conditions":[{"type":"forge:mod_loaded","modid":"occultism"}],"type": "mekanism:mek_data",
   "category": "misc",
   "key": {
     "A": {"tag": "mekanism:alloys/reinforced"},

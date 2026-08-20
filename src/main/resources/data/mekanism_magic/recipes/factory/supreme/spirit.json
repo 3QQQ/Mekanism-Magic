@@ -1,5 +1,5 @@
 {
-  "forge:conditions": [{"type": "forge:mod_loaded", "modid": "mekanism_extras"}],
+  "forge:conditions": [{"type":"forge:mod_loaded","modid":"occultism"},{"type": "forge:mod_loaded", "modid": "mekanism_extras"}],
   "type": "mekanism:mek_data",
   "category": "misc",
   "pattern": ["ACA", "IPI", "ACA"],

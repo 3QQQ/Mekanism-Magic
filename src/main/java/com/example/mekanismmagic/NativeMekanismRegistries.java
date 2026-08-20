@@ -182,40 +182,67 @@ public final class NativeMekanismRegistries {
                             .requiresCorrectToolForDrops()));
 
     public static final TileEntityTypeRegistryObject<NativeSpiritProcessorBlockEntity> SPIRIT_TILE =
-            TILES.register(SPIRIT_BLOCK, NativeSpiritProcessorBlockEntity::new);
+            TILES.builder(SPIRIT_BLOCK, NativeSpiritProcessorBlockEntity::new)
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeDimensionMinerBlockEntity>
-            DIMENSION_MINER_TILE = TILES.register(DIMENSION_MINER_BLOCK,
-                    NativeDimensionMinerBlockEntity::new);
+            DIMENSION_MINER_TILE = TILES.builder(DIMENSION_MINER_BLOCK,
+                    NativeDimensionMinerBlockEntity::new)
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            BASIC_SPIRIT_FACTORY_TILE = TILES.register(BASIC_SPIRIT_FACTORY_BLOCK,
+            BASIC_SPIRIT_FACTORY_TILE = TILES.builder(BASIC_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            BASIC_SPIRIT_FACTORY_BLOCK, pos, state));
+                            BASIC_SPIRIT_FACTORY_BLOCK, pos, state))
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ADVANCED_SPIRIT_FACTORY_TILE = TILES.register(ADVANCED_SPIRIT_FACTORY_BLOCK,
+            ADVANCED_SPIRIT_FACTORY_TILE = TILES.builder(ADVANCED_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ADVANCED_SPIRIT_FACTORY_BLOCK, pos, state));
+                            ADVANCED_SPIRIT_FACTORY_BLOCK, pos, state))
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ELITE_SPIRIT_FACTORY_TILE = TILES.register(ELITE_SPIRIT_FACTORY_BLOCK,
+            ELITE_SPIRIT_FACTORY_TILE = TILES.builder(ELITE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ELITE_SPIRIT_FACTORY_BLOCK, pos, state));
+                            ELITE_SPIRIT_FACTORY_BLOCK, pos, state))
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeSpiritFactoryBlockEntity>
-            ULTIMATE_SPIRIT_FACTORY_TILE = TILES.register(ULTIMATE_SPIRIT_FACTORY_BLOCK,
+            ULTIMATE_SPIRIT_FACTORY_TILE = TILES.builder(ULTIMATE_SPIRIT_FACTORY_BLOCK,
                     (pos, state) -> new NativeSpiritFactoryBlockEntity(
-                            ULTIMATE_SPIRIT_FACTORY_BLOCK, pos, state));
+                            ULTIMATE_SPIRIT_FACTORY_BLOCK, pos, state))
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<NativeRitualEngineBlockEntity> RITUAL_TILE =
-            TILES.register(RITUAL_BLOCK, NativeRitualEngineBlockEntity::new);
+            TILES.builder(RITUAL_BLOCK, NativeRitualEngineBlockEntity::new)
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
     public static final TileEntityTypeRegistryObject<
             NativeMiniRitualAssemblerBlockEntity> MINI_RITUAL_ASSEMBLER_TILE =
-            TILES.register(MINI_RITUAL_ASSEMBLER_BLOCK,
-                    NativeMiniRitualAssemblerBlockEntity::new);
+            TILES.builder(MINI_RITUAL_ASSEMBLER_BLOCK,
+                    NativeMiniRitualAssemblerBlockEntity::new)
+                    .serverTicker(NativeMekanismRegistries::tickServer)
+                    .build();
 
     private NativeMekanismRegistries() {
     }
 
     public static void register(IEventBus bus) {
+        if (!ModCompatibility.occultismLoaded()) {
+            return;
+        }
         BLOCKS.register(bus);
         TILES.register(bus);
         CONTAINERS.register(bus);
+    }
+
+    private static void tickServer(net.minecraft.world.level.Level level,
+                                   net.minecraft.core.BlockPos pos,
+                                   net.minecraft.world.level.block.state.BlockState state,
+                                   mekanism.common.tile.base.TileEntityMekanism tile) {
+        mekanism.common.tile.base.TileEntityMekanism.tickServer(
+                level, pos, state, tile);
     }
 
     private static BlockRegistryObject<?, ?> basicSpiritFactoryBlock() {

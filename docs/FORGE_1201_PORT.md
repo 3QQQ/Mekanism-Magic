@@ -25,6 +25,9 @@
 * 已同步维度矿工使用 Occultism 维度矿井合成、256 堆叠输出、额外输出吞吐和独立矿工界面布局。
 * 已同步机器工作动画、客户端进度同步、工厂逐进程时长同步、标准 Mekanism 自动输入输出及能量槽充能。
 * 已同步维度矿工和高阶魔灵工厂的专用纹理资源。
+* 已同步 1.21.1 的可选 Occultism 门控；关闭 Occultism 时不会注册本模组内容。
+* 已同步 Forge 1.20.1 的显式服务端方块实体 ticker、标准侧面输入输出和自动弹出。
+* 已新增 `docs/ARCHITECTURE.md`，整理通用机器框架与各模组集成边界。
 
 ## 已验证
 
@@ -35,6 +38,8 @@
 * `gradlew runServer` 能完成专用服务端模组加载并到达 EULA 检查。
 * Mekanism、Generators、Extras、MoreMachine、Occultism、Ars Nouveau 和 JEI 全套开发环境可共同加载到主菜单。
 * 迁移后的完整客户端启动未出现 Mekanism Magic 专用崩溃或模型加载错误。
+* `gradlew runClient "-Pmekanism_magic.occultism_runtime=false"` 可在无 Occultism
+  运行依赖时完成基础客户端加载。
 
 ## 尚未完成
 
