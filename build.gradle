@@ -99,6 +99,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('jar', Jar).configure {
+    archiveFileName = "${mod_id}-${mod_version}-forge-${minecraft_version}.jar"
     manifest {
         attributes(
                 'Implementation-Title': mod_name,
@@ -109,6 +110,10 @@ tasks.named('jar', Jar).configure {
     from('LICENSE') {
         into 'META-INF'
     }
+}
+
+tasks.named('reobfJar', Jar).configure {
+    archiveFileName = "${mod_id}-${mod_version}-forge-${minecraft_version}.jar"
 }
 
 processResources {

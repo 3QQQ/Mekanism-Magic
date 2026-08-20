@@ -38,5 +38,5 @@ JEI、Ars Nouveau、Mekanism Extras 与 Mekanism: MoreMachine 为可选兼容目
 ## 构建产物
 
 ```text
-build/libs/mekanism_magic-1.0.0.jar
+build/libs/mekanism_magic-1.0.0-forge-1.20.1.jar
 ```

@@ -87,7 +87,7 @@ Forge 1.20.1 分支已完成实际世界测试，包括机器放置、GUI、槽�
 构建产物位于：
 
 ```text
-build/libs/mekanism_magic-1.0.0.jar
+build/libs/mekanism_magic-1.0.0-forge-1.20.1.jar
 ```
 
 请使用与 Minecraft/加载器版本匹配的分支和 JAR；不要将 NeoForge 1.21.1 构建产物放入 Forge 1.20.1。
