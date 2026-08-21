@@ -53,6 +53,11 @@ public final class SourceGeneratorBlockEntity
     }
 
     @Override
+    public boolean mekanismMagicSupportsPatternAutomation() {
+        return false;
+    }
+
+    @Override
     protected int sourceMaxReceive() {
         // Prevent network feedback: raw Source is taken only from an actual
         // nearby Ars Nouveau sourcelink.

@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.integration.common.recipe.InputUse;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
@@ -24,6 +25,7 @@ import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentUpgrade;
+import mekanism.common.tile.component.config.ConfigInfo;
 import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.component.config.slot.InventorySlotInfo;
 import mekanism.common.lib.transmitter.TransmissionType;
@@ -51,7 +53,12 @@ import java.util.Optional;
  * components are owned by this base.
  */
 public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
-        implements ISideConfiguration, IUpgradeTile {
+        implements ISideConfiguration, IUpgradeTile,
+        IMekanismMagicAutomation {
+    // Mekanism's ejector has an internal ten-tick cooldown. Eleven calls
+    // provide one complete output scan per game tick, but only while an
+    // output slot actually contains an item.
+    private static final int EJECTOR_CALLS_PER_TICK = 11;
     public static final int INPUT_SLOTS = 16;
     public static final int OUTPUT_SLOT = 16;
     public static final int CONTAINMENT_SLOT = 17;
@@ -70,6 +77,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected EnergyInventorySlot energySlot;
     protected BasicInventorySlot containmentSlot;
     private Map<Integer, IInventorySlot> logicalSlots;
+    private List<IInventorySlot> configuredInputSlots;
+    // Populated while TileEntityMekanism's constructor builds the inventory.
+    // Do not use a field initializer here: it would run afterwards and erase
+    // the output slots registered during the superclass construction.
+    private List<IInventorySlot> configuredOutputSlots;
     protected int progress;
     protected int progressRequired = 1;
     protected String activeRecipe = "";
@@ -132,19 +144,18 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 value -> progressRequired = Math.max(1, value)));
     }
 
-    protected final void setupNativeItemIO(
+    protected final ConfigInfo setupNativeItemIO(
             List<? extends IInventorySlot> inputs,
             List<? extends IInventorySlot> outputs,
             List<? extends IInventorySlot> extras) {
         List<IInventorySlot> inputSlots = new java.util.ArrayList<>(inputs);
         List<IInventorySlot> outputSlots = new java.util.ArrayList<>(outputs);
+        configuredInputSlots = List.copyOf(inputSlots);
+        configuredOutputSlots = List.copyOf(outputSlots);
         var itemConfig = configComponent.setupItemIOConfig(
                 inputSlots, outputSlots, energySlot, false);
-        if (!extras.isEmpty()) {
-            itemConfig.addSlotInfo(DataType.EXTRA,
-                    new InventorySlotInfo(true, true,
-                            new java.util.ArrayList<>(extras)));
-        }
+        addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
+                true, true, extras);
         // Match Mekanism's normal machine behavior for newly placed machines:
         // every item side exposes the configured inventory and automatic
         // ejection is enabled. Players can still change these modes through
@@ -153,6 +164,18 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             itemConfig.setDataType(DataType.INPUT_OUTPUT, side);
         }
         itemConfig.setEjecting(true);
+        return itemConfig;
+    }
+
+    protected final void addNativeItemSlotInfo(
+            ConfigInfo itemConfig, DataType type,
+            boolean canInput, boolean canOutput,
+            List<? extends IInventorySlot> slots) {
+        if (itemConfig != null && !slots.isEmpty()) {
+            itemConfig.addSlotInfo(type,
+                    new InventorySlotInfo(canInput, canOutput,
+                            new java.util.ArrayList<>(slots)));
+        }
     }
 
     protected final <SLOT extends IInventorySlot> SLOT registerLogicalSlot(
@@ -232,6 +255,34 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     @Override
+    public net.minecraft.resources.ResourceLocation mekanismMagicMachineId() {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(
+                getBlockState().getBlock());
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternInputs() {
+        return configuredInputSlots == null ? List.of()
+                : configuredInputSlots;
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternOutputs() {
+        return configuredOutputSlots == null ? List.of()
+                : configuredOutputSlots;
+    }
+
+    @Override
+    public IEnergyContainer mekanismMagicEnergyContainer() {
+        return energyContainer;
+    }
+
+    @Override
+    public boolean mekanismMagicIsBusy() {
+        return progress > 0;
+    }
+
+    @Override
     public void recalculateUpgrades(Upgrade upgrade) {
         if (energyContainer == null) {
             return;
@@ -304,6 +355,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (level == null) {
             return changed;
         }
+        if (!canFunction()) {
+            return changed;
+        }
         ItemStackHandler snapshot = snapshotInventory();
         Optional<MachineRecipeResult> found = findRecipe(snapshot);
         if (found.isEmpty()) {
@@ -372,10 +426,25 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (energySlot != null) {
             energySlot.fillContainerOrConvert();
         }
-        if (ejectorComponent != null && level instanceof ServerLevel) {
-            ejectorComponent.tickServer();
+        if (ejectorComponent != null && level instanceof ServerLevel
+                && hasEjectableItem()) {
+            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
+                ejectorComponent.tickServer();
+            }
         }
         return changed;
+    }
+
+    private boolean hasEjectableItem() {
+        if (configuredOutputSlots == null) {
+            return false;
+        }
+        for (IInventorySlot slot : configuredOutputSlots) {
+            if (!slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected void onRecipeFinished(MachineRecipeResult recipe) {

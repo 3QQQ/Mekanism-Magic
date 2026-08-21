@@ -90,15 +90,25 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     @Override
+    public List<mekanism.api.inventory.IInventorySlot>
+    mekanismMagicPatternInputs() {
+        return List.of();
+    }
+
+    @Override
+    public List<mekanism.api.inventory.IInventorySlot>
+    mekanismMagicPersistentInputs() {
+        return inputSlot == null ? List.of() : List.of(inputSlot);
+    }
+
+    @Override
+    public boolean mekanismMagicSupportsPatternAutomation() {
+        return false;
+    }
+
+    @Override
     protected boolean onUpdateServer() {
         boolean changed = nativeBaseUpdate();
-        // Mekanism's item ejector intentionally throttles normal machines to
-        // one transfer roughly every ten ticks. The dimensional miner can
-        // produce many output stacks per cycle, so spend the remaining calls
-        // in this tick to keep its output bus from lagging behind production.
-        if (hasStoredOutput()) {
-            tickEjectorAdditional(10);
-        }
         setActive(false);
         if (level == null) {
             return changed;

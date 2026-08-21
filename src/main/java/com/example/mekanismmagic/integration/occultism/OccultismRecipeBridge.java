@@ -92,6 +92,14 @@ public final class OccultismRecipeBridge {
             "lime", "magenta", "orange", "pink",
             "purple", "red", "white", "gold"
     );
+    private static final List<net.minecraft.world.item.Item>
+            DUPLICATE_RECIPE_MARKERS = List.of(
+            Items.WHITE_DYE, Items.ORANGE_DYE, Items.MAGENTA_DYE,
+            Items.LIGHT_BLUE_DYE, Items.YELLOW_DYE, Items.LIME_DYE,
+            Items.PINK_DYE, Items.GRAY_DYE, Items.LIGHT_GRAY_DYE,
+            Items.CYAN_DYE, Items.PURPLE_DYE, Items.BLUE_DYE,
+            Items.BROWN_DYE, Items.GREEN_DYE, Items.RED_DYE,
+            Items.BLACK_DYE);
     private static final Map<String, Set<String>> DEFAULT_PENTACLE_CHALK_COLORS =
             Map.ofEntries(
                     Map.entry("contact_eldritch_spirit",
@@ -658,7 +666,7 @@ public final class OccultismRecipeBridge {
                     List.copyOf(ritualIngredients),
                     activation,
                     sacrificeExamples(recipe),
-                    createPentacleMiniRitual(projection.get()),
+                    createMiniRitual(projection.get()),
                     output));
         }
         return result;
@@ -882,10 +890,42 @@ public final class OccultismRecipeBridge {
                     createPentacleMiniRitual(value)));
         }
         List<PentacleDefinition> definitions =
-                List.copyOf(grouped.values());
+                addUniqueRecipeMarkers(List.copyOf(grouped.values()));
         PENTACLE_CATALOGS.put(recipeManager,
                 new PentacleCatalog(fingerprint, definitions));
         return definitions;
+    }
+
+    private static List<PentacleDefinition> addUniqueRecipeMarkers(
+            List<PentacleDefinition> definitions) {
+        List<PentacleDefinition> sorted = new ArrayList<>(definitions);
+        sorted.sort(java.util.Comparator.comparing(
+                definition -> definition.pentacleId().toString()));
+        Map<ResourceLocation, ItemStack> markers = new LinkedHashMap<>();
+        for (int index = 0; index < sorted.size(); index++) {
+            net.minecraft.world.item.Item marker =
+                    DUPLICATE_RECIPE_MARKERS.get(
+                            index % DUPLICATE_RECIPE_MARKERS.size());
+            int count = index / DUPLICATE_RECIPE_MARKERS.size() + 1;
+            markers.put(sorted.get(index).pentacleId(),
+                    new ItemStack(marker, count));
+        }
+        List<PentacleDefinition> differentiated =
+                new ArrayList<>(definitions.size());
+        for (PentacleDefinition definition : definitions) {
+            ItemStack marker = markers.get(definition.pentacleId());
+            List<ItemStack> materials =
+                    new ArrayList<>(definition.materials().size() + 1);
+            // Put the marker first so it remains visible even for large JEI
+            // recipes that fill all sixteen displayed input positions.
+            materials.add(marker);
+            materials.addAll(copyStacks(definition.materials()));
+            differentiated.add(new PentacleDefinition(
+                    definition.recipeId(), definition.pentacleId(),
+                    List.copyOf(materials), definition.chalkColors(),
+                    definition.output()));
+        }
+        return List.copyOf(differentiated);
     }
 
     private static long recipeFingerprint(
@@ -927,6 +967,30 @@ public final class OccultismRecipeBridge {
                     100, materialSlots.get(), -1));
         }
         return List.copyOf(candidates);
+    }
+
+    /**
+     * Returns the stable pentacle catalog used by the mini-ritual assembler.
+     * Unlike recipe matching, this does not require materials or chalk to be
+     * present, so a machine can be configured before it is supplied.
+     */
+    public static List<ResourceLocation> miniRitualPentacleIds(Level level) {
+        return pentacleDefinitions(level).stream()
+                .map(PentacleDefinition::pentacleId)
+                .toList();
+    }
+
+    public static Optional<ResourceLocation> miniRitualPentacle(ItemStack stack) {
+        if (stack.isEmpty() || stack.getItem() != MekanismMagic.MINI_RITUAL.get()) {
+            return Optional.empty();
+        }
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data == null) {
+            return Optional.empty();
+        }
+        String pentacle = data.copyTag().getString("pentacle");
+        ResourceLocation id = ResourceLocation.tryParse(pentacle);
+        return id == null ? Optional.empty() : Optional.of(id);
     }
 
     private static Optional<List<InputUse>> matchPentacleMaterials(
@@ -974,9 +1038,14 @@ public final class OccultismRecipeBridge {
     }
 
     public static ItemStack createPentacleMiniRitual(RitualProjection projection) {
+        return createPentacleMiniRitual(projection.pentacleId());
+    }
+
+    public static ItemStack createPentacleMiniRitual(
+            ResourceLocation pentacleId) {
         ItemStack output = new ItemStack(MekanismMagic.MINI_RITUAL.get());
         CustomData.update(DataComponents.CUSTOM_DATA, output, tag ->
-                tag.putString("pentacle", projection.pentacleId().toString()));
+                tag.putString("pentacle", pentacleId.toString()));
         return output;
     }
 

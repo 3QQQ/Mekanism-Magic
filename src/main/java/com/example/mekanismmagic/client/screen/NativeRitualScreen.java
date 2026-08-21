@@ -67,8 +67,13 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         super.addSlots();
         dictionaryGuiSlots.clear();
         for (GuiEventListener child : children()) {
-            if (child instanceof GuiSlot guiSlot && isDictionaryGuiSlot(guiSlot)) {
-                dictionaryGuiSlots.add(guiSlot);
+            if (child instanceof GuiSlot guiSlot) {
+                if (isDictionaryGuiSlot(guiSlot)) {
+                    dictionaryGuiSlots.add(guiSlot);
+                } else if (isSacrificeGuiSlot(guiSlot)) {
+                    guiSlot.hover(slot -> List.of(Component.translatable(
+                            "gui.mekanism_magic.sacrifice")));
+                }
             }
         }
         updateDictionarySlotVisibility();
@@ -130,5 +135,11 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
         return x == 240 && y == 104;
+    }
+
+    private static boolean isSacrificeGuiSlot(GuiSlot slot) {
+        int x = slot.getRelativeX() + 1;
+        int y = slot.getRelativeY() + 1;
+        return x == 20 && y == 85;
     }
 }

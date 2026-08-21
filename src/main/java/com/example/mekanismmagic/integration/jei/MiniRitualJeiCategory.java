@@ -5,6 +5,8 @@ import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.api.recipe.IFocusGroup;
+import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -26,12 +28,15 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder,
                           OccultismRecipeBridge.PentacleJeiData recipe,
-                          mezz.jei.api.recipe.IFocusGroup focuses) {
+                          IFocusGroup focuses) {
         for (int index = 0; index < Math.min(16, recipe.materials().size()); index++) {
             int row = index / 8;
             int column = index % 8;
-            builder.addInputSlot(4 + column * SLOT_SPACING, 4 + row * SLOT_SPACING)
-                    .setStandardSlotBackground()
+            JeiSlotMarker.mark(
+                            builder.addInputSlot(4 + column * SLOT_SPACING,
+                                            4 + row * SLOT_SPACING)
+                                    .setStandardSlotBackground(),
+                            JeiSlotMarker.Kind.INPUT, "input_" + index)
                     .addItemStack(recipe.materials().get(index));
         }
 
@@ -43,13 +48,27 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
                             "occultism", "chalk_" + color)));
             int row = index / 8;
             int column = index % 8;
-            builder.addInputSlot(4 + column * SLOT_SPACING,
-                            46 + row * SLOT_SPACING)
-                    .setStandardSlotBackground()
+            JeiSlotMarker.mark(
+                            builder.addSlot(RecipeIngredientRole.CATALYST,
+                                            4 + column * SLOT_SPACING,
+                                            46 + row * SLOT_SPACING)
+                                    .setStandardSlotBackground(),
+                            JeiSlotMarker.Kind.CHALK, "chalk_" + index)
                     .addItemStack(chalk);
         }
-        builder.addOutputSlot(148, 31)
-                .setOutputSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addOutputSlot(148, 31)
+                                .setOutputSlotBackground(),
+                        JeiSlotMarker.Kind.OUTPUT, "output")
                 .addItemStack(recipe.output());
+        builder.addInvisibleIngredients(RecipeIngredientRole.OUTPUT)
+                .addItemStacks(MekanismMagicJeiPlugin.boundRitualSelectors(
+                        recipe.pentacleId()));
+    }
+
+    @Override
+    public ResourceLocation getRegistryName(
+            OccultismRecipeBridge.PentacleJeiData recipe) {
+        return recipe.pentacleId();
     }
 }

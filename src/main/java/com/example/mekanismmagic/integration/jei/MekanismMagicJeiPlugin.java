@@ -7,10 +7,13 @@ import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.registration.IExtraIngredientRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.ISubtypeRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
@@ -34,11 +37,36 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             ULTIMATE_MINI_RITUAL_TYPE = RecipeType.create(
                     MekanismMagic.MOD_ID, "ultimate_mini_ritual",
                     UltimateMiniRitualRecipe.class);
+    private static volatile List<OccultismRecipeBridge.RitualJeiData>
+            registeredRituals = List.of();
 
     @Override
     public ResourceLocation getPluginUid() {
         return ResourceLocation.fromNamespaceAndPath(
                 MekanismMagic.MOD_ID, "jei_plugin");
+    }
+
+    @Override
+    public void registerItemSubtypes(ISubtypeRegistration registration) {
+        if (ModCompatibility.occultismLoaded()) {
+            registration.registerSubtypeInterpreter(
+                    MekanismMagic.MINI_RITUAL.get(),
+                    MiniRitualSubtypeInterpreter.INSTANCE);
+        }
+    }
+
+    @Override
+    public void registerExtraIngredients(IExtraIngredientRegistration registration) {
+        if (!ModCompatibility.occultismLoaded()
+                || Minecraft.getInstance().level == null) {
+            return;
+        }
+        registration.addExtraItemStacks(
+                OccultismRecipeBridge.pentacleJeiRecipes(
+                                Minecraft.getInstance().level).stream()
+                        .map(OccultismRecipeBridge.PentacleJeiData::output)
+                        .map(net.minecraft.world.item.ItemStack::copy)
+                        .toList());
     }
 
     @Override
@@ -64,10 +92,25 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             List<OccultismRecipeBridge.PentacleJeiData> pentacles =
                     OccultismRecipeBridge.pentacleJeiRecipes(
                             Minecraft.getInstance().level);
-            registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
-            registration.addRecipes(RITUAL_TYPE,
+            registration.addItemStackInfo(
+                    pentacles.stream()
+                            .map(OccultismRecipeBridge.PentacleJeiData::output)
+                            .map(net.minecraft.world.item.ItemStack::copy)
+                            .toList(),
+                    net.minecraft.network.chat.Component.translatable(
+                            "jei.mekanism_magic.mini_ritual.info"));
+            registration.getIngredientManager().addIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    pentacles.stream()
+                            .map(OccultismRecipeBridge.PentacleJeiData::output)
+                            .map(net.minecraft.world.item.ItemStack::copy)
+                            .toList());
+            List<OccultismRecipeBridge.RitualJeiData> rituals =
                     OccultismRecipeBridge.ritualJeiRecipes(
-                            Minecraft.getInstance().level));
+                            Minecraft.getInstance().level);
+            registeredRituals = List.copyOf(rituals);
+            registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
+            registration.addRecipes(RITUAL_TYPE, rituals);
             registration.addRecipes(SPIRIT_TYPE,
                     OccultismRecipeBridge.spiritJeiRecipes(
                             Minecraft.getInstance().level));
@@ -87,6 +130,21 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                     ultimateRecipes);
         }
     }
+
+    @Override
+    public void onRuntimeUnavailable() {
+        registeredRituals = List.of();
+    }
+
+    static List<net.minecraft.world.item.ItemStack> boundRitualSelectors(
+            ResourceLocation pentacleId) {
+        return registeredRituals.stream()
+                .filter(recipe -> recipe.pentacleId().equals(pentacleId))
+                .map(OccultismRecipeBridge.RitualJeiData::selector)
+                .map(net.minecraft.world.item.ItemStack::copy)
+                .toList();
+    }
+
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {

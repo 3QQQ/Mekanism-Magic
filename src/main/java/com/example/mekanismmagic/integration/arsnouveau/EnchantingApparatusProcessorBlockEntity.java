@@ -6,6 +6,7 @@ import mekanism.api.inventory.IInventorySlot;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
+import mekanism.common.tile.component.config.DataType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -22,6 +23,7 @@ public final class EnchantingApparatusProcessorBlockEntity
     public static final int REAGENT_SLOT = 0;
     public static final int PEDESTAL_SLOT_START = 1;
     public static final int PEDESTAL_SLOT_COUNT = 8;
+    private List<IInventorySlot> pedestalSlots;
 
     public EnchantingApparatusProcessorBlockEntity(
             BlockPos pos, BlockState state) {
@@ -32,16 +34,15 @@ public final class EnchantingApparatusProcessorBlockEntity
     @Override
     protected void createMachineSlots(InventorySlotHelper helper,
                                       IContentsListener listener) {
-        List<IInventorySlot> inputs = new ArrayList<>();
+        pedestalSlots = new ArrayList<>();
         int logical = PEDESTAL_SLOT_START;
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 3; column++) {
                 if (row == 1 && column == 1) {
                     inputSlot = registerLogicalSlot(helper, REAGENT_SLOT,
                             InputInventorySlot.at(listener, 62, 35));
-                    inputs.add(inputSlot);
                 } else {
-                    inputs.add(registerLogicalSlot(helper, logical++,
+                    pedestalSlots.add(registerLogicalSlot(helper, logical++,
                             InputInventorySlot.at(listener,
                                     44 + column * 18,
                                     17 + row * 18)));
@@ -52,7 +53,12 @@ public final class EnchantingApparatusProcessorBlockEntity
                 OutputInventorySlot.at(listener, 116, 35));
         IInventorySlot module = addSourceConversionModuleSlot(
                 helper, listener, 28, 71);
-        setupArsItemIO(inputs, List.of(outputSlot), List.of(module));
+        var itemConfig = setupArsItemIO(
+                List.of(inputSlot), List.of(outputSlot), List.of());
+        addNativeItemSlotInfo(itemConfig, DataType.INPUT_2,
+                true, false, pedestalSlots);
+        addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
+                true, true, List.of(module));
     }
 
     @Override
@@ -76,5 +82,15 @@ public final class EnchantingApparatusProcessorBlockEntity
     @Override
     protected int energySlotY() {
         return 17;
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternInputs() {
+        List<IInventorySlot> slots =
+                new ArrayList<>(super.mekanismMagicPatternInputs());
+        if (pedestalSlots != null) {
+            slots.addAll(pedestalSlots);
+        }
+        return List.copyOf(slots);
     }
 }

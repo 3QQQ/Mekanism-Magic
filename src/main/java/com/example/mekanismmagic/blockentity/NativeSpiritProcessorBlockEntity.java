@@ -8,6 +8,7 @@ import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
+import mekanism.common.tile.component.config.DataType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,8 +28,10 @@ public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBl
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT, OutputInventorySlot.at(listener, 116, 35));
         containmentSlot = registerLogicalSlot(helper, CONTAINMENT_SLOT,
                 BasicInventorySlot.at(OccultismRecipeBridge::isSpiritSource, listener, 64, 53));
-        setupNativeItemIO(List.of(inputSlot), List.of(outputSlot),
-                List.of(containmentSlot));
+        var itemConfig = setupNativeItemIO(
+                List.of(inputSlot), List.of(outputSlot), List.of());
+        addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
+                true, true, List.of(containmentSlot));
     }
 
     @Override
@@ -62,5 +65,12 @@ public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBl
         if (containmentSlot != null) {
             containmentSlot.setStack(source.copy());
         }
+    }
+
+    @Override
+    public List<mekanism.api.inventory.IInventorySlot>
+    mekanismMagicPersistentInputs() {
+        return containmentSlot == null ? List.of()
+                : List.of(containmentSlot);
     }
 }

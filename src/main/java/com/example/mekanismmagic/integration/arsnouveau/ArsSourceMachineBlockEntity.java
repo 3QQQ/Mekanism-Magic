@@ -12,6 +12,7 @@ import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.inventory.slot.BasicInventorySlot;
+import mekanism.common.tile.component.config.ConfigInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
@@ -76,11 +77,17 @@ public abstract class ArsSourceMachineBlockEntity
                 && !sourceConversionModuleSlot.getStack().isEmpty();
     }
 
-    protected final void setupArsItemIO(
+    protected final ConfigInfo setupArsItemIO(
             java.util.List<? extends IInventorySlot> inputs,
             java.util.List<? extends IInventorySlot> outputs,
             java.util.List<? extends IInventorySlot> extras) {
-        setupNativeItemIO(inputs, outputs, extras);
+        return setupNativeItemIO(inputs, outputs, extras);
+    }
+
+    @Override
+    public java.util.List<IInventorySlot> mekanismMagicPersistentInputs() {
+        return sourceConversionModuleSlot == null ? java.util.List.of()
+                : java.util.List.of(sourceConversionModuleSlot);
     }
 
     @Override
