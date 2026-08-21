@@ -26,12 +26,12 @@ public final class NativeMiniRitualAssemblerContainer
 
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
-        if (buttonId >= 0 && buttonId <= 2) {
-            if (buttonId == 1) {
-                getTileEntity().requestCraft();
-            } else {
-                getTileEntity().cyclePreview(buttonId == 2 ? 1 : -1);
-            }
+        if (buttonId == 99) {
+            getTileEntity().clearPentaclePreference();
+            return true;
+        }
+        if (buttonId >= 100) {
+            getTileEntity().lockPentacle(buttonId - 100);
             return true;
         }
         return super.clickMenuButton(player, buttonId);

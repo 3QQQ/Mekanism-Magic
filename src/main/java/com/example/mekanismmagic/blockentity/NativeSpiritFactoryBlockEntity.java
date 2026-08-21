@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
 
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
@@ -38,7 +39,9 @@ import java.util.Set;
  * OccultismRecipeBridge.
  */
 public final class NativeSpiritFactoryBlockEntity
-        extends TileEntityItemToItemFactory<SpiritFactoryRecipe> {
+        extends TileEntityItemToItemFactory<SpiritFactoryRecipe>
+        implements IMekanismMagicAutomation {
+    private static final int EJECTOR_CALLS_PER_TICK = 11;
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
 
@@ -169,6 +172,9 @@ public final class NativeSpiritFactoryBlockEntity
         @SuppressWarnings({"rawtypes", "unchecked"})
         CachedRecipe<SpiritFactoryRecipe> cached = (CachedRecipe) OneInputCachedRecipe.itemToItem(recipe, () -> true,
                         inputHandlers[process], outputHandlers[process])
+                .setCanHolderFunction(() -> spiritSlot != null
+                        && OccultismRecipeBridge.isSpiritSource(
+                                spiritSlot.getStack()))
                 .setActive(active -> setActiveState(active, process))
                 .setEnergyRequirements(
                         () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(
@@ -179,6 +185,26 @@ public final class NativeSpiritFactoryBlockEntity
                 .setOperatingTicksChanged(value -> progress[process] = value)
                 .setBaselineMaxOperations(() -> 1);
         return cached;
+    }
+
+    @Override
+    protected void onUpdateServer() {
+        super.onUpdateServer();
+        if (level instanceof net.minecraft.server.level.ServerLevel
+                && hasStoredOutput()) {
+            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
+                ejectorComponent.tickServer();
+            }
+        }
+    }
+
+    private boolean hasStoredOutput() {
+        for (IInventorySlot slot : outputSlots) {
+            if (!slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -227,6 +253,45 @@ public final class NativeSpiritFactoryBlockEntity
     @Override
     public void recalculateUpgrades(Upgrade upgrade) {
         super.recalculateUpgrades(upgrade);
+    }
+
+    @Override
+    public net.minecraft.resources.ResourceLocation mekanismMagicMachineId() {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(
+                getBlockState().getBlock());
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternInputs() {
+        return inputSlots == null ? List.of() : List.copyOf(inputSlots);
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternOutputs() {
+        return outputSlots == null ? List.of() : List.copyOf(outputSlots);
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPersistentInputs() {
+        return spiritSlot == null ? List.of() : List.of(spiritSlot);
+    }
+
+    @Override
+    public mekanism.api.energy.IEnergyContainer
+    mekanismMagicEnergyContainer() {
+        return energyContainer;
+    }
+
+    @Override
+    public boolean mekanismMagicIsBusy() {
+        if (progress != null) {
+            for (int value : progress) {
+                if (value > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
 

@@ -22,11 +22,15 @@ public final class MinerJeiCategory extends AbstractRecipeCategory<
     public void setRecipe(IRecipeLayoutBuilder builder,
                           OccultismRecipeBridge.MinerJeiData recipe,
                           mezz.jei.api.recipe.IFocusGroup focuses) {
-        builder.addInputSlot(42, 27)
-                .setStandardSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addInputSlot(42, 27)
+                                .setStandardSlotBackground(),
+                        JeiSlotMarker.Kind.INPUT, "miner_input")
                 .addIngredients(recipe.input());
-        builder.addOutputSlot(122, 27)
-                .setOutputSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addOutputSlot(122, 27)
+                                .setOutputSlotBackground(),
+                        JeiSlotMarker.Kind.OUTPUT, "output")
                 .addItemStack(recipe.output());
     }
 }

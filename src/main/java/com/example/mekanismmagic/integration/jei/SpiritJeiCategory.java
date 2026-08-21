@@ -22,14 +22,20 @@ public final class SpiritJeiCategory extends AbstractRecipeCategory<
     public void setRecipe(IRecipeLayoutBuilder builder,
                           OccultismRecipeBridge.SpiritJeiData recipe,
                           mezz.jei.api.recipe.IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.CATALYST, 4, 27)
-                .setStandardSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addSlot(RecipeIngredientRole.CATALYST, 4, 27)
+                                .setStandardSlotBackground(),
+                        JeiSlotMarker.Kind.SPIRIT, "spirit")
                 .addItemStack(recipe.spirit());
-        builder.addInputSlot(48, 27)
-                .setStandardSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addInputSlot(48, 27)
+                                .setStandardSlotBackground(),
+                        JeiSlotMarker.Kind.INPUT, "input")
                 .addItemStack(recipe.input());
-        builder.addOutputSlot(148, 27)
-                .setOutputSlotBackground()
+        JeiSlotMarker.mark(
+                        builder.addOutputSlot(148, 27)
+                                .setOutputSlotBackground(),
+                        JeiSlotMarker.Kind.OUTPUT, "output")
                 .addItemStack(recipe.output());
     }
 }

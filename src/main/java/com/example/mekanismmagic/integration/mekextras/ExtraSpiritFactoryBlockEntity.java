@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.mekextras;
 
+import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
@@ -31,7 +32,9 @@ import java.util.Set;
  * Spirit recipe adapter for Mekanism Extras' 11/13/15/17-process factories.
  */
 public final class ExtraSpiritFactoryBlockEntity
-        extends TileEntityExtraItemToItemFactory<SpiritFactoryRecipe> {
+        extends TileEntityExtraItemToItemFactory<SpiritFactoryRecipe>
+        implements IMekanismMagicAutomation {
+    private static final int EJECTOR_CALLS_PER_TICK = 11;
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
 
@@ -155,7 +158,11 @@ public final class ExtraSpiritFactoryBlockEntity
                                 inputHandlers[process], outputHandlers[process])
                         .setErrorsChanged(errors ->
                                 errorTracker.onErrorsChanged(errors, process))
-                        .setCanHolderFunction(() -> MekanismUtils.canFunction(this))
+                        .setCanHolderFunction(() ->
+                                MekanismUtils.canFunction(this)
+                                && spiritSlot != null
+                                && OccultismRecipeBridge.isSpiritSource(
+                                        spiritSlot.getStack()))
                         .setActive(active -> setActiveState(active, process))
                         .setEnergyRequirements(
                                 () -> MekanismUtils.getEnergyPerTick(
@@ -167,6 +174,26 @@ public final class ExtraSpiritFactoryBlockEntity
                         .setBaselineMaxOperations(this::getBaselineMaxOperations)
                         .setOperatingTicksChanged(value -> progress[process] = value);
         return cached;
+    }
+
+    @Override
+    protected void onUpdateServer() {
+        super.onUpdateServer();
+        if (level instanceof net.minecraft.server.level.ServerLevel
+                && hasStoredOutput()) {
+            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
+                ejectorComponent.tickServer();
+            }
+        }
+    }
+
+    private boolean hasStoredOutput() {
+        for (IInventorySlot slot : outputSlots) {
+            if (!slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -210,5 +237,44 @@ public final class ExtraSpiritFactoryBlockEntity
                 && spiritSlot != null) {
             spiritSlot.setStack(spiritUpgrade.spiritSource.copy());
         }
+    }
+
+    @Override
+    public net.minecraft.resources.ResourceLocation mekanismMagicMachineId() {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(
+                getBlockState().getBlock());
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternInputs() {
+        return inputSlots == null ? List.of() : List.copyOf(inputSlots);
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPatternOutputs() {
+        return outputSlots == null ? List.of() : List.copyOf(outputSlots);
+    }
+
+    @Override
+    public List<IInventorySlot> mekanismMagicPersistentInputs() {
+        return spiritSlot == null ? List.of() : List.of(spiritSlot);
+    }
+
+    @Override
+    public mekanism.api.energy.IEnergyContainer
+    mekanismMagicEnergyContainer() {
+        return energyContainer;
+    }
+
+    @Override
+    public boolean mekanismMagicIsBusy() {
+        if (progress != null) {
+            for (int value : progress) {
+                if (value > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
