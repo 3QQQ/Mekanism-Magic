@@ -1,0 +1,32 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RGR",
+    "ECE",
+    "RGR"
+  ],
+  "key": {
+    "R": {
+      "item": "mekanism:alloy_reinforced"
+    },
+    "G": {
+      "item": "ars_nouveau:source_gem"
+    },
+    "E": {
+      "item": "mekanism:energy_tablet"
+    },
+    "C": {
+      "item": "mekanism:advanced_control_circuit"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:source_conversion_module",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ]
+}

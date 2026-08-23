@@ -2,6 +2,10 @@ package com.example.mekanismmagic.integration;
 
 import net.neoforged.fml.ModList;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 /**
  * Single source of truth for optional integration gates.
  *
@@ -14,7 +18,10 @@ public final class ModCompatibility {
     public static final String ARS_NOUVEAU = "ars_nouveau";
     public static final String MEKANISM_EXTRAS = "mekanism_extras";
     public static final String MEKMM = "mekmm";
-    private static final boolean ARS_NOUVEAU_MACHINE_CONTENT_ENABLED = false;
+    public static final String ARS_MACHINE_CONTENT_PROPERTY =
+            "mekanism_magic.ars_machine_content";
+    private static final boolean PACKAGED_ARS_MACHINE_CONTENT =
+            packagedArsMachineContent();
 
     private ModCompatibility() {
     }
@@ -28,13 +35,18 @@ public final class ModCompatibility {
     }
 
     /**
-     * Ars Nouveau machine content remains disabled in release builds until
-     * its full recipe and multiplayer compatibility matrix is complete.
-     * The independent mob-jar adapter is still enabled when Ars Nouveau is
-     * installed.
+     * Ars Nouveau machine content is opt-in while its full recipe and
+     * multiplayer compatibility matrix is being completed. Development runs
+     * enable it with -Pmekanism_magic.ars_machine_content=true; release builds
+     * leave it disabled by default. The independent mob-jar adapter remains
+     * available whenever Ars Nouveau is installed.
      */
     public static boolean arsNouveauMachineContentEnabled() {
-        return ARS_NOUVEAU_MACHINE_CONTENT_ENABLED
+        String override = System.getProperty(ARS_MACHINE_CONTENT_PROPERTY);
+        boolean enabled = override == null
+                ? PACKAGED_ARS_MACHINE_CONTENT
+                : Boolean.parseBoolean(override);
+        return enabled
                 && arsNouveauLoaded();
     }
 
@@ -48,5 +60,21 @@ public final class ModCompatibility {
 
     public static boolean loaded(String modId) {
         return ModList.get().isLoaded(modId);
+    }
+
+    private static boolean packagedArsMachineContent() {
+        Properties properties = new Properties();
+        try (InputStream stream = ModCompatibility.class.getClassLoader()
+                .getResourceAsStream(
+                        "META-INF/mekanism_magic_features.properties")) {
+            if (stream == null) {
+                return false;
+            }
+            properties.load(stream);
+            return Boolean.parseBoolean(properties.getProperty(
+                    "ars_nouveau_machine_content", "false"));
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 }

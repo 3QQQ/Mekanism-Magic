@@ -59,6 +59,10 @@
     {
       "id": "mekanism_magic:enchanting_apparatus_processor",
       "required": false
+    },
+    {
+      "id": "mekanism_magic:drygmy_simulator",
+      "required": false
     }
   ]
 }

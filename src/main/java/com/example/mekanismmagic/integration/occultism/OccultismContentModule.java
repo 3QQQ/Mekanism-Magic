@@ -29,6 +29,19 @@ public final class OccultismContentModule
         MekanismMagic.INGREDIENT_TYPES.register(modBus);
         NativeMekanismRegistries.register(modBus);
         registerMekanismExtrasFactories(modBus);
+        registerMekEnergistics();
+    }
+
+    private static void registerMekEnergistics() {
+        try {
+            Class.forName("com.example.mekanismmagic.integration.mekenergistics."
+                            + "MekEnergisticsCompat")
+                    .getMethod("registerBlocks")
+                    .invoke(null);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Mek Energistics is optional and may not be present in a release
+            // build; its mixin and bridge are skipped in that case.
+        }
     }
 
     private static void registerMekanismExtrasFactories(IEventBus modBus) {

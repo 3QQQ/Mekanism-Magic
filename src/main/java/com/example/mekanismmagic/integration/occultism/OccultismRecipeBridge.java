@@ -139,6 +139,8 @@ public final class OccultismRecipeBridge {
             );
     private static final Map<RecipeManager, PentacleCatalog> PENTACLE_CATALOGS =
             Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<RecipeManager, MinerCatalog> MINER_CATALOGS =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private OccultismRecipeBridge() {
     }
@@ -179,6 +181,16 @@ public final class OccultismRecipeBridge {
 
     private record PentacleScan(List<ItemStack> materials,
                                 Set<String> chalkColors) {
+    }
+
+    private record MinerCandidate(Ingredient ingredient,
+                                  ResourceLocation recipeId,
+                                  ItemStack output,
+                                  int weight) {
+    }
+
+    private record MinerCatalog(long recipeFingerprint,
+                                List<MinerCandidate> candidates) {
     }
 
     public record RitualJeiData(ResourceLocation recipeId,
@@ -239,12 +251,49 @@ public final class OccultismRecipeBridge {
         if (type == null) {
             return Optional.empty();
         }
-        List<MinerOutput> candidates = new ArrayList<>();
+        List<MinerCandidate> candidates =
+                minerCandidates(level, type);
         long totalWeight = 0;
-        for (RecipeHolder<?> holder : recipes(level, type)) {
+        List<MinerCandidate> matching = new ArrayList<>();
+        for (MinerCandidate candidate : candidates) {
+            if (!candidate.ingredient().test(miner)) {
+                continue;
+            }
+            matching.add(candidate);
+            totalWeight += candidate.weight();
+        }
+        if (matching.isEmpty() || totalWeight <= 0) {
+            return Optional.empty();
+        }
+        long roll = Math.floorMod(level.random.nextLong(), totalWeight);
+        for (MinerCandidate candidate : matching) {
+            roll -= candidate.weight();
+            if (roll < 0) {
+                return Optional.of(new MinerOutput(candidate.recipeId(),
+                        candidate.output().copy(), candidate.weight()));
+            }
+        }
+        MinerCandidate candidate = matching.getLast();
+        return Optional.of(new MinerOutput(candidate.recipeId(),
+                candidate.output().copy(), candidate.weight()));
+    }
+
+    private static List<MinerCandidate> minerCandidates(Level level,
+                                                         RecipeType<?> type) {
+        RecipeManager recipeManager = level.getRecipeManager();
+        List<RecipeHolder<?>> holders = recipes(level, type);
+        long fingerprint = recipeFingerprint(holders);
+        MinerCatalog cached = MINER_CATALOGS.get(recipeManager);
+        if (cached != null && cached.recipeFingerprint() == fingerprint) {
+            return cached.candidates();
+        }
+        List<MinerCandidate> candidates = new ArrayList<>();
+        for (RecipeHolder<?> holder : holders) {
             Object recipe = holder.value();
             List<Ingredient> recipeIngredients = ingredients(recipe);
-            if (recipeIngredients.isEmpty() || !recipeIngredients.getFirst().test(miner)) {
+            Ingredient ingredient = recipeIngredients.isEmpty()
+                    ? null : recipeIngredients.getFirst();
+            if (ingredient == null || ingredient.isEmpty()) {
                 continue;
             }
             ItemStack output = result(level.registryAccess(), recipe);
@@ -253,20 +302,13 @@ public final class OccultismRecipeBridge {
             if (output.isEmpty() || weight <= 0) {
                 continue;
             }
-            candidates.add(new MinerOutput(holder.id(), output, weight));
-            totalWeight += weight;
+            candidates.add(new MinerCandidate(ingredient, holder.id(),
+                    output.copy(), weight));
         }
-        if (candidates.isEmpty() || totalWeight <= 0) {
-            return Optional.empty();
-        }
-        long roll = Math.floorMod(level.random.nextLong(), totalWeight);
-        for (MinerOutput candidate : candidates) {
-            roll -= candidate.weight();
-            if (roll < 0) {
-                return Optional.of(candidate);
-            }
-        }
-        return Optional.of(candidates.getLast());
+        List<MinerCandidate> immutable = List.copyOf(candidates);
+        MINER_CATALOGS.put(recipeManager,
+                new MinerCatalog(fingerprint, immutable));
+        return immutable;
     }
 
     public static List<MinerJeiData> minerJeiRecipes(Level level) {

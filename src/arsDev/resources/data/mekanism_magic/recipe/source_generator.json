@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LGL",
+    "SCS",
+    "LEL"
+  ],
+  "key": {
+    "L": {
+      "tag": "mekanism_magic:ars_sourcelinks"
+    },
+    "G": {
+      "item": "ars_nouveau:source_gem"
+    },
+    "S": {
+      "item": "ars_nouveau:source_jar"
+    },
+    "C": {
+      "item": "mekanism:steel_casing"
+    },
+    "E": {
+      "item": "mekanism:energy_tablet"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:source_generator",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ]
+}

@@ -6,7 +6,15 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "mekanism_magic:mini_ritual_assembler"
+          "name": "mekanism_magic:mini_ritual_assembler",
+          "functions": [
+            {"function": "minecraft:copy_name", "source": "block_entity"},
+            {"function": "minecraft:copy_components", "include": [
+              "mekanism:ejector", "mekanism:owner", "mekanism:redstone_control",
+              "mekanism:security", "mekanism:side_config", "mekanism:upgrades",
+              "mekanism:energy", "mekanism:items"
+            ], "source": "block_entity"}
+          ]
         }
       ],
       "conditions": [

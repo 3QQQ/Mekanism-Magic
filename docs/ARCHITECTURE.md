@@ -114,3 +114,10 @@ JEI 分类和配方展示集中在此处。JEI 显示数据应通过适配层获
 
 具体配方类型统计与推荐实现顺序见
 [`ARS_NOUVEAU_ADAPTATION.md`](ARS_NOUVEAU_ADAPTATION.md)。
+
+### Ars 开发资源
+
+尚未进入正式发布的 Ars Nouveau 机器数据放在 `src/arsDev/resources/`。
+只有使用 `-Pmekanism_magic.ars_machine_content=true` 时才加入资源集，并在
+`META-INF/mekanism_magic_features.properties` 中写入启用状态。默认发布构建不会
+包含这些配方和掉落，也不会注册对应机器。

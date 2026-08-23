@@ -14,6 +14,9 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+def arsMachineContentEnabled = project.findProperty(
+        'mekanism_magic.ars_machine_content')?.toString()?.toBoolean() ?: false
+
 repositories {
     maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
     maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
@@ -48,6 +51,8 @@ neoForge {
         }
         configureEach {
             logLevel = org.slf4j.event.Level.DEBUG
+            systemProperty 'mekanism_magic.ars_machine_content',
+                    arsMachineContentEnabled.toString()
         }
     }
     mods {
@@ -59,17 +64,29 @@ neoForge {
 
 sourceSets.main.resources {
     srcDir('src/generated/resources')
+    if (arsMachineContentEnabled) {
+        srcDir('src/arsDev/resources')
+    }
 }
 
 // Mekanism Extras is an optional binary-only integration. Keep its source out
 // of release builds unless the supplied development jar is present, so a clean
 // CI runner can build the core Mekanism-only artifact from public Maven repos.
-def mekanismExtrasJar = file('libs/mekanism_extras-1.21.1-1.4.0.jar')
+def mekanismExtrasJar = file(
+        "libs/mekanism_extras-1.21.1-${mekanism_extras_version}.jar")
+def mekenergisticsJar = file('libs/mekenergistics-3.0.6.jar')
+def compileMekEnergistics = project.findProperty(
+        'mekanism_magic.compile_mekenergistics')?.toString()?.toBoolean()
+        ?: mekenergisticsJar.exists()
 def compileMekanismExtras = project.findProperty(
         'mekanism_magic.compile_mekextras')?.toString()?.toBoolean()
         ?: mekanismExtrasJar.exists()
 if (!compileMekanismExtras) {
     sourceSets.main.java.exclude('com/example/mekanismmagic/integration/mekextras/**')
+}
+if (compileMekEnergistics) {
+    sourceSets.main.java.srcDir('src/mekenergistics/java')
+    sourceSets.main.resources.srcDir('src/mekenergistics/resources')
 }
 
 configurations {
@@ -86,6 +103,8 @@ def mekExtrasRuntimeEnabled = compatRuntimeEnabled ||
 def mekmmRuntimeEnabled = compatRuntimeEnabled ||
         (project.findProperty('mekanism_magic.mekmm_runtime')?.toString()?.toBoolean() ?: false)
 def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
+def mekEnergisticsRuntimeEnabled = project.findProperty(
+        'mekanism_magic.mekenergistics_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
     compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
@@ -94,6 +113,7 @@ dependencies {
     compileOnly "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_compile_version}"
     compileOnly files(
             mekanismExtrasJar,
+            mekenergisticsJar,
             'libs/mekmm-1.21.1-1.4.0.jar'
     )
     // Recipe and mob-jar bridges use registry lookups/reflection so optional
@@ -121,6 +141,9 @@ dependencies {
                 "libs/mekmm-1.21.1-${mekmm_runtime_version}.jar"
         )
     }
+    if (mekEnergisticsRuntimeEnabled) {
+        localRuntime files(mekenergisticsJar)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -140,10 +163,21 @@ processResources {
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
-            mod_version            : mod_version
+            mod_version            : mod_version,
+            ars_machine_content    : arsMachineContentEnabled,
+            // The optional bridge is guarded by a runtime Mixin plugin. Keep
+            // the config in builds that include the API so a released jar
+            // automatically adapts when Mek Energistics is added later.
+            mekenergistics_mixins  : compileMekEnergistics
+                    ? '[[mixins]]\nconfig="mekenergistics_compat.mixins.json"'
+                    : ''
     ]
     inputs.properties replaceProperties
-    filesMatching(['META-INF/neoforge.mods.toml']) {
+    inputs.property 'arsMachineContentEnabled', arsMachineContentEnabled
+    filesMatching([
+            'META-INF/neoforge.mods.toml',
+            'META-INF/mekanism_magic_features.properties'
+    ]) {
         expand replaceProperties
     }
 }

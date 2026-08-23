@@ -8,6 +8,7 @@ import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.tile.component.config.DataType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -82,6 +83,15 @@ public final class EnchantingApparatusProcessorBlockEntity
     @Override
     protected int energySlotY() {
         return 17;
+    }
+
+    void seedDevelopmentTest() {
+        inputSlot.setStack(new net.minecraft.world.item.ItemStack(
+                Items.SCULK_SENSOR));
+        setSource(getMaxSource());
+        if (energyContainer != null) {
+            energyContainer.setEnergy(energyContainer.getMaxEnergy());
+        }
     }
 
     @Override

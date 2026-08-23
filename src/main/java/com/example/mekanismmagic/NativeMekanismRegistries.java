@@ -62,6 +62,8 @@ public final class NativeMekanismRegistries {
     public static final ContainerTypeRegistryObject<NativeSpiritFactoryContainer> SPIRIT_FACTORY_CONTAINER =
             CONTAINERS.register("spirit_factory", NativeSpiritFactoryBlockEntity.class,
                     (id, inventory, tile) -> new NativeSpiritFactoryContainer(id, inventory, tile));
+    private static final Upgrade DIMENSION_MINER_STACK_UPGRADE =
+            optionalMekanismExtrasStackUpgrade();
 
     public static final Machine<NativeSpiritProcessorBlockEntity> SPIRIT_TYPE =
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.SPIRIT_TILE,
@@ -73,14 +75,8 @@ public final class NativeMekanismRegistries {
                     .with(new AttributeUpgradeable(
                             NativeMekanismRegistries::basicSpiritFactoryBlock))
                     .build();
-    public static final Machine<NativeDimensionMinerBlockEntity> DIMENSION_MINER_TYPE =
-            Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.DIMENSION_MINER_TILE,
-                            MagicLang.DIMENSION_MINER)
-                    .withGui(() -> DIMENSION_MINER_CONTAINER)
-                    .withEnergyConfig(() -> 800L, () -> 4_000_000L)
-                    .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
-                    .build();
+    public static final Machine<NativeDimensionMinerBlockEntity>
+            DIMENSION_MINER_TYPE = createDimensionMinerType();
     public static final Machine<NativeRitualEngineBlockEntity> RITUAL_TYPE =
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.RITUAL_TILE,
                             MagicLang.RITUAL_ENGINE)
@@ -279,6 +275,32 @@ public final class NativeMekanismRegistries {
         return ULTIMATE_SPIRIT_FACTORY_TILE;
     }
 
+    public static Upgrade dimensionMinerStackUpgrade() {
+        return DIMENSION_MINER_STACK_UPGRADE;
+    }
+
+    private static Machine<NativeDimensionMinerBlockEntity>
+    createDimensionMinerType() {
+        Machine.MachineBuilder<
+                Machine<NativeDimensionMinerBlockEntity>,
+                NativeDimensionMinerBlockEntity, ?> builder =
+                Machine.MachineBuilder.createMachine(
+                                () -> NativeMekanismRegistries
+                                        .DIMENSION_MINER_TILE,
+                                MagicLang.DIMENSION_MINER)
+                        .withGui(() -> DIMENSION_MINER_CONTAINER)
+                        .withEnergyConfig(() -> 800L, () -> 4_000_000L)
+                        .withSideConfig(TransmissionType.ITEM,
+                                TransmissionType.ENERGY);
+        if (DIMENSION_MINER_STACK_UPGRADE == null) {
+            builder.withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY);
+        } else {
+            builder.withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY,
+                    DIMENSION_MINER_STACK_UPGRADE);
+        }
+        return builder.build();
+    }
+
     private static Machine.FactoryMachine<NativeSpiritFactoryBlockEntity>
     createUltimateSpiritFactoryType() {
         Machine.MachineBuilder<
@@ -326,6 +348,31 @@ public final class NativeMekanismRegistries {
             MekanismMagic.LOGGER.warn(
                     "Mekanism Extras factory upgrade is unavailable; "
                             + "continuing with the four base factory tiers",
+                    failure);
+            return null;
+        }
+    }
+
+    private static Upgrade optionalMekanismExtrasStackUpgrade() {
+        if (!ModCompatibility.mekanismExtrasLoaded()) {
+            return null;
+        }
+        try {
+            Class<?> extraUpgrade =
+                    Class.forName("com.jerry.mekextras.api.ExtraUpgrade");
+            Upgrade stack =
+                    (Upgrade) extraUpgrade.getField("STACK").get(null);
+            if (stack != null) {
+                MekanismMagic.LOGGER.info(
+                        "Enabled Mekanism Extras stack upgrade support "
+                                + "for the Dimensional Miner");
+            }
+            return stack;
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            MekanismMagic.LOGGER.warn(
+                    "Mekanism Extras stack upgrade is unavailable; "
+                            + "the Dimensional Miner will use its base "
+                            + "single-operation behavior",
                     failure);
             return null;
         }

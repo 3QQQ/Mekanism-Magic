@@ -63,6 +63,7 @@ public final class MekanismMagic {
                         acceptOptional(output, "source_generator");
                         acceptOptional(output, "imbuement_processor");
                         acceptOptional(output, "enchanting_apparatus_processor");
+                        acceptOptional(output, "drygmy_simulator");
                         acceptOptional(output, "source_conversion_module");
                         acceptOptional(output, "spirit_processor");
                         acceptOptional(output, "dimension_miner");

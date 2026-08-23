@@ -40,7 +40,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                         InputInventorySlot.at(listener, 69 + column * 18, 31 + row * 18)));
             }
         }
-        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT, OutputInventorySlot.at(listener, 176, 58));
+        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
+                OutputInventorySlot.at(listener, 176, 58));
         ritualSlot = registerLogicalSlot(helper, RITUAL_SLOT,
                 InputInventorySlot.at(OccultismRecipeBridge::isRitualSelector, listener, 20, 39));
         activationSlot = registerLogicalSlot(helper, ACTIVATION_SLOT,

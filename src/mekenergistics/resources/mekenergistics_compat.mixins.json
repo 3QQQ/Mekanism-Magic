@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.example.mekanismmagic.integration.mekenergistics.mixin",
+  "plugin": "com.example.mekanismmagic.integration.mekenergistics.MekEnergisticsCompatMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MekEnergisticsAutomationMixin",
+    "MekEnergisticsExtraSpiritFactoryProfileMixin",
+    "MekEnergisticsInstallerGuardMixin",
+    "MekEnergisticsSpiritFactoryInstallerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

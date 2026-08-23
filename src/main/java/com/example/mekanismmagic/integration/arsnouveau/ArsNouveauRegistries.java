@@ -41,10 +41,10 @@ public final class ArsNouveauRegistries {
                             new Item.Properties().stacksTo(1)));
 
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<SourceGeneratorBlockEntity>>
-            SOURCE_GENERATOR_CONTAINER =
+            MekanismTileContainer<SourceAmplifierBlockEntity>>
+            SOURCE_AMPLIFIER_CONTAINER =
             CONTAINERS.custom("source_generator",
-                    SourceGeneratorBlockEntity.class).build();
+                    SourceAmplifierBlockEntity.class).build();
     public static final ContainerTypeRegistryObject<
             MekanismTileContainer<ImbuementProcessorBlockEntity>>
             IMBUEMENT_PROCESSOR_CONTAINER =
@@ -56,13 +56,19 @@ public final class ArsNouveauRegistries {
             CONTAINERS.custom("enchanting_apparatus_processor",
                     EnchantingApparatusProcessorBlockEntity.class)
                     .offset(0, 18).build();
+    public static final ContainerTypeRegistryObject<
+            MekanismTileContainer<DrygmySimulatorBlockEntity>>
+            DRYGMY_SIMULATOR_CONTAINER =
+            CONTAINERS.custom("drygmy_simulator",
+                    DrygmySimulatorBlockEntity.class)
+                    .offset(17, 42).build();
 
-    public static final Machine<SourceGeneratorBlockEntity>
-            SOURCE_GENERATOR_TYPE =
+    public static final Machine<SourceAmplifierBlockEntity>
+            SOURCE_AMPLIFIER_TYPE =
             Machine.MachineBuilder.createMachine(
                             ArsNouveauRegistries::sourceGeneratorTile,
-                            MagicLang.SOURCE_GENERATOR)
-                    .withGui(() -> SOURCE_GENERATOR_CONTAINER)
+                            MagicLang.SOURCE_AMPLIFIER)
+                    .withGui(() -> SOURCE_AMPLIFIER_CONTAINER)
                     .withEnergyConfig(() -> 500L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
@@ -91,12 +97,23 @@ public final class ArsNouveauRegistries {
                             TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .build();
+    public static final Machine<DrygmySimulatorBlockEntity>
+            DRYGMY_SIMULATOR_TYPE =
+            Machine.MachineBuilder.createMachine(
+                            ArsNouveauRegistries::drygmySimulatorTile,
+                            MagicLang.DRYGMY_SIMULATOR)
+                    .withGui(() -> DRYGMY_SIMULATOR_CONTAINER)
+                    .withEnergyConfig(() -> 800L, () -> 4_000_000L)
+                    .withSideConfig(TransmissionType.ITEM,
+                            TransmissionType.ENERGY)
+                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .build();
 
     public static final BlockRegistryObject<
-            NativeMachineBlock<SourceGeneratorBlockEntity>, BlockItem>
-            SOURCE_GENERATOR_BLOCK =
+            NativeMachineBlock<SourceAmplifierBlockEntity>, BlockItem>
+            SOURCE_AMPLIFIER_BLOCK =
             BLOCKS.register("source_generator",
-                    () -> new NativeMachineBlock<>(SOURCE_GENERATOR_TYPE,
+                    () -> new NativeMachineBlock<>(SOURCE_AMPLIFIER_TYPE,
                             BlockBehaviour.Properties.of().strength(4.0F)
                                     .requiresCorrectToolForDrops()));
     public static final BlockRegistryObject<
@@ -114,11 +131,19 @@ public final class ArsNouveauRegistries {
                             ENCHANTING_APPARATUS_PROCESSOR_TYPE,
                             BlockBehaviour.Properties.of().strength(5.0F)
                                     .requiresCorrectToolForDrops()));
+    public static final BlockRegistryObject<
+            NativeMachineBlock<DrygmySimulatorBlockEntity>, BlockItem>
+            DRYGMY_SIMULATOR_BLOCK =
+            BLOCKS.register("drygmy_simulator",
+                    () -> new NativeMachineBlock<>(
+                            DRYGMY_SIMULATOR_TYPE,
+                            BlockBehaviour.Properties.of().strength(5.0F)
+                                    .requiresCorrectToolForDrops()));
 
     public static final TileEntityTypeRegistryObject<
-            SourceGeneratorBlockEntity> SOURCE_GENERATOR_TILE =
-            TILES.mekBuilder(SOURCE_GENERATOR_BLOCK,
-                            SourceGeneratorBlockEntity::new)
+            SourceAmplifierBlockEntity> SOURCE_AMPLIFIER_TILE =
+            TILES.mekBuilder(SOURCE_AMPLIFIER_BLOCK,
+                            SourceAmplifierBlockEntity::new)
                     .serverTicker((level, pos, state, tile) ->
                             mekanism.common.tile.base.TileEntityMekanism
                                     .tickServer(level, pos, state, tile))
@@ -140,13 +165,21 @@ public final class ArsNouveauRegistries {
                             mekanism.common.tile.base.TileEntityMekanism
                                     .tickServer(level, pos, state, tile))
                     .build();
+    public static final TileEntityTypeRegistryObject<
+            DrygmySimulatorBlockEntity> DRYGMY_SIMULATOR_TILE =
+            TILES.mekBuilder(DRYGMY_SIMULATOR_BLOCK,
+                            DrygmySimulatorBlockEntity::new)
+                    .serverTicker((level, pos, state, tile) ->
+                            mekanism.common.tile.base.TileEntityMekanism
+                                    .tickServer(level, pos, state, tile))
+                    .build();
 
     private ArsNouveauRegistries() {
     }
 
-    private static TileEntityTypeRegistryObject<SourceGeneratorBlockEntity>
+    private static TileEntityTypeRegistryObject<SourceAmplifierBlockEntity>
     sourceGeneratorTile() {
-        return SOURCE_GENERATOR_TILE;
+        return SOURCE_AMPLIFIER_TILE;
     }
 
     private static TileEntityTypeRegistryObject<ImbuementProcessorBlockEntity>
@@ -158,6 +191,11 @@ public final class ArsNouveauRegistries {
             EnchantingApparatusProcessorBlockEntity>
     enchantingApparatusProcessorTile() {
         return ENCHANTING_APPARATUS_PROCESSOR_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            DrygmySimulatorBlockEntity> drygmySimulatorTile() {
+        return DRYGMY_SIMULATOR_TILE;
     }
 
     public static void register(IEventBus modBus) {
@@ -172,7 +210,7 @@ public final class ArsNouveauRegistries {
             RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
-                SOURCE_GENERATOR_TILE.get(),
+                SOURCE_AMPLIFIER_TILE.get(),
                 (tile, side) -> tile.getSourceStorage());
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
@@ -181,6 +219,10 @@ public final class ArsNouveauRegistries {
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 ENCHANTING_APPARATUS_PROCESSOR_TILE.get(),
+                (tile, side) -> tile.getSourceStorage());
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                DRYGMY_SIMULATOR_TILE.get(),
                 (tile, side) -> tile.getSourceStorage());
     }
 }

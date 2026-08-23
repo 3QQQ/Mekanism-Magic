@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "ars_nouveau:agronomic_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:alchemical_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:vitalic_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:mycelial_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:volcanic_sourcelink",
+      "required": false
+    }
+  ]
+}

@@ -18,10 +18,13 @@ import java.util.Optional;
  * Uses Mekanism energy to amplify Source produced by nearby vanilla
  * Ars Nouveau sourcelinks.
  */
-public final class SourceGeneratorBlockEntity
+public final class SourceAmplifierBlockEntity
         extends ArsSourceMachineBlockEntity {
-    public SourceGeneratorBlockEntity(BlockPos pos, BlockState state) {
-        super(ArsNouveauRegistries.SOURCE_GENERATOR_BLOCK.get()
+    private BlockPos cachedSourcelinkPosition;
+    private long nextSourcelinkScan;
+
+    public SourceAmplifierBlockEntity(BlockPos pos, BlockState state) {
+        super(ArsNouveauRegistries.SOURCE_AMPLIFIER_BLOCK.get()
                 .builtInRegistryHolder(), pos, state);
     }
 
@@ -98,6 +101,14 @@ public final class SourceGeneratorBlockEntity
                 AutomationType.INTERNAL);
         progress++;
         if (progress >= progressRequired) {
+            if (!isUsableSourcelink(sourcelink)
+                    || getMaxSource() - getSource()
+                    < ArsNouveauMachineConfig
+                    .AMPLIFIED_SOURCE_PER_OPERATION) {
+                progress = 0;
+                setActive(false);
+                return changed;
+            }
             sourcelink.removeSource(
                     ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION);
             addSource(
@@ -112,6 +123,20 @@ public final class SourceGeneratorBlockEntity
         if (level == null) {
             return null;
         }
+        if (cachedSourcelinkPosition != null
+                && level.isLoaded(cachedSourcelinkPosition)) {
+            BlockEntity cached =
+                    level.getBlockEntity(cachedSourcelinkPosition);
+            if (cached instanceof SourcelinkTile sourcelink
+                    && isUsableSourcelink(sourcelink)) {
+                return sourcelink;
+            }
+            cachedSourcelinkPosition = null;
+        }
+        if (level.getGameTime() < nextSourcelinkScan) {
+            return null;
+        }
+        nextSourcelinkScan = level.getGameTime() + 20;
         int radius = ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_RADIUS;
         SourcelinkTile best = null;
         int mostSource = 0;
@@ -128,6 +153,44 @@ public final class SourceGeneratorBlockEntity
                 mostSource = candidate.getSource();
             }
         }
+        cachedSourcelinkPosition =
+                best == null ? null : best.getBlockPos().immutable();
         return best;
+    }
+
+    private static boolean isUsableSourcelink(
+            SourcelinkTile sourcelink) {
+        return !sourcelink.isRemoved()
+                && !sourcelink.isDisabled
+                && sourcelink.getSource()
+                >= ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION;
+    }
+
+    boolean seedDevelopmentTest() {
+        if (level == null) {
+            return false;
+        }
+        int radius = ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_RADIUS;
+        for (BlockPos position : BlockPos.betweenClosed(
+                worldPosition.offset(-radius, -radius, -radius),
+                worldPosition.offset(radius, radius, radius))) {
+            BlockEntity blockEntity = level.getBlockEntity(position);
+            if (blockEntity instanceof SourcelinkTile sourcelink) {
+                sourcelink.setSource(1_000);
+                cachedSourcelinkPosition = position.immutable();
+                if (energyContainer != null) {
+                    energyContainer.setEnergy(
+                            energyContainer.getMaxEnergy());
+                }
+                progressRequired = Math.max(1,
+                        mekanism.common.util.MekanismUtils.getTicks(
+                                this,
+                                ArsNouveauMachineConfig
+                                        .SOURCE_AMPLIFICATION_DURATION));
+                progress = Math.max(0, progressRequired - 1);
+                return true;
+            }
+        }
+        return false;
     }
 }

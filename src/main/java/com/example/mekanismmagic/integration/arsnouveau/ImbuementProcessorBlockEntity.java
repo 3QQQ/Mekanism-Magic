@@ -8,6 +8,7 @@ import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.tile.component.config.DataType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -76,6 +77,21 @@ public final class ImbuementProcessorBlockEntity
     @Override
     protected int energySlotY() {
         return 17;
+    }
+
+    void seedDevelopmentTest(boolean electric) {
+        inputSlot.setStack(new net.minecraft.world.item.ItemStack(
+                Items.AMETHYST_SHARD));
+        setSource(electric ? 0 : getMaxSource());
+        if (electric && sourceConversionModuleSlot != null) {
+            sourceConversionModuleSlot.setStack(
+                    new net.minecraft.world.item.ItemStack(
+                            ArsNouveauRegistries
+                                    .SOURCE_CONVERSION_MODULE.get()));
+        }
+        if (energyContainer != null) {
+            energyContainer.setEnergy(energyContainer.getMaxEnergy());
+        }
     }
 
     @Override

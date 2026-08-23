@@ -3,10 +3,11 @@ package com.example.mekanismmagic;
 import mekanism.api.text.ILangEntry;
 
 public enum MagicLang implements ILangEntry {
-    SOURCE_GENERATOR("block.mekanism_magic.source_generator"),
+    SOURCE_AMPLIFIER("block.mekanism_magic.source_generator"),
     IMBUEMENT_PROCESSOR("block.mekanism_magic.imbuement_processor"),
     ENCHANTING_APPARATUS_PROCESSOR(
             "block.mekanism_magic.enchanting_apparatus_processor"),
+    DRYGMY_SIMULATOR("block.mekanism_magic.drygmy_simulator"),
     SPIRIT_PROCESSOR("block.mekanism_magic.spirit_processor"),
     DIMENSION_MINER("block.mekanism_magic.dimension_miner"),
     RITUAL_ENGINE("block.mekanism_magic.ritual_engine"),

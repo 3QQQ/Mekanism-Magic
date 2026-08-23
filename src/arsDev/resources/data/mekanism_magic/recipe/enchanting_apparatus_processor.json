@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RER",
+    "ACA",
+    "RIR"
+  ],
+  "key": {
+    "R": {
+      "item": "mekanism:alloy_reinforced"
+    },
+    "E": {
+      "item": "mekanism:energy_tablet"
+    },
+    "A": {
+      "item": "ars_nouveau:arcane_core"
+    },
+    "C": {
+      "item": "mekanism:steel_casing"
+    },
+    "I": {
+      "item": "ars_nouveau:enchanting_apparatus"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:enchanting_apparatus_processor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ]
+}

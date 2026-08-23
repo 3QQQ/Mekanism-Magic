@@ -87,9 +87,14 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 - `mekanism_magic:enchanting_apparatus_processor`：处理附魔装置体系配方；
 - `mekanism_magic:source_conversion_module`：用额外 FE 替代配方 Source 消耗。
 
-这些机器和插件在 `1.0.1` 发布版中暂不注册，对应配方、掉落和 JEI 催化剂也不会
+这些机器和插件在默认发布构建中暂不注册，对应配方、掉落和 JEI 催化剂也不会
 加载。当前发布版仅保留已经验证的 Ars Nouveau 收容罐兼容；完成全部特殊配方和
 多人服务器测试后再启用机器内容。
+
+开发构建可使用
+`-Pmekanism_magic.ars_machine_content=true` 启用，并从
+`src/arsDev/resources` 打包专用配方和掉落。默认发布 JAR 会写入
+`ars_nouveau_machine_content=false`，不会意外注册这些内容。
 
 三台机器均公开 Ars Nouveau `SOURCE_CAPABILITY`，容量为 `10,000 Source`。
 灌注机和附魔装置机支持每次 `1,000 Source` 的双向传输；魔源增幅器只允许输出。
@@ -100,6 +105,29 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 `10,000 FE` 后输出 `150 Source`，不会脱离原版生产条件凭空生成魔源。
 电力替代插件按 `200 FE / Source` 计算。
 Mekanism 速度和能量升级继续正常生效。
+
+## 维度矿机与 Mekanism Extras 堆叠升级
+
+安装 Mekanism Extras `1.4.0` 和兼容的 Mekanism `10.7.19` 或更高版本时，
+维度矿机会额外支持 `mekanism_extras:upgrade_stack`。
+
+- 每个堆叠升级令单周期并行次数乘以 2，最高安装 8 个；
+- 并行倍率范围为 `1x` 至 `256x`；
+- 每 tick 能量消耗按并行倍率同步增加；
+- 单个输出槽的容量从基础 `256` 同步扩大，最高为 `65,536`；
+- 安装或移除堆叠升级会重置尚未完成的待输出批次；
+- 未加载 Mekanism Extras 时只显示并支持原有速度和能量升级。
+
+该功能通过反射读取 Extras 动态注入的 `ExtraUpgrade.STACK`，不会让
+Mekanism Extras 变成硬性前置。
+
+开发树另有 `mekanism_magic:drygmy_simulator`：
+
+- 九个不消耗的已填充 `mob_jar` 输入槽；
+- 二十七个可堆叠输出槽；
+- 使用原版实体战利品表、德格米黑名单、种类奖励与经验宝石换算；
+- 使用 Source，或安装魔源电力替代插件；
+- 收容实体只在内存中创建用于计算，不加入世界。
 
 ## Occultism 灵火与交易配方
 

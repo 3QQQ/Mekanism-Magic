@@ -9,6 +9,7 @@ import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.api.recipes.cache.OneInputCachedRecipe;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.inventory.slot.BasicInventorySlot;
@@ -132,6 +133,18 @@ public final class NativeSpiritFactoryBlockEntity
     @Override
     public IMekanismRecipeTypeProvider getRecipeType() {
         return (IMekanismRecipeTypeProvider) MekanismRecipeType.CRUSHING;
+    }
+
+    /**
+     * Spirit factories reuse Mekanism's item-to-item factory pipeline, so the
+     * internal recipe cache is exposed as CRUSHING above. They are not,
+     * however, Mekanism crushing factories. Returning a null factory type
+     * keeps external integrations such as Mek Energistics from replacing the
+     * machine identity with the Crusher profile when an ME upgrade is added.
+     */
+    @Override
+    public FactoryType getFactoryType() {
+        return null;
     }
 
     @Override
