@@ -73,7 +73,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public static final int CHALK_SLOT_START = 21;
     public static final int DICTIONARY_SLOT = CHALK_SLOT_START;
     public static final int CHALK_SLOT_COUNT = 16;
-    public static final int MACHINE_INVENTORY_SIZE = 43;
+    public static final int CATALYST_LIBRARY_SLOT_START = 43;
+    public static final int CATALYST_LIBRARY_SLOT_COUNT = 30;
+    public static final int MACHINE_INVENTORY_SIZE =
+            CATALYST_LIBRARY_SLOT_START + CATALYST_LIBRARY_SLOT_COUNT;
     protected TileComponentConfig configComponent;
     protected TileComponentEjector ejectorComponent;
     protected MachineEnergyContainer<? extends NativeMagicMachineBlockEntity> energyContainer;
@@ -227,6 +230,29 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected long energyUsagePerTick(MachineRecipeResult recipe) {
         return mekanism.common.util.MekanismUtils.getEnergyPerTick(
                 this, baseEnergyPerTick());
+    }
+
+    protected final boolean hasEnergyForRecipe(MachineRecipeResult recipe) {
+        return hasEnergyForRecipe(recipe, energyUsagePerTick(recipe));
+    }
+
+    protected final boolean hasEnergyForRecipe(MachineRecipeResult recipe,
+                                               long usage) {
+        return energyContainer != null
+                && energyContainer.getEnergy() >= Math.max(0, usage);
+    }
+
+    protected boolean canRunWithoutEnergy(MachineRecipeResult recipe) {
+        return false;
+    }
+
+    protected int energylessTickInterval(MachineRecipeResult recipe) {
+        return 5;
+    }
+
+    protected final boolean isEnergylessTick(MachineRecipeResult recipe) {
+        int interval = Math.max(1, energylessTickInterval(recipe));
+        return level != null && level.getGameTime() % interval == 0;
     }
 
     protected boolean hasRecipeResources(MachineRecipeResult recipe) {
@@ -429,10 +455,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             return changed;
         }
         long usage = energyUsagePerTick(recipe);
-        if (!hasRecipeResources(recipe)
-                || energyContainer == null
-                || energyContainer.getEnergy() < usage) {
+        boolean powered = hasEnergyForRecipe(recipe, usage);
+        boolean sourceOnly = !powered && canRunWithoutEnergy(recipe);
+        if (!hasRecipeResources(recipe) || (!powered && !sourceOnly)) {
             recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
+            return changed;
+        }
+        if (sourceOnly && !isEnergylessTick(recipe)) {
             return changed;
         }
         String recipeKey = recipeKey(recipe);
@@ -441,7 +470,10 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             progress = 0;
         }
         setActive(true);
-        energyContainer.extract(usage, Action.EXECUTE, AutomationType.INTERNAL);
+        if (powered) {
+            energyContainer.extract(usage, Action.EXECUTE,
+                    AutomationType.INTERNAL);
+        }
         progress++;
         if (progress >= progressRequired) {
             if (level instanceof ServerLevel serverLevel
@@ -481,17 +513,35 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (energySlot != null) {
             energySlot.fillContainerOrConvert();
         }
-        if (ejectorComponent != null && level instanceof ServerLevel
-                && hasEjectableItem() && shouldEjectOutputs()) {
-            // Logistical transporters need Mekanism's colored transit
-            // request, so keep a single native call for those targets.
-            boolean fallback = fastEjectItems();
-            onFastEjectFinished(hasEjectableItem(), fallback);
-            if (fallback) {
+        if (ejectorComponent != null && level instanceof ServerLevel) {
+            if (useFastEjectPath()) {
+                if (hasEjectableItem() && shouldEjectOutputs()) {
+                    // The dimensional miner keeps its dedicated batched
+                    // output path. Logistical transporters still use the
+                    // native colored transit request as a fallback.
+                    boolean fallback = fastEjectItems();
+                    onFastEjectFinished(hasEjectableItem(), fallback);
+                    if (fallback) {
+                        ejectorComponent.tickServer();
+                    }
+                }
+            } else {
+                // Match Mekanism's configurable-machine behavior for every
+                // machine except the dimensional miner: one native ejector
+                // tick per server tick, including when the inventory is empty.
                 ejectorComponent.tickServer();
             }
         }
         return changed;
+    }
+
+    /**
+     * Only the dimensional miner uses the custom long-buffer/batched output
+     * path. All other machines retain Mekanism/Mekanism Extras ejection
+     * timing and transport behavior.
+     */
+    protected boolean useFastEjectPath() {
+        return false;
     }
 
     protected boolean shouldEjectOutputs() {
@@ -718,15 +768,6 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     protected void onRecipeFinished(MachineRecipeResult recipe) {
-    }
-
-    protected final void tickEjectorAdditional(int calls) {
-        if (!(level instanceof ServerLevel) || ejectorComponent == null) {
-            return;
-        }
-        for (int index = 0; index < calls; index++) {
-            ejectorComponent.tickServer();
-        }
     }
 
     private ItemStackHandler snapshotInventory() {

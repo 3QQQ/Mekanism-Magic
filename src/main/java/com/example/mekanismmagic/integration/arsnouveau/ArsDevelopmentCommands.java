@@ -8,7 +8,11 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+
+import java.util.List;
 
 /**
  * Development-only commands for validating optional Ars machine content.
@@ -75,7 +79,32 @@ final class ArsDevelopmentCommands {
                                 .executes(context -> arsStatus(
                                         context.getSource(),
                                         BlockPosArgument.getLoadedBlockPos(
-                                                context, "pos"))))));
+                                                context, "pos")))))
+                .then(Commands.literal("catalyst_identifier")
+                        .then(Commands.argument("recipe",
+                                        ResourceLocationArgument.id())
+                                .executes(context -> giveCatalystIdentifier(
+                                        context.getSource(),
+                                        ResourceLocationArgument.getId(
+                                                context, "recipe")))))
+                .then(Commands.literal("catalyst_identifier_all")
+                        .executes(context -> giveAllCatalystIdentifiers(
+                                context.getSource())))
+                .then(Commands.literal("catalyst_assembler_test")
+                        .then(Commands.argument("pos",
+                                        BlockPosArgument.blockPos())
+                                .then(Commands.argument("recipe",
+                                                ResourceLocationArgument.id())
+                                        .executes(context ->
+                                                catalystAssemblerTest(
+                                                        context.getSource(),
+                                                        BlockPosArgument
+                                                                .getLoadedBlockPos(
+                                                                        context,
+                                                                        "pos"),
+                                                        ResourceLocationArgument
+                                                                .getId(context,
+                                                                        "recipe")))))));
     }
 
     private static int seedDrygmy(CommandSourceStack source,
@@ -180,5 +209,69 @@ final class ArsDevelopmentCommands {
                         + ", progress=" + machine.getProgress()
                         + "/" + machine.getProgressRequired()), false);
         return machine.getProgress();
+    }
+
+    private static int giveCatalystIdentifier(
+            CommandSourceStack source, ResourceLocation recipeId) {
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            source.sendFailure(Component.literal(
+                    "Only players can receive catalyst identifiers"));
+            return 0;
+        }
+        ItemStack identifier = ArsNouveauRecipeBridge
+                .createIdentifierForRecipe(source.getLevel(), recipeId);
+        if (!identifier.is(ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get())
+                || !identifier.has(
+                net.minecraft.core.component.DataComponents.CUSTOM_DATA)) {
+            source.sendFailure(Component.literal(
+                    "Recipe has no valid catalyst identifier"));
+            return 0;
+        }
+        if (!player.getInventory().add(identifier)) {
+            player.drop(identifier, false);
+        }
+        source.sendSuccess(() -> Component.literal(
+                "Generated catalyst identifier for " + recipeId), false);
+        return 1;
+    }
+
+    private static int giveAllCatalystIdentifiers(
+            CommandSourceStack source) {
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            source.sendFailure(Component.literal(
+                    "Only players can receive catalyst identifiers"));
+            return 0;
+        }
+        List<ItemStack> identifiers =
+                ArsNouveauRecipeBridge.catalystIdentifierJeiStacks(
+                        source.getLevel());
+        for (ItemStack identifier : identifiers) {
+            if (!player.getInventory().add(identifier.copy())) {
+                player.drop(identifier.copy(), false);
+            }
+        }
+        int count = identifiers.size();
+        source.sendSuccess(() -> Component.literal(
+                "Generated " + count + " catalyst identifiers"), false);
+        return count;
+    }
+
+    private static int catalystAssemblerTest(
+            CommandSourceStack source, BlockPos position,
+            ResourceLocation recipeId) {
+        if (!(source.getLevel().getBlockEntity(position)
+                instanceof CatalystIdentifierAssemblerBlockEntity assembler)) {
+            source.sendFailure(Component.literal(
+                    "Target is not a Catalyst Identifier Assembler"));
+            return 0;
+        }
+        if (assembler.seedDevelopmentTest(recipeId) <= 0) {
+            source.sendFailure(Component.literal(
+                    "Recipe not found or has no three catalyst ingredients"));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+                "Catalyst identifier test prepared for " + recipeId), false);
+        return 1;
     }
 }

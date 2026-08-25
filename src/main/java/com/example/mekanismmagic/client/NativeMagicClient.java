@@ -16,6 +16,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 @SuppressWarnings("removal")
 @EventBusSubscriber(modid = "mekanism_magic", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -41,6 +42,24 @@ public final class NativeMagicClient {
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             registerOptionalScreens(event,
                     "arsnouveau.client.ArsNouveauClient");
+        }
+    }
+
+    @SubscribeEvent
+    public static void registerRenderers(
+            EntityRenderersEvent.RegisterRenderers event) {
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            try {
+                Class.forName("com.example.mekanismmagic.integration."
+                                + "arsnouveau.client.ArsNouveauClient")
+                        .getMethod("registerRenderers",
+                                EntityRenderersEvent.RegisterRenderers.class)
+                        .invoke(null, event);
+            } catch (ReflectiveOperationException | LinkageError failure) {
+                throw new IllegalStateException(
+                        "Failed to register optional Ars renderers",
+                        failure);
+            }
         }
     }
 

@@ -41,7 +41,7 @@ NeoForge loader 和 Minecraft 1.21.1。
 当前开发环境已加入：
 
 * Mekanism Extras `1.4.0` (`mekanism_extras`)
-* Mekanism: MoreMachine `1.4.0` (`mekmm`)
+* Mekanism: MoreMachine `1.3.3` (`mekmm`) 或更高版本
 * Ars Nouveau `5.13.0` (`ars_nouveau`，可选)
 
 对应 JAR 位于本地 `libs/`，并通过 `compileOnly` 或按需 `localRuntime`
@@ -80,12 +80,25 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 
 ## Ars Nouveau 机器与 Source
 
+开发构建还提供 `mekanism_magic:magic_source_pipe` 魔力管道：
+
+- 外观和连接形态参考 Mekanism 管道，支持六向连接；
+- 管道自身缓存 `10,000 Source`，传输速率为 `1,000 Source / tick`；
+- 只与相邻的 Ars Source 机器或相邻魔力管道传输，不会跨区段读取 Source；
+- 通过 Ars Nouveau `SOURCE_CAPABILITY` 对外提供 Source；
+- 未启用 Ars Nouveau 开发内容时不会注册。
+
 开发树中包含以下 Ars Nouveau `5.13.0` 机器实现：
 
 - `mekanism_magic:source_generator`：增强附近原版魔源连接器的 Source 产量；
+- `mekanism_magic:source_converter`：消耗 FE 直接生成 Ars Source；
+- `mekanism_magic:catalyst_identifier_assembler`：读取 3 个真实灌注材料，
+  生成一个不消耗的催化剂标识；
 - `mekanism_magic:imbuement_processor`：处理灌注室配方；
 - `mekanism_magic:enchanting_apparatus_processor`：处理附魔装置体系配方；
-- `mekanism_magic:source_conversion_module`：用额外 FE 替代配方 Source 消耗。
+- Ars 机器支持 Mekanism Extras 的 `upgrade_creative`，并额外注册
+  `mekanism_magic:creative_source_upgrade` 作为同类型的“创造魔力升级”物品。
+  两者都可以放入 Mekanism 原版升级界面，用额外 FE 替代配方 Source 消耗。
 
 这些机器和插件在默认发布构建中暂不注册，对应配方、掉落和 JEI 催化剂也不会
 加载。当前发布版仅保留已经验证的 Ars Nouveau 收容罐兼容；完成全部特殊配方和
@@ -101,9 +114,39 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 灌注机提供三个材料槽，附魔装置机提供八个材料槽；
 物品可在槽内堆叠，实际处理时按配方数量消耗。
 
+Ars 机器支持无电慢速运行：正常供电时按 Mekanism 速度运行；当 FE 不足时，
+只要配方需要的 Source 仍然足够，机器每 5 tick 推进一次处理，不会完全停机。
+Source 仍按原配方在完成时消耗；安装创造魔力升级后不再启用该 Source 后备模式，
+而是继续使用其额外 FE 替代逻辑。
+
+Ars 机器 GUI 侧边新增“魔力配置”标签，六个方向分别支持：
+关闭、输入、输出、输入输出。该配置独立于物品、流体、气体和能量配置，
+并会同步保存到机器数据；魔力管道只会连接已启用 Source 的侧面。
+
 魔源增幅器每轮从半径 4 格内的原版魔源连接器抽取 `100 Source`，消耗
 `10,000 FE` 后输出 `150 Source`，不会脱离原版生产条件凭空生成魔源。
-电力替代插件按 `200 FE / Source` 计算。
+魔源转换机每轮消耗约 `50,000 FE`，生成 `100 Source`，并通过
+`SOURCE_CAPABILITY` 输出到 Ars Source 网络；支持速度、能量和创造魔力升级。
+
+催化剂标识制作机的输出物品保存 `catalyst_id` 和匹配的灌注配方 ID 列表。
+灌注处理机现在使用一个可展开的催化剂标识库，不再需要同时摆放 3 个真实催化剂；
+JEI 会动态显示当前配方对应的标识变体，玩家可将目标标识拖入配方锁定槽。
+标识物品在处理时不消耗，实际只消耗核心输入和 Source。
+
+魔法灌注工厂等级：
+
+- 基础、高级、精英、终极：分别使用 Mekanism 原版工厂等级；
+- 安装 Mekanism Extras 时增加绝对、至尊、宇宙、无限工厂；
+- Extras 高阶工厂分别提供 11、13、15、17 个并行进程；
+- 全部工厂共用不消耗的催化剂锁定槽，支持 Source 能力、创造魔力升级、
+  JEI 灌注配方催化剂和 Mek Energistics 可选自动化。
+
+安装 AE2 后，灌注处理机可作为可选 AE Crafting Provider：
+每个 Ars 灌注配方会生成一个 AE Pattern，Pattern 内部保存
+`recipe_id` 和 `catalyst_id` 虚拟上下文。AE 推送时只发送实际消耗的核心输入，
+不会发送或消耗催化剂标识物品；机器从标识库验证 `catalyst_id` 后处理。
+创造魔力升级按 `200 FE / Source` 计算，放置在 Mekanism 原版升级界面，
+不再占用机器额外物品槽。
 Mekanism 速度和能量升级继续正常生效。
 
 ## 维度矿机与 Mekanism Extras 堆叠升级
@@ -126,8 +169,13 @@ Mekanism Extras 变成硬性前置。
 - 九个不消耗的已填充 `mob_jar` 输入槽；
 - 二十七个可堆叠输出槽；
 - 使用原版实体战利品表、德格米黑名单、种类奖励与经验宝石换算；
-- 使用 Source，或安装魔源电力替代插件；
+- 使用 Source，或安装 Mekanism Extras 创造升级；
 - 收容实体只在内存中创建用于计算，不加入世界。
+
+安装 Mek Energistics `3.0.6` 或更高版本后，`mekanism_magic:dimension_miner`
+也会注册到其 ME 升级兼容清单。维度矿机安装 ME 升级后使用 Mek Energistics
+的输出弹出机制；未安装该模组或仅安装 `3.0.5` 时，继续使用 Mekanism
+原生自动弹出。旧版不会阻止进入世界，客户端首次进入世界会收到升级提示。
 
 ## Occultism 灵火与交易配方
 
@@ -183,7 +231,7 @@ Mekanism 的 `speed_upgrade` / `energy_upgrade` 是普通机器的升级物品�
 等级灯和 `ItemExtraTierInstaller` 升级链。Extras 未安装时这些类不会被
 加载，基础模组仍只注册 Mekanism 原版四级工厂。
 
-安装 JEI `19.39.0` 或更高版本时，本模组会注册“微缩五芒星制作”“神秘仪式”和
+安装 JEI `19.20.0` 或更高版本时，本模组会注册“微缩五芒星制作”“神秘仪式”和
 “魔灵处理”三个配方分类：前者显示 18 种五芒星成立材料、法阵粉笔和微缩输出，
 第二类显示可由仪式机器处理的具体仪式材料、激活物品、献祭示例和输出，包含普通合成、
 矿工魔灵和储存升级仪式；第三类显示灵火、粉碎、

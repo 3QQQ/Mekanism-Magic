@@ -57,6 +57,38 @@
       "required": false
     },
     {
+      "id": "mekanism_magic:basic_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:advanced_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:elite_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:ultimate_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:absolute_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:supreme_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:cosmic_imbuement_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:infinite_imbuement_factory",
+      "required": false
+    },
+    {
       "id": "mekanism_magic:enchanting_apparatus_processor",
       "required": false
     },

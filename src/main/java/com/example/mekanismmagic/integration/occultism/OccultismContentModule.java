@@ -33,6 +33,9 @@ public final class OccultismContentModule
     }
 
     private static void registerMekEnergistics() {
+        if (!ModCompatibility.mekenergisticsAutomationSupported()) {
+            return;
+        }
         try {
             Class.forName("com.example.mekanismmagic.integration.mekenergistics."
                             + "MekEnergisticsCompat")

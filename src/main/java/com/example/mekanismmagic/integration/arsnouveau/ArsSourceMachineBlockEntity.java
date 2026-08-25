@@ -8,15 +8,13 @@ import com.hollingsworth.arsnouveau.api.source.SourceProvider;
 import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
 import mekanism.api.IContentsListener;
 import mekanism.api.inventory.IInventorySlot;
-import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableInt;
-import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.tile.component.config.ConfigInfo;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -24,17 +22,33 @@ import net.minecraft.world.level.block.state.BlockState;
  * Mekanism machine base that participates in Ars Nouveau's Source network.
  */
 public abstract class ArsSourceMachineBlockEntity
-        extends NativeMagicMachineBlockEntity implements ISourceTile {
-    public static final int SOURCE_CONVERSION_MODULE_SLOT = 42;
+        extends NativeMagicMachineBlockEntity
+        implements ISourceTile, ArsSourceModeHost {
+    public enum SourceMode {
+        NONE,
+        INPUT,
+        OUTPUT,
+        INPUT_OUTPUT;
+
+        public SourceMode next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+    }
+
     private static final String SOURCE_NBT = "ars_source";
+    private static final String SOURCE_MODE_NBT = "ars_source_modes";
 
     private SourceStorage sourceStorage;
     private SourceProvider sourceProvider;
-    protected BasicInventorySlot sourceConversionModuleSlot;
+    private final java.util.EnumMap<Direction, SourceMode> sourceModes =
+            new java.util.EnumMap<>(Direction.class);
 
     protected ArsSourceMachineBlockEntity(Holder<Block> block, BlockPos pos,
                                           BlockState state) {
         super(block, pos, state);
+        for (Direction direction : Direction.values()) {
+            sourceModes.put(direction, SourceMode.INPUT_OUTPUT);
+        }
     }
 
     public final SourceStorage getSourceStorage() {
@@ -52,6 +66,31 @@ public abstract class ArsSourceMachineBlockEntity
         return sourceStorage;
     }
 
+    public final SourceMode getSourceMode(Direction side) {
+        return sourceModes.getOrDefault(side, SourceMode.NONE);
+    }
+
+    public final void cycleSourceMode(int index) {
+        Direction[] directions = Direction.values();
+        if (index < 0 || index >= directions.length) {
+            return;
+        }
+        Direction side = directions[index];
+        sourceModes.put(side, getSourceMode(side).next());
+        setChanged();
+        if (level != null) {
+            level.invalidateCapabilities(worldPosition);
+        }
+    }
+
+    public final boolean sourceSideEnabled(Direction side) {
+        return getSourceMode(side) != SourceMode.NONE;
+    }
+
+    public final SourceStorage getSourceStorage(Direction side) {
+        return sourceSideEnabled(side) ? getSourceStorage() : null;
+    }
+
     protected int sourceMaxReceive() {
         return ArsNouveauMachineConfig.SOURCE_TRANSFER_RATE;
     }
@@ -60,21 +99,25 @@ public abstract class ArsSourceMachineBlockEntity
         return ArsNouveauMachineConfig.SOURCE_TRANSFER_RATE;
     }
 
-    protected final BasicInventorySlot addSourceConversionModuleSlot(
-            InventorySlotHelper helper, IContentsListener listener,
-            int x, int y) {
-        sourceConversionModuleSlot = registerLogicalSlot(helper,
-                SOURCE_CONVERSION_MODULE_SLOT,
-                BasicInventorySlot.at(
-                        stack -> stack.is(
-                                ArsNouveauRegistries.SOURCE_CONVERSION_MODULE.get()),
-                        listener, x, y));
-        return sourceConversionModuleSlot;
+    protected final boolean hasCreativeSourceUpgrade() {
+        mekanism.api.Upgrade upgrade =
+                ArsNouveauRegistries.creativeSourceUpgrade();
+        return upgrade != null && upgradeComponent != null
+                && upgradeComponent.getUpgrades(upgrade) > 0;
     }
 
-    protected final boolean hasSourceConversionModule() {
-        return sourceConversionModuleSlot != null
-                && !sourceConversionModuleSlot.getStack().isEmpty();
+    @Override
+    protected boolean canRunWithoutEnergy(MachineRecipeResult recipe) {
+        int sourceCost = recipe.resourceCost(
+                ArsNouveauMachineConfig.SOURCE_RESOURCE);
+        return sourceCost > 0
+                && !hasCreativeSourceUpgrade()
+                && getSource() >= sourceCost;
+    }
+
+    @Override
+    protected int energylessTickInterval(MachineRecipeResult recipe) {
+        return ArsNouveauMachineConfig.ENERGYLESS_TICK_INTERVAL;
     }
 
     protected final ConfigInfo setupArsItemIO(
@@ -86,8 +129,7 @@ public abstract class ArsSourceMachineBlockEntity
 
     @Override
     public java.util.List<IInventorySlot> mekanismMagicPersistentInputs() {
-        return sourceConversionModuleSlot == null ? java.util.List.of()
-                : java.util.List.of(sourceConversionModuleSlot);
+        return java.util.List.of();
     }
 
     @Override
@@ -95,7 +137,7 @@ public abstract class ArsSourceMachineBlockEntity
         long base = baseEnergyPerTick();
         int sourceCost = recipe.resourceCost(
                 ArsNouveauMachineConfig.SOURCE_RESOURCE);
-        if (sourceCost > 0 && hasSourceConversionModule()) {
+        if (sourceCost > 0 && hasCreativeSourceUpgrade()) {
             base += Math.max(1L, Math.ceilDiv(
                     sourceCost * ArsNouveauMachineConfig.FE_PER_SOURCE,
                     Math.max(1, recipe.duration())));
@@ -107,7 +149,7 @@ public abstract class ArsSourceMachineBlockEntity
     protected boolean hasRecipeResources(MachineRecipeResult recipe) {
         int sourceCost = recipe.resourceCost(
                 ArsNouveauMachineConfig.SOURCE_RESOURCE);
-        return sourceCost <= 0 || hasSourceConversionModule()
+        return sourceCost <= 0 || hasCreativeSourceUpgrade()
                 || getSource() >= sourceCost;
     }
 
@@ -115,7 +157,7 @@ public abstract class ArsSourceMachineBlockEntity
     protected boolean consumeRecipeResources(MachineRecipeResult recipe) {
         int sourceCost = recipe.resourceCost(
                 ArsNouveauMachineConfig.SOURCE_RESOURCE);
-        if (sourceCost <= 0 || hasSourceConversionModule()) {
+        if (sourceCost <= 0 || hasCreativeSourceUpgrade()) {
             return true;
         }
         if (getSource() < sourceCost) {
@@ -130,6 +172,14 @@ public abstract class ArsSourceMachineBlockEntity
         super.addContainerTrackers(container);
         container.track(SyncableInt.create(this::getSource,
                 this::setSource));
+        for (Direction direction : Direction.values()) {
+            container.track(SyncableInt.create(
+                    () -> getSourceMode(direction).ordinal(),
+                    value -> sourceModes.put(direction,
+                            SourceMode.values()[Math.max(0, Math.min(
+                                    SourceMode.values().length - 1,
+                                    value))])));
+        }
     }
 
     @Override
@@ -201,16 +251,16 @@ public abstract class ArsSourceMachineBlockEntity
                 : getSource() / (double) getMaxSource();
     }
 
-    public final ItemStack getSourceConversionModuleStack() {
-        return sourceConversionModuleSlot == null ? ItemStack.EMPTY
-                : sourceConversionModuleSlot.getStack();
-    }
-
     @Override
     public void saveAdditional(CompoundTag tag,
                                net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt(SOURCE_NBT, getSource());
+        CompoundTag modes = new CompoundTag();
+        for (Direction direction : Direction.values()) {
+            modes.putInt(direction.getName(), getSourceMode(direction).ordinal());
+        }
+        tag.put(SOURCE_MODE_NBT, modes);
     }
 
     @Override
@@ -218,5 +268,14 @@ public abstract class ArsSourceMachineBlockEntity
                                net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         setSource(tag.getInt(SOURCE_NBT));
+        CompoundTag modes = tag.getCompound(SOURCE_MODE_NBT);
+        for (Direction direction : Direction.values()) {
+            if (modes.contains(direction.getName())) {
+                int value = Math.max(0, Math.min(
+                        SourceMode.values().length - 1,
+                        modes.getInt(direction.getName())));
+                sourceModes.put(direction, SourceMode.values()[value]);
+            }
+        }
     }
 }

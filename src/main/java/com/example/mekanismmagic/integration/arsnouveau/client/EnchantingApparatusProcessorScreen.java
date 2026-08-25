@@ -12,16 +12,43 @@ public final class EnchantingApparatusProcessorScreen
             MekanismTileContainer<
                     EnchantingApparatusProcessorBlockEntity> container,
             Inventory inventory, Component title) {
-        super(container, inventory, title, 184);
+        super(container, inventory, title, 208);
+        imageWidth = 210;
+        inventoryLabelX = 26;
     }
 
     @Override
     protected int workArrowX() {
-        return 91;
+        return 145;
     }
 
     @Override
     protected int workProgressX() {
-        return 92;
+        return 145;
+    }
+
+    @Override
+    protected int workArrowY() {
+        return 62;
+    }
+
+    @Override
+    protected int workProgressY() {
+        return 62;
+    }
+
+    @Override
+    protected boolean showUpArrow() {
+        return false;
+    }
+
+    @Override
+    protected int energyBarHeight() {
+        return 87;
+    }
+
+    @Override
+    protected mekanism.client.gui.element.progress.ProgressType progressType() {
+        return mekanism.client.gui.element.progress.ProgressType.SMALL_RIGHT;
     }
 }

@@ -57,34 +57,46 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
 
     @Override
     public void registerExtraIngredients(IExtraIngredientRegistration registration) {
-        if (!ModCompatibility.occultismLoaded()
-                || Minecraft.getInstance().level == null) {
+        if (Minecraft.getInstance().level == null) {
             return;
         }
-        registration.addExtraItemStacks(
-                OccultismRecipeBridge.pentacleJeiRecipes(
-                                Minecraft.getInstance().level).stream()
-                        .map(OccultismRecipeBridge.PentacleJeiData::output)
-                        .map(net.minecraft.world.item.ItemStack::copy)
-                        .toList());
+        if (ModCompatibility.occultismLoaded()) {
+            registration.addExtraItemStacks(
+                    OccultismRecipeBridge.pentacleJeiRecipes(
+                                    Minecraft.getInstance().level).stream()
+                            .map(OccultismRecipeBridge.PentacleJeiData::output)
+                            .map(net.minecraft.world.item.ItemStack::copy)
+                            .toList());
+        }
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            invokeOptionalJeiExtraRegistration(registration);
+        }
     }
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
-        if (!ModCompatibility.occultismLoaded()) {
-            return;
+        if (ModCompatibility.occultismLoaded()) {
+            registration.addRecipeCategories(new MiniRitualJeiCategory(
+                            registration.getJeiHelpers().getGuiHelper()),
+                    new RitualJeiCategory(
+                            registration.getJeiHelpers().getGuiHelper()),
+                    new SpiritJeiCategory(
+                            registration.getJeiHelpers().getGuiHelper()),
+                    new MinerJeiCategory(
+                            registration.getJeiHelpers().getGuiHelper()),
+                    new UltimateMiniRitualJeiCategory(
+                            registration.getJeiHelpers().getGuiHelper()));
         }
-        registration.addRecipeCategories(new MiniRitualJeiCategory(
-                registration.getJeiHelpers().getGuiHelper()),
-                new RitualJeiCategory(registration.getJeiHelpers().getGuiHelper()),
-                new SpiritJeiCategory(registration.getJeiHelpers().getGuiHelper()),
-                new MinerJeiCategory(registration.getJeiHelpers().getGuiHelper()),
-                new UltimateMiniRitualJeiCategory(
-                        registration.getJeiHelpers().getGuiHelper()));
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            invokeOptionalJeiCategoryRegistration(registration);
+        }
     }
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            invokeOptionalJeiRecipeRegistration(registration);
+        }
         if (!ModCompatibility.occultismLoaded()) {
             return;
         }
@@ -204,6 +216,50 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         } catch (ReflectiveOperationException | LinkageError failure) {
             throw new IllegalStateException(
                     "Failed to register optional JEI catalysts", failure);
+        }
+    }
+
+    private static void invokeOptionalJeiExtraRegistration(
+            IExtraIngredientRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "arsnouveau.client.ArsNouveauJeiIntegration")
+                    .getMethod("registerExtraIngredients",
+                            IExtraIngredientRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Ars JEI ingredients",
+                    failure);
+        }
+    }
+
+    private static void invokeOptionalJeiCategoryRegistration(
+            IRecipeCategoryRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "arsnouveau.client.ArsNouveauJeiIntegration")
+                    .getMethod("registerCategories",
+                            IRecipeCategoryRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Ars JEI categories",
+                    failure);
+        }
+    }
+
+    private static void invokeOptionalJeiRecipeRegistration(
+            IRecipeRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "arsnouveau.client.ArsNouveauJeiIntegration")
+                    .getMethod("registerRecipes",
+                            IRecipeRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Ars JEI recipes", failure);
         }
     }
 

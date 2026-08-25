@@ -3,11 +3,24 @@ package com.example.mekanismmagic.integration.arsnouveau;
 import com.example.mekanismmagic.MagicLang;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.block.NativeMachineBlock;
+import com.example.mekanismmagic.container.ArsSourceMachineContainer;
+import com.example.mekanismmagic.container.ImbuementFactoryContainer;
+import com.example.mekanismmagic.container.CatalystIdentifierAssemblerContainer;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import mekanism.api.Upgrade;
 import mekanism.common.content.blocktype.Machine;
+import mekanism.common.content.blocktype.BlockTypeTile;
+import mekanism.common.content.blocktype.BlockTypeTile.BlockTileBuilder;
+import mekanism.common.content.blocktype.FactoryType;
+import mekanism.common.tier.FactoryTier;
+import mekanism.common.tier.PipeTier;
+import mekanism.common.block.attribute.AttributeTier;
+import mekanism.common.block.attribute.AttributeUpgradeable;
+import mekanism.common.block.attribute.Attribute;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import mekanism.common.lib.transmitter.TransmissionType;
+import mekanism.common.capabilities.Capabilities;
+import mekanism.common.capabilities.proxy.ProxyConfigurable;
 import mekanism.common.registration.impl.BlockDeferredRegister;
 import mekanism.common.registration.impl.BlockRegistryObject;
 import mekanism.common.registration.impl.ContainerTypeDeferredRegister;
@@ -16,18 +29,35 @@ import mekanism.common.registration.impl.TileEntityTypeDeferredRegister;
 import mekanism.common.registration.impl.TileEntityTypeRegistryObject;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import mekanism.common.item.ItemUpgrade;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.function.Supplier;
+import mekanism.common.tier.FactoryTier;
+import mekanism.common.block.attribute.AttributeTier;
 
 /**
  * Registries loaded only when Ars Nouveau is present.
  */
 public final class ArsNouveauRegistries {
+    private static final Upgrade CREATIVE_SOURCE_UPGRADE =
+            optionalCreativeSourceUpgrade();
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MekanismMagic.MOD_ID);
+    public static final DeferredHolder<Item, Item>
+            CREATIVE_SOURCE_UPGRADE_ITEM =
+            registerCreativeSourceUpgradeItem();
+    public static final DeferredHolder<Item, CatalystIdentifierItem>
+            CATALYST_IDENTIFIER_ITEM =
+            ITEMS.register("catalyst_identifier",
+                    () -> new CatalystIdentifierItem(
+                            new Item.Properties().stacksTo(1)));
     public static final BlockDeferredRegister BLOCKS =
             new BlockDeferredRegister(MekanismMagic.MOD_ID);
     public static final TileEntityTypeDeferredRegister TILES =
@@ -35,33 +65,67 @@ public final class ArsNouveauRegistries {
     public static final ContainerTypeDeferredRegister CONTAINERS =
             new ContainerTypeDeferredRegister(MekanismMagic.MOD_ID);
 
-    public static final DeferredHolder<Item, Item> SOURCE_CONVERSION_MODULE =
-            ITEMS.register("source_conversion_module",
-                    () -> new SourceConversionModuleItem(
-                            new Item.Properties().stacksTo(1)));
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            MAGIC_SOURCE_PIPE_TYPE =
+            BlockTileBuilder.createBlock(
+                            ArsNouveauRegistries::magicSourcePipeTile,
+                            MagicLang.MAGIC_SOURCE_PIPE)
+                    .with(new AttributeTier<>(PipeTier.BASIC))
+                    .build();
+
+    public static final BlockRegistryObject<MagicSourcePipeBlock, BlockItem>
+            MAGIC_SOURCE_PIPE_BLOCK =
+            BLOCKS.register("magic_source_pipe",
+                    () -> new MagicSourcePipeBlock(
+                            MAGIC_SOURCE_PIPE_TYPE));
 
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<SourceAmplifierBlockEntity>>
+            ArsSourceMachineContainer<SourceAmplifierBlockEntity>>
             SOURCE_AMPLIFIER_CONTAINER =
-            CONTAINERS.custom("source_generator",
-                    SourceAmplifierBlockEntity.class).build();
+            CONTAINERS.register("source_generator",
+                    SourceAmplifierBlockEntity.class,
+                    (id, inventory, tile) ->
+                            new ArsSourceMachineContainer<>(id, inventory, tile));
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<ImbuementProcessorBlockEntity>>
+            ArsSourceMachineContainer<FeSourceConverterBlockEntity>>
+            SOURCE_CONVERTER_CONTAINER =
+            CONTAINERS.register("source_converter",
+                    FeSourceConverterBlockEntity.class,
+                    (id, inventory, tile) ->
+                            new ArsSourceMachineContainer<>(id, inventory, tile));
+    public static final ContainerTypeRegistryObject<
+            ArsSourceMachineContainer<ImbuementProcessorBlockEntity>>
             IMBUEMENT_PROCESSOR_CONTAINER =
-            CONTAINERS.custom("imbuement_processor",
-                    ImbuementProcessorBlockEntity.class).build();
+            CONTAINERS.register("imbuement_processor",
+                    ImbuementProcessorBlockEntity.class,
+                    (id, inventory, tile) ->
+                            new ArsSourceMachineContainer<>(id, inventory, tile));
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<EnchantingApparatusProcessorBlockEntity>>
+            ArsSourceMachineContainer<
+                    EnchantingApparatusProcessorBlockEntity>>
             ENCHANTING_APPARATUS_PROCESSOR_CONTAINER =
-            CONTAINERS.custom("enchanting_apparatus_processor",
-                    EnchantingApparatusProcessorBlockEntity.class)
-                    .offset(0, 18).build();
+            CONTAINERS.register("enchanting_apparatus_processor",
+                    EnchantingApparatusProcessorBlockEntity.class,
+                    (id, inventory, tile) ->
+                            new ArsSourceMachineContainer<>(id, inventory, tile));
     public static final ContainerTypeRegistryObject<
-            MekanismTileContainer<DrygmySimulatorBlockEntity>>
+            ArsSourceMachineContainer<DrygmySimulatorBlockEntity>>
             DRYGMY_SIMULATOR_CONTAINER =
-            CONTAINERS.custom("drygmy_simulator",
-                    DrygmySimulatorBlockEntity.class)
-                    .offset(17, 42).build();
+            CONTAINERS.register("drygmy_simulator",
+                    DrygmySimulatorBlockEntity.class,
+                    (id, inventory, tile) ->
+                            new ArsSourceMachineContainer<>(id, inventory, tile));
+    public static final ContainerTypeRegistryObject<
+            CatalystIdentifierAssemblerContainer>
+            CATALYST_IDENTIFIER_ASSEMBLER_CONTAINER =
+            CONTAINERS.register("catalyst_identifier_assembler",
+                    CatalystIdentifierAssemblerBlockEntity.class,
+                    CatalystIdentifierAssemblerContainer::new);
+    public static final ContainerTypeRegistryObject<
+            ImbuementFactoryContainer> IMBUEMENT_FACTORY_CONTAINER =
+            CONTAINERS.register("imbuement_factory",
+                    ImbuementFactoryBlockEntity.class,
+                    ImbuementFactoryContainer::new);
 
     public static final Machine<SourceAmplifierBlockEntity>
             SOURCE_AMPLIFIER_TYPE =
@@ -72,7 +136,29 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 500L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .build();
+    public static final Machine<FeSourceConverterBlockEntity>
+            SOURCE_CONVERTER_TYPE =
+            Machine.MachineBuilder.createMachine(
+                            ArsNouveauRegistries::sourceConverterTile,
+                            MagicLang.SOURCE_CONVERTER)
+                    .withGui(() -> SOURCE_CONVERTER_CONTAINER)
+                    .withEnergyConfig(() -> 500L, () -> 4_000_000L)
+                    .withSideConfig(TransmissionType.ITEM,
+                            TransmissionType.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .build();
+    public static final Machine<CatalystIdentifierAssemblerBlockEntity>
+            CATALYST_IDENTIFIER_ASSEMBLER_TYPE =
+            Machine.MachineBuilder.createMachine(
+                            ArsNouveauRegistries::catalystIdentifierAssemblerTile,
+                            MagicLang.CATALYST_IDENTIFIER_ASSEMBLER)
+                    .withGui(() -> CATALYST_IDENTIFIER_ASSEMBLER_CONTAINER)
+                    .withEnergyConfig(() -> 300L, () -> 2_000_000L)
+                    .withSideConfig(TransmissionType.ITEM,
+                            TransmissionType.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
                     .build();
     public static final Machine<ImbuementProcessorBlockEntity>
             IMBUEMENT_PROCESSOR_TYPE =
@@ -83,8 +169,28 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 600L, () -> 2_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
                     .build();
+    public static final Machine.FactoryMachine<ImbuementFactoryBlockEntity>
+            BASIC_IMBUEMENT_FACTORY_TYPE = createImbuementFactory(
+                    FactoryTier.BASIC, MagicLang.BASIC_IMBUEMENT_FACTORY,
+                    ArsNouveauRegistries::basicImbuementFactoryTile,
+                    ArsNouveauRegistries::advancedImbuementFactoryBlock);
+    public static final Machine.FactoryMachine<ImbuementFactoryBlockEntity>
+            ADVANCED_IMBUEMENT_FACTORY_TYPE = createImbuementFactory(
+                    FactoryTier.ADVANCED, MagicLang.ADVANCED_IMBUEMENT_FACTORY,
+                    ArsNouveauRegistries::advancedImbuementFactoryTile,
+                    ArsNouveauRegistries::eliteImbuementFactoryBlock);
+    public static final Machine.FactoryMachine<ImbuementFactoryBlockEntity>
+            ELITE_IMBUEMENT_FACTORY_TYPE = createImbuementFactory(
+                    FactoryTier.ELITE, MagicLang.ELITE_IMBUEMENT_FACTORY,
+                    ArsNouveauRegistries::eliteImbuementFactoryTile,
+                    ArsNouveauRegistries::ultimateImbuementFactoryBlock);
+    public static final Machine.FactoryMachine<ImbuementFactoryBlockEntity>
+            ULTIMATE_IMBUEMENT_FACTORY_TYPE = createImbuementFactory(
+                    FactoryTier.ULTIMATE, MagicLang.ULTIMATE_IMBUEMENT_FACTORY,
+                    ArsNouveauRegistries::ultimateImbuementFactoryTile,
+                    null);
     public static final Machine<EnchantingApparatusProcessorBlockEntity>
             ENCHANTING_APPARATUS_PROCESSOR_TYPE =
             Machine.MachineBuilder.createMachine(
@@ -95,7 +201,7 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 1_200L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
                     .build();
     public static final Machine<DrygmySimulatorBlockEntity>
             DRYGMY_SIMULATOR_TYPE =
@@ -106,7 +212,7 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 800L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
+                    .withSupportedUpgrades(arsSupportedUpgrades())
                     .build();
 
     public static final BlockRegistryObject<
@@ -117,12 +223,47 @@ public final class ArsNouveauRegistries {
                             BlockBehaviour.Properties.of().strength(4.0F)
                                     .requiresCorrectToolForDrops()));
     public static final BlockRegistryObject<
+            NativeMachineBlock<FeSourceConverterBlockEntity>, BlockItem>
+            SOURCE_CONVERTER_BLOCK =
+            BLOCKS.register("source_converter",
+                    () -> new NativeMachineBlock<>(SOURCE_CONVERTER_TYPE,
+                            BlockBehaviour.Properties.of().strength(4.0F)
+                                    .requiresCorrectToolForDrops()));
+    public static final BlockRegistryObject<
+            NativeMachineBlock<CatalystIdentifierAssemblerBlockEntity>,
+            BlockItem> CATALYST_IDENTIFIER_ASSEMBLER_BLOCK =
+            BLOCKS.register("catalyst_identifier_assembler",
+                    () -> new NativeMachineBlock<>(
+                            CATALYST_IDENTIFIER_ASSEMBLER_TYPE,
+                            BlockBehaviour.Properties.of().strength(4.0F)
+                                    .requiresCorrectToolForDrops()));
+    public static final BlockRegistryObject<
             NativeMachineBlock<ImbuementProcessorBlockEntity>, BlockItem>
             IMBUEMENT_PROCESSOR_BLOCK =
             BLOCKS.register("imbuement_processor",
                     () -> new NativeMachineBlock<>(IMBUEMENT_PROCESSOR_TYPE,
                             BlockBehaviour.Properties.of().strength(4.0F)
                                     .requiresCorrectToolForDrops()));
+    public static final BlockRegistryObject<
+            NativeMachineBlock<ImbuementFactoryBlockEntity>, BlockItem>
+            BASIC_IMBUEMENT_FACTORY_BLOCK =
+            registerImbuementFactoryBlock("basic_imbuement_factory",
+                    BASIC_IMBUEMENT_FACTORY_TYPE);
+    public static final BlockRegistryObject<
+            NativeMachineBlock<ImbuementFactoryBlockEntity>, BlockItem>
+            ADVANCED_IMBUEMENT_FACTORY_BLOCK =
+            registerImbuementFactoryBlock("advanced_imbuement_factory",
+                    ADVANCED_IMBUEMENT_FACTORY_TYPE);
+    public static final BlockRegistryObject<
+            NativeMachineBlock<ImbuementFactoryBlockEntity>, BlockItem>
+            ELITE_IMBUEMENT_FACTORY_BLOCK =
+            registerImbuementFactoryBlock("elite_imbuement_factory",
+                    ELITE_IMBUEMENT_FACTORY_TYPE);
+    public static final BlockRegistryObject<
+            NativeMachineBlock<ImbuementFactoryBlockEntity>, BlockItem>
+            ULTIMATE_IMBUEMENT_FACTORY_BLOCK =
+            registerImbuementFactoryBlock("ultimate_imbuement_factory",
+                    ULTIMATE_IMBUEMENT_FACTORY_TYPE);
     public static final BlockRegistryObject<
             NativeMachineBlock<EnchantingApparatusProcessorBlockEntity>,
             BlockItem> ENCHANTING_APPARATUS_PROCESSOR_BLOCK =
@@ -149,6 +290,23 @@ public final class ArsNouveauRegistries {
                                     .tickServer(level, pos, state, tile))
                     .build();
     public static final TileEntityTypeRegistryObject<
+            FeSourceConverterBlockEntity> SOURCE_CONVERTER_TILE =
+            TILES.mekBuilder(SOURCE_CONVERTER_BLOCK,
+                            FeSourceConverterBlockEntity::new)
+                    .serverTicker((level, pos, state, tile) ->
+                            mekanism.common.tile.base.TileEntityMekanism
+                                    .tickServer(level, pos, state, tile))
+                    .build();
+    public static final TileEntityTypeRegistryObject<
+            CatalystIdentifierAssemblerBlockEntity>
+            CATALYST_IDENTIFIER_ASSEMBLER_TILE =
+            TILES.mekBuilder(CATALYST_IDENTIFIER_ASSEMBLER_BLOCK,
+                            CatalystIdentifierAssemblerBlockEntity::new)
+                    .serverTicker((level, pos, state, tile) ->
+                            mekanism.common.tile.base.TileEntityMekanism
+                                    .tickServer(level, pos, state, tile))
+                    .build();
+    public static final TileEntityTypeRegistryObject<
             ImbuementProcessorBlockEntity> IMBUEMENT_PROCESSOR_TILE =
             TILES.mekBuilder(IMBUEMENT_PROCESSOR_BLOCK,
                             ImbuementProcessorBlockEntity::new)
@@ -156,6 +314,18 @@ public final class ArsNouveauRegistries {
                             mekanism.common.tile.base.TileEntityMekanism
                                     .tickServer(level, pos, state, tile))
                     .build();
+    public static final TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> BASIC_IMBUEMENT_FACTORY_TILE =
+            factoryTile(BASIC_IMBUEMENT_FACTORY_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> ADVANCED_IMBUEMENT_FACTORY_TILE =
+            factoryTile(ADVANCED_IMBUEMENT_FACTORY_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> ELITE_IMBUEMENT_FACTORY_TILE =
+            factoryTile(ELITE_IMBUEMENT_FACTORY_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> ULTIMATE_IMBUEMENT_FACTORY_TILE =
+            factoryTile(ULTIMATE_IMBUEMENT_FACTORY_BLOCK);
     public static final TileEntityTypeRegistryObject<
             EnchantingApparatusProcessorBlockEntity>
             ENCHANTING_APPARATUS_PROCESSOR_TILE =
@@ -173,6 +343,26 @@ public final class ArsNouveauRegistries {
                             mekanism.common.tile.base.TileEntityMekanism
                                     .tickServer(level, pos, state, tile))
                     .build();
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> MAGIC_SOURCE_PIPE_TILE =
+            TILES.builder(MAGIC_SOURCE_PIPE_BLOCK,
+                            (pos, state) ->
+                                    new MagicSourcePipeBlockEntity(
+                                            MAGIC_SOURCE_PIPE_BLOCK.get()
+                                                    .builtInRegistryHolder(),
+                                            pos, state))
+                    .serverTicker((level, pos, state, tile) ->
+                            mekanism.common.tile.transmitter
+                                    .TileEntityTransmitter.tickServer(
+                                            level, pos, state, tile))
+                    .withSimple(Capabilities.ALLOY_INTERACTION)
+                    .with(Capabilities.CONFIGURABLE,
+                            mekanism.common.tile.transmitter
+                                    .TileEntityTransmitter
+                                    .CONFIGURABLE_PROVIDER)
+                    .with(CapabilityRegistry.SOURCE_CAPABILITY,
+                            (tile, side) -> tile.getSourceStorage(side))
+                    .build();
 
     private ArsNouveauRegistries() {
     }
@@ -180,6 +370,22 @@ public final class ArsNouveauRegistries {
     private static TileEntityTypeRegistryObject<SourceAmplifierBlockEntity>
     sourceGeneratorTile() {
         return SOURCE_AMPLIFIER_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> magicSourcePipeTile() {
+        return MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<FeSourceConverterBlockEntity>
+    sourceConverterTile() {
+        return SOURCE_CONVERTER_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            CatalystIdentifierAssemblerBlockEntity>
+    catalystIdentifierAssemblerTile() {
+        return CATALYST_IDENTIFIER_ASSEMBLER_TILE;
     }
 
     private static TileEntityTypeRegistryObject<ImbuementProcessorBlockEntity>
@@ -198,6 +404,125 @@ public final class ArsNouveauRegistries {
         return DRYGMY_SIMULATOR_TILE;
     }
 
+    private static Machine.FactoryMachine<ImbuementFactoryBlockEntity>
+    createImbuementFactory(FactoryTier tier, MagicLang lang,
+                           java.util.function.Supplier<
+                                   TileEntityTypeRegistryObject<
+                                           ImbuementFactoryBlockEntity>> tile,
+                           Supplier<BlockRegistryObject<?, ?>> next) {
+        Machine.MachineBuilder<
+                Machine.FactoryMachine<ImbuementFactoryBlockEntity>,
+                ImbuementFactoryBlockEntity, ?> builder =
+                Machine.MachineBuilder.createFactoryMachine(tile,
+                        lang, FactoryType.SMELTING)
+                .withGui(() -> IMBUEMENT_FACTORY_CONTAINER)
+                .withEnergyConfig(() -> 600L * tier.processes,
+                        () -> 4_000_000L)
+                .withSideConfig(TransmissionType.ITEM,
+                        TransmissionType.ENERGY)
+                .withSupportedUpgrades(arsSupportedUpgrades())
+                .with(new AttributeTier<>(tier));
+        if (next != null) {
+            builder.with(new AttributeUpgradeable(next));
+        } else {
+            Attribute extras = optionalExtrasImbuementUpgrade();
+            if (extras != null) {
+                builder.with(extras);
+            }
+        }
+        return builder.build();
+    }
+
+    private static BlockRegistryObject<
+            NativeMachineBlock<ImbuementFactoryBlockEntity>, BlockItem>
+    registerImbuementFactoryBlock(
+            String name,
+            Machine.FactoryMachine<ImbuementFactoryBlockEntity> type) {
+        return BLOCKS.register(name,
+                () -> new NativeMachineBlock<>(type,
+                        BlockBehaviour.Properties.of().strength(4.0F)
+                                .requiresCorrectToolForDrops()));
+    }
+
+    private static TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> factoryTile(
+            BlockRegistryObject<
+                    NativeMachineBlock<ImbuementFactoryBlockEntity>,
+                    BlockItem> block) {
+        return TILES.mekBuilder(block,
+                        (pos, state) -> new ImbuementFactoryBlockEntity(
+                                block.get().builtInRegistryHolder(), pos, state))
+                .serverTicker((level, pos, state, tile) ->
+                        mekanism.common.tile.base.TileEntityMekanism
+                                .tickServer(level, pos, state, tile))
+                .build();
+    }
+
+    private static TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> basicImbuementFactoryTile() {
+        return BASIC_IMBUEMENT_FACTORY_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> advancedImbuementFactoryTile() {
+        return ADVANCED_IMBUEMENT_FACTORY_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> eliteImbuementFactoryTile() {
+        return ELITE_IMBUEMENT_FACTORY_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            ImbuementFactoryBlockEntity> ultimateImbuementFactoryTile() {
+        return ULTIMATE_IMBUEMENT_FACTORY_TILE;
+    }
+
+    private static BlockRegistryObject<?, ?>
+    advancedImbuementFactoryBlock() {
+        return ADVANCED_IMBUEMENT_FACTORY_BLOCK;
+    }
+
+    private static BlockRegistryObject<?, ?>
+    eliteImbuementFactoryBlock() {
+        return ELITE_IMBUEMENT_FACTORY_BLOCK;
+    }
+
+    private static BlockRegistryObject<?, ?>
+    ultimateImbuementFactoryBlock() {
+        return ULTIMATE_IMBUEMENT_FACTORY_BLOCK;
+    }
+
+    private static Attribute optionalExtrasImbuementUpgrade() {
+        if (!net.neoforged.fml.ModList.get().isLoaded("mekanism_extras")) {
+            return null;
+        }
+        try {
+            Class<?> attributeClass = Class.forName(
+                    "com.jerry.mekextras.common.block.attribute."
+                            + "ExtraAttributeUpgradeable");
+            Constructor<?> constructor = attributeClass.getConstructor(
+                    Supplier.class);
+            Supplier<BlockRegistryObject<?, ?>> target = () -> {
+                try {
+                    Class<?> integration = Class.forName(
+                            "com.example.mekanismmagic.integration.mekextras."
+                                    + "MekanismExtrasImbuementFactories");
+                    Field field = integration.getField("ABSOLUTE_BLOCK");
+                    return (BlockRegistryObject<?, ?>) field.get(null);
+                } catch (ReflectiveOperationException failure) {
+                    throw new IllegalStateException(failure);
+                }
+            };
+            return (Attribute) constructor.newInstance(target);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            MekanismMagic.LOGGER.warn(
+                    "Mekanism Extras imbuement factory upgrade is unavailable",
+                    failure);
+            return null;
+        }
+    }
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
         BLOCKS.register(modBus);
@@ -206,23 +531,126 @@ public final class ArsNouveauRegistries {
         modBus.addListener(ArsNouveauRegistries::registerCapabilities);
     }
 
+    public static Upgrade creativeSourceUpgrade() {
+        return CREATIVE_SOURCE_UPGRADE;
+    }
+
+    public static ContainerTypeRegistryObject<?> containerFor(
+            ArsSourceMachineBlockEntity tile) {
+        if (tile instanceof SourceAmplifierBlockEntity) {
+            return SOURCE_AMPLIFIER_CONTAINER;
+        }
+        if (tile instanceof FeSourceConverterBlockEntity) {
+            return SOURCE_CONVERTER_CONTAINER;
+        }
+        if (tile instanceof ImbuementProcessorBlockEntity) {
+            return IMBUEMENT_PROCESSOR_CONTAINER;
+        }
+        if (tile instanceof EnchantingApparatusProcessorBlockEntity) {
+            return ENCHANTING_APPARATUS_PROCESSOR_CONTAINER;
+        }
+        if (tile instanceof DrygmySimulatorBlockEntity) {
+            return DRYGMY_SIMULATOR_CONTAINER;
+        }
+        throw new IllegalArgumentException("Unknown Ars Source machine");
+    }
+
+    private static DeferredHolder<Item, Item>
+    registerCreativeSourceUpgradeItem() {
+        if (CREATIVE_SOURCE_UPGRADE == null) {
+            return null;
+        }
+        MekanismMagic.LOGGER.info(
+                "Registered Creative Source Upgrade item for Ars Nouveau");
+        return ITEMS.register("creative_source_upgrade",
+                () -> new ItemUpgrade(CREATIVE_SOURCE_UPGRADE,
+                        new Item.Properties().stacksTo(1)));
+    }
+
+    private static Upgrade[] arsSupportedUpgrades() {
+        return CREATIVE_SOURCE_UPGRADE == null
+                ? new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY}
+                : new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY,
+                        CREATIVE_SOURCE_UPGRADE};
+    }
+
+    private static Upgrade optionalCreativeSourceUpgrade() {
+        if (!net.neoforged.fml.ModList.get().isLoaded("mekanism_extras")) {
+            return null;
+        }
+        try {
+            Class<?> extraUpgrade = Class.forName(
+                    "com.jerry.mekextras.api.ExtraUpgrade");
+            Upgrade creative = (Upgrade) extraUpgrade
+                    .getField("CREATIVE").get(null);
+            MekanismMagic.LOGGER.info(
+                    "Enabled Mekanism Extras creative upgrade support "
+                            + "for Ars Nouveau Source machines");
+            return creative;
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            MekanismMagic.LOGGER.warn(
+                    "Mekanism Extras creative upgrade is unavailable; "
+                            + "Ars machines will require Source normally",
+                    failure);
+            return null;
+        }
+    }
+
     private static void registerCapabilities(
             RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 SOURCE_AMPLIFIER_TILE.get(),
-                (tile, side) -> tile.getSourceStorage());
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                SOURCE_CONVERTER_TILE.get(),
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 IMBUEMENT_PROCESSOR_TILE.get(),
-                (tile, side) -> tile.getSourceStorage());
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                BASIC_IMBUEMENT_FACTORY_TILE.get(),
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                ADVANCED_IMBUEMENT_FACTORY_TILE.get(),
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                ELITE_IMBUEMENT_FACTORY_TILE.get(),
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
+        event.registerBlockEntity(
+                CapabilityRegistry.SOURCE_CAPABILITY,
+                ULTIMATE_IMBUEMENT_FACTORY_TILE.get(),
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 ENCHANTING_APPARATUS_PROCESSOR_TILE.get(),
-                (tile, side) -> tile.getSourceStorage());
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 DRYGMY_SIMULATOR_TILE.get(),
-                (tile, side) -> tile.getSourceStorage());
+                (tile, side) -> side == null
+                        ? tile.getSourceStorage()
+                        : tile.getSourceStorage(side));
     }
 }

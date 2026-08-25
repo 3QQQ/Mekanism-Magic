@@ -94,9 +94,7 @@ public final class DrygmySimulatorBlockEntity
                 outputSlot = slot;
             }
         }
-        IInventorySlot module = addSourceConversionModuleSlot(
-                helper, listener, 20, 106);
-        setupArsItemIO(jarSlots, outputSlots, List.of(module));
+        setupArsItemIO(jarSlots, outputSlots, List.of());
     }
 
     @Override
@@ -133,16 +131,12 @@ public final class DrygmySimulatorBlockEntity
     @Override
     public List<IInventorySlot> mekanismMagicPersistentInputs() {
         List<IInventorySlot> persistent = new ArrayList<>(jarSlots);
-        if (sourceConversionModuleSlot != null) {
-            persistent.add(sourceConversionModuleSlot);
-        }
         return List.copyOf(persistent);
     }
 
     @Override
     protected boolean onUpdateServer() {
         boolean changed = nativeBaseUpdate();
-        tickEjectorAdditional(10);
         setActive(false);
         if (!(level instanceof ServerLevel serverLevel)) {
             return changed;
@@ -165,13 +159,19 @@ public final class DrygmySimulatorBlockEntity
             return changed;
         }
         long usage = energyUsagePerTick(process);
-        if (energyContainer == null
-                || energyContainer.getEnergy() < usage) {
+        boolean powered = hasEnergyForRecipe(process, usage);
+        boolean sourceOnly = !powered && canRunWithoutEnergy(process);
+        if (!powered && !sourceOnly) {
+            return changed;
+        }
+        if (sourceOnly && !isEnergylessTick(process)) {
             return changed;
         }
         setActive(true);
-        energyContainer.extract(usage, Action.EXECUTE,
-                AutomationType.INTERNAL);
+        if (powered) {
+            energyContainer.extract(usage, Action.EXECUTE,
+                    AutomationType.INTERNAL);
+        }
         progress++;
         if (progress >= progressRequired) {
             if (!consumeRecipeResources(process)

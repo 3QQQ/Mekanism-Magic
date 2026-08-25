@@ -10,8 +10,10 @@ import org.spongepowered.asm.mixin.Mixin;
  * concrete profile on the high-tier spirit factory so AE2 node readiness
  * cannot fail with AbstractMethodError.
  */
-@Mixin(targets =
+@Mixin(targets = {
         "com.example.mekanismmagic.integration.mekextras.ExtraSpiritFactoryBlockEntity",
+        "com.example.mekanismmagic.integration.mekextras.ExtraImbuementFactoryBlockEntity"
+},
         remap = false)
 public abstract class MekEnergisticsExtraSpiritFactoryProfileMixin {
     public MeUpgradeMachineProfile<?> getMeUpgradeProfile() {

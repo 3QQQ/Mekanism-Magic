@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "mekanism_magic:item/source_conversion_module"
+    "layer0": "mekanism_magic:item/catalyst_identifier"
   }
 }

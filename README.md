@@ -20,10 +20,22 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 - 终极微缩仪式：使用四个最高等级 Marid 五芒星制作，可作为通用仪式选择器。
 - 维度矿工处理机：单个不消耗矿工输入，三行九槽输出，支持附魔和自动输出。
 - 安装 Mekanism Extras 时，维度矿机支持最高 256 倍并行的堆叠升级。
+- Ars 机器提供“创造魔力升级”，使用 Mekanism Extras 时可放入原版升级界面。
+- Ars 机器在 FE 不足时可依靠足量 Source 缓慢工作，供电恢复后自动恢复正常速度。
+- Ars 机器 GUI 提供独立的“魔力配置”界面，可分别设置六个方向的 Source 输入/输出。
+- 魔源转换机可消耗 FE 直接生成 Source，并输出到 Ars Source 网络。
+- 催化剂标识制作机可将 3 个灌注材料合成为一个不消耗的催化剂标识；
+  灌注处理机使用可展开标识库，并支持从 JEI 拖拽标识锁定配方。
+- 安装 AE2 后，灌注处理机支持带 `recipe_id/catalyst_id` 虚拟上下文的 AE 自动化。
+- 魔法灌注工厂包含 Mekanism 四级工厂；安装 Mekanism Extras 时扩展至
+  绝对、至尊、宇宙、无限等级（最高 17 个并行进程）。
+- 安装 Mek Energistics 时，维度矿机支持 ME 升级弹出机制。
 - Mekanism 风格 GUI、能量槽、侧面配置、速度/能量升级和 JEI 配方分类。
 - Ars Nouveau 收容罐、Occultism 灵魂容器、刷怪蛋和魔灵职业数据兼容。
 - Ars Nouveau 收容罐兼容；魔源增幅器、灌注处理机、附魔装置处理机和
-  魔源电力替代插件在完成全部适配验证前不在发布版中启用。
+  德格米生态模拟器在完成全部适配验证前不在发布版中启用。
+- 开发构建提供参考 Mekanism 连接形态的魔力管道，用于 Ars Source 的相邻
+  管道传输。
 
 ## 1.21.1 NeoForge
 
@@ -38,6 +50,16 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 - Java 21
 
 IDEA 中以 Gradle 项目打开根目录，刷新 Gradle 后运行 `client` 或 `server`。
+
+项目还提供两个 IDEA 专用 Ars Nouveau 测试配置：
+
+- `Ars Compatibility Client`：启动带 Ars Nouveau 运行时和开发机器内容的客户端；
+- `Ars Compatibility Server`：启动同样开关的专用服务器。
+
+这些配置只在当前 IDEA 启动时传入
+`-Pmekanism_magic.ars_runtime=true` 和
+`-Pmekanism_magic.ars_machine_content=true`，不会修改
+`gradle.properties`，因此普通 `build` 和正式发布包仍保持关闭 Ars 开发机器内容。
 
 ## 1.20.1 Forge
 

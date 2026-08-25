@@ -93,12 +93,19 @@ public final class SourceAmplifierBlockEntity
         }
         long usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
                 this, baseEnergyPerTick());
-        if (energyContainer == null || energyContainer.getEnergy() < usage) {
+        boolean powered = energyContainer != null
+                && energyContainer.getEnergy() >= usage;
+        boolean sourceOnly = !powered
+                && level.getGameTime()
+                % ArsNouveauMachineConfig.ENERGYLESS_TICK_INTERVAL == 0;
+        if (!powered && !sourceOnly) {
             return changed;
         }
         setActive(true);
-        energyContainer.extract(usage, Action.EXECUTE,
-                AutomationType.INTERNAL);
+        if (powered) {
+            energyContainer.extract(usage, Action.EXECUTE,
+                    AutomationType.INTERNAL);
+        }
         progress++;
         if (progress >= progressRequired) {
             if (!isUsableSourcelink(sourcelink)

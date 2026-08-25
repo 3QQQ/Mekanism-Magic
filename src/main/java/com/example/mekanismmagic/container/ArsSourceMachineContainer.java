@@ -1,0 +1,71 @@
+package com.example.mekanismmagic.container;
+
+import com.example.mekanismmagic.integration.arsnouveau.ArsSourceMachineBlockEntity;
+import mekanism.common.inventory.container.tile.MekanismTileContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+
+/**
+ * Common Ars machine container with Mekanism-style side-mode buttons for the
+ * Source capability.
+ */
+public final class ArsSourceMachineContainer<
+        TILE extends ArsSourceMachineBlockEntity>
+        extends MekanismTileContainer<TILE> {
+    public ArsSourceMachineContainer(
+            int id,
+            Inventory inventory, TILE tile) {
+        super(com.example.mekanismmagic.integration.arsnouveau
+                        .ArsNouveauRegistries.containerFor(tile),
+                id, inventory, tile);
+    }
+
+    @Override
+    protected int getInventoryXOffset() {
+        return tile instanceof com.example.mekanismmagic.integration.arsnouveau
+                .DrygmySimulatorBlockEntity
+                || tile instanceof com.example.mekanismmagic.integration.arsnouveau
+                .EnchantingApparatusProcessorBlockEntity ? 25 : 8;
+    }
+
+    @Override
+    protected int getInventoryYOffset() {
+        if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
+                .DrygmySimulatorBlockEntity) {
+            return 126;
+        }
+        if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
+                .EnchantingApparatusProcessorBlockEntity) {
+            return 126;
+        }
+        return 84;
+    }
+
+    @Override
+    public boolean clickMenuButton(Player player, int buttonId) {
+        if (buttonId >= 200 && buttonId < 206) {
+            tile.cycleSourceMode(buttonId - 200);
+            return true;
+        }
+        if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
+                .ImbuementProcessorBlockEntity imbuement) {
+            if (buttonId == 220) {
+                imbuement.cycleCatalystPage(-1);
+                return true;
+            }
+            if (buttonId == 221) {
+                imbuement.cycleCatalystPage(1);
+                return true;
+            }
+            if (buttonId >= 300
+                    && buttonId < 300
+                    + com.example.mekanismmagic.blockentity
+                    .NativeMagicMachineBlockEntity
+                    .CATALYST_LIBRARY_SLOT_COUNT) {
+                imbuement.selectCatalystIdentifier(buttonId - 300);
+                return true;
+            }
+        }
+        return super.clickMenuButton(player, buttonId);
+    }
+}

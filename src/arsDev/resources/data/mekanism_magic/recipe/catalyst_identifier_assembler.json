@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GSG",
+    "ECE",
+    "GSG"
+  ],
+  "key": {
+    "G": {"item": "ars_nouveau:source_gem"},
+    "S": {"item": "ars_nouveau:source_jar"},
+    "E": {"item": "mekanism:energy_tablet"},
+    "C": {"item": "mekanism:steel_casing"}
+  },
+  "result": {
+    "id": "mekanism_magic:catalyst_identifier_assembler",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {"type": "neoforge:mod_loaded", "modid": "ars_nouveau"}
+  ]
+}

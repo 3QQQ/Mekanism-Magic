@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau.client;
 
+import com.example.mekanismmagic.client.gui.ArsIntegratedSideConfig;
 import com.example.mekanismmagic.client.screen.NativeMagicMachineScreen;
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceMachineBlockEntity;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
@@ -12,7 +13,6 @@ import net.minecraft.world.entity.player.Inventory;
 public abstract class ArsSourceMachineScreen<
         TILE extends ArsSourceMachineBlockEntity>
         extends NativeMagicMachineScreen<TILE, MekanismTileContainer<TILE>> {
-
     protected ArsSourceMachineScreen(
             MekanismTileContainer<TILE> container,
             Inventory inventory, Component title, int imageHeight) {
@@ -23,6 +23,8 @@ public abstract class ArsSourceMachineScreen<
     protected void addMachineGuiElements() {
         addRenderableWidget(new GuiSourceBar(this, getTileEntity(),
                 sourceBarX(), 16, sourceBarHeight()));
+        ArsIntegratedSideConfig.install(this, getTileEntity(), children(),
+                this::addRenderableWidget);
         addArsMachineGuiElements();
     }
 
@@ -30,7 +32,7 @@ public abstract class ArsSourceMachineScreen<
     }
 
     protected int sourceBarX() {
-        return imageWidth - 20;
+        return imageWidth - 31;
     }
 
     protected int sourceBarHeight() {

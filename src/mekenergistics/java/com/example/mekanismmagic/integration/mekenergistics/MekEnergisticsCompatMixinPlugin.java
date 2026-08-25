@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.mekenergistics;
 
+import com.example.mekanismmagic.integration.ModCompatibility;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -19,8 +20,17 @@ public final class MekEnergisticsCompatMixinPlugin
 
     private static boolean loaded() {
         String resource = API_CLASS.replace('.', '/') + ".class";
-        return MekEnergisticsCompatMixinPlugin.class.getClassLoader()
-                .getResource(resource) != null;
+        if (MekEnergisticsCompatMixinPlugin.class.getClassLoader()
+                .getResource(resource) == null) {
+            return false;
+        }
+        try {
+            return ModCompatibility.mekenergisticsAutomationSupported();
+        } catch (Throwable ignored) {
+            // A partially initialized loader must never make the optional
+            // integration prevent the game from starting.
+            return false;
+        }
     }
 
     @Override

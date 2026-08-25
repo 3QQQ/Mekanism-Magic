@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "mekanism_magic:block/magic_source_pipe_transmitter"
+    }
+  }
+}

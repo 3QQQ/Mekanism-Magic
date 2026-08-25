@@ -84,6 +84,13 @@ public abstract class NativeMagicMachineScreen<
         return ProgressType.BAR;
     }
 
+    protected void clickMenuButton(int buttonId) {
+        if (minecraft.gameMode != null) {
+            minecraft.gameMode.handleInventoryButtonClick(
+                    getMenu().containerId, buttonId);
+        }
+    }
+
     @Override
     protected void drawForegroundText(net.minecraft.client.gui.GuiGraphics gui,
                                       int mouseX, int mouseY) {

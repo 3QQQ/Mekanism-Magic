@@ -61,10 +61,21 @@ public final class MekanismMagic {
                     .icon(MekanismMagic::creativeIcon)
                     .displayItems((parameters, output) -> {
                         acceptOptional(output, "source_generator");
+                        acceptOptional(output, "source_converter");
+                        acceptOptional(output, "catalyst_identifier_assembler");
+                        acceptOptional(output, "basic_imbuement_factory");
+                        acceptOptional(output, "advanced_imbuement_factory");
+                        acceptOptional(output, "elite_imbuement_factory");
+                        acceptOptional(output, "ultimate_imbuement_factory");
+                        acceptOptional(output, "absolute_imbuement_factory");
+                        acceptOptional(output, "supreme_imbuement_factory");
+                        acceptOptional(output, "cosmic_imbuement_factory");
+                        acceptOptional(output, "infinite_imbuement_factory");
                         acceptOptional(output, "imbuement_processor");
                         acceptOptional(output, "enchanting_apparatus_processor");
                         acceptOptional(output, "drygmy_simulator");
-                        acceptOptional(output, "source_conversion_module");
+                        acceptOptional(output, "magic_source_pipe");
+                        acceptOptional(output, "creative_source_upgrade");
                         acceptOptional(output, "spirit_processor");
                         acceptOptional(output, "dimension_miner");
                         acceptOptional(output, "basic_spirit_factory");

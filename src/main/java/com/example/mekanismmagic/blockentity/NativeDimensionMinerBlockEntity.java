@@ -490,6 +490,11 @@ public final class NativeDimensionMinerBlockEntity
                 || outputBufferNeedsEject();
     }
 
+    @Override
+    protected boolean useFastEjectPath() {
+        return true;
+    }
+
     private boolean outputBufferNeedsEject() {
         int limit = currentOutputLimit();
         for (BasicInventorySlot slot : minerOutputs) {

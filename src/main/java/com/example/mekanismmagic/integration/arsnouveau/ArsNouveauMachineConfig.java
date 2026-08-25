@@ -15,6 +15,10 @@ public final class ArsNouveauMachineConfig {
     public static final int RAW_SOURCE_PER_OPERATION = 100;
     public static final int AMPLIFIED_SOURCE_PER_OPERATION = 150;
     public static final long FE_PER_SOURCE = 200L;
+    public static final int ENERGYLESS_TICK_INTERVAL = 5;
+    public static final int SOURCE_CONVERTER_DURATION = 100;
+    public static final int SOURCE_CONVERTER_FE_PER_TICK = 500;
+    public static final int SOURCE_CONVERTER_SOURCE_PER_OPERATION = 100;
     public static final int IMBUEMENT_DURATION = 100;
     public static final int APPARATUS_DURATION = 100;
 

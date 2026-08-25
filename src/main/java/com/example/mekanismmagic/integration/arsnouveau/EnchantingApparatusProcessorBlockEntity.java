@@ -41,25 +41,21 @@ public final class EnchantingApparatusProcessorBlockEntity
             for (int column = 0; column < 3; column++) {
                 if (row == 1 && column == 1) {
                     inputSlot = registerLogicalSlot(helper, REAGENT_SLOT,
-                            InputInventorySlot.at(listener, 62, 35));
+                            InputInventorySlot.at(listener, 87, 49));
                 } else {
                     pedestalSlots.add(registerLogicalSlot(helper, logical++,
                             InputInventorySlot.at(listener,
-                                    44 + column * 18,
-                                    17 + row * 18)));
+                                    69 + column * 18,
+                                    31 + row * 18)));
                 }
             }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
-                OutputInventorySlot.at(listener, 116, 35));
-        IInventorySlot module = addSourceConversionModuleSlot(
-                helper, listener, 28, 71);
+                OutputInventorySlot.at(listener, 176, 58));
         var itemConfig = setupArsItemIO(
                 List.of(inputSlot), List.of(outputSlot), List.of());
         addNativeItemSlotInfo(itemConfig, DataType.INPUT_2,
                 true, false, pedestalSlots);
-        addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
-                true, true, List.of(module));
     }
 
     @Override
@@ -77,12 +73,12 @@ public final class EnchantingApparatusProcessorBlockEntity
 
     @Override
     protected int energySlotX() {
-        return 28;
+        return 30;
     }
 
     @Override
     protected int energySlotY() {
-        return 17;
+        return 35;
     }
 
     void seedDevelopmentTest() {

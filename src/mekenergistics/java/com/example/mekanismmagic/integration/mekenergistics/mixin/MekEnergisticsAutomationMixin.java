@@ -15,7 +15,9 @@ import java.util.List;
 @Mixin(targets = {
         "com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity",
         "com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity",
-        "com.example.mekanismmagic.integration.mekextras.ExtraSpiritFactoryBlockEntity"
+        "com.example.mekanismmagic.integration.arsnouveau.ImbuementFactoryBlockEntity",
+        "com.example.mekanismmagic.integration.mekextras.ExtraSpiritFactoryBlockEntity",
+        "com.example.mekanismmagic.integration.mekextras.ExtraImbuementFactoryBlockEntity"
 }, remap = false)
 public abstract class MekEnergisticsAutomationMixin
         implements IMePatternAutomationHost {

@@ -1,7 +1,7 @@
 package com.example.mekanismmagic.integration.arsnouveau.client;
 
 import com.example.mekanismmagic.MekanismMagic;
-import com.example.mekanismmagic.integration.arsnouveau.ArsSourceMachineBlockEntity;
+import com.hollingsworth.arsnouveau.api.source.ISourceTile;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.bar.GuiBar;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,12 +19,13 @@ public final class GuiSourceBar
     private final int barHeight;
 
     public GuiSourceBar(IGuiWrapper gui,
-                        ArsSourceMachineBlockEntity tile,
+                        ISourceTile tile,
                         int x, int y, int height) {
         super(TEXTURE, gui, new IBarInfoHandler() {
             @Override
             public double getLevel() {
-                return tile.getSourceScale();
+                return tile.getMaxSource() <= 0 ? 0
+                        : tile.getSource() / (double) tile.getMaxSource();
             }
 
             @Override

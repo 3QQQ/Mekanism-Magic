@@ -75,6 +75,11 @@ sourceSets.main.resources {
 def mekanismExtrasJar = file(
         "libs/mekanism_extras-1.21.1-${mekanism_extras_version}.jar")
 def mekenergisticsJar = file('libs/mekenergistics-3.0.6.jar')
+def mekmmJar = file("libs/mekmm-1.21.1-${mekmm_runtime_version}.jar")
+def ae2Jar = file('run/mods/appliedenergistics2-19.2.17.jar')
+def compileAe2 = project.findProperty(
+        'mekanism_magic.compile_ae2')?.toString()?.toBoolean()
+        ?: ae2Jar.exists()
 def compileMekEnergistics = project.findProperty(
         'mekanism_magic.compile_mekenergistics')?.toString()?.toBoolean()
         ?: mekenergisticsJar.exists()
@@ -87,6 +92,9 @@ if (!compileMekanismExtras) {
 if (compileMekEnergistics) {
     sourceSets.main.java.srcDir('src/mekenergistics/java')
     sourceSets.main.resources.srcDir('src/mekenergistics/resources')
+}
+if (compileAe2) {
+    sourceSets.main.java.srcDir('src/ae2/java')
 }
 
 configurations {
@@ -105,6 +113,8 @@ def mekmmRuntimeEnabled = compatRuntimeEnabled ||
 def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
 def mekEnergisticsRuntimeEnabled = project.findProperty(
         'mekanism_magic.mekenergistics_runtime')?.toString()?.toBoolean() ?: false
+def ae2RuntimeEnabled = project.findProperty(
+        'mekanism_magic.ae2_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
     compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
@@ -114,7 +124,8 @@ dependencies {
     compileOnly files(
             mekanismExtrasJar,
             mekenergisticsJar,
-            'libs/mekmm-1.21.1-1.4.0.jar'
+            ae2Jar,
+            mekmmJar
     )
     // Recipe and mob-jar bridges use registry lookups/reflection so optional
     // implementation classes are not hard-linked into the addon.
@@ -143,6 +154,9 @@ dependencies {
     }
     if (mekEnergisticsRuntimeEnabled) {
         localRuntime files(mekenergisticsJar)
+    }
+    if (ae2RuntimeEnabled) {
+        localRuntime files(ae2Jar)
     }
 }
 

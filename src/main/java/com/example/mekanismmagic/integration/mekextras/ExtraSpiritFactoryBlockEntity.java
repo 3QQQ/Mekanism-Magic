@@ -33,7 +33,6 @@ import java.util.Set;
 public final class ExtraSpiritFactoryBlockEntity
         extends TileEntityExtraItemToItemFactory<SpiritFactoryRecipe>
         implements IMekanismMagicAutomation {
-    private static final int EJECTOR_CALLS_PER_TICK = 11;
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
 
@@ -189,23 +188,7 @@ public final class ExtraSpiritFactoryBlockEntity
 
     @Override
     protected boolean onUpdateServer() {
-        boolean changed = super.onUpdateServer();
-        if (level instanceof net.minecraft.server.level.ServerLevel
-                && hasStoredOutput()) {
-            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
-                ejectorComponent.tickServer();
-            }
-        }
-        return changed;
-    }
-
-    private boolean hasStoredOutput() {
-        for (IInventorySlot slot : outputSlots) {
-            if (!slot.getStack().isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+        return super.onUpdateServer();
     }
 
     @Override

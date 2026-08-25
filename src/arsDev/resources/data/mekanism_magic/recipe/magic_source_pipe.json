@@ -1,27 +1,24 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "RGR",
-    "ECE",
-    "RGR"
+    "GSG",
+    "SCS",
+    "GSG"
   ],
   "key": {
-    "R": {
-      "item": "mekanism:alloy_reinforced"
-    },
     "G": {
       "item": "ars_nouveau:source_gem"
     },
-    "E": {
-      "item": "mekanism:energy_tablet"
+    "S": {
+      "item": "ars_nouveau:source_jar"
     },
     "C": {
-      "item": "mekanism:advanced_control_circuit"
+      "item": "mekanism:steel_casing"
     }
   },
   "result": {
-    "id": "mekanism_magic:source_conversion_module",
-    "count": 1
+    "id": "mekanism_magic:magic_source_pipe",
+    "count": 8
   },
   "neoforge:conditions": [
     {
