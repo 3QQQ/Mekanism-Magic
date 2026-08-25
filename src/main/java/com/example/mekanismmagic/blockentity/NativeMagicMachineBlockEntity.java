@@ -796,7 +796,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return fingerprint;
     }
 
-    private boolean hasAnyRecipeInput() {
+    /**
+     * Returns whether the machine has enough non-special input state to make a
+     * recipe lookup worthwhile. Machines with a selector or other manual
+     * control item can override this to avoid scanning while their real
+     * processing inputs are empty.
+     */
+    protected boolean hasAnyRecipeInput() {
         if (logicalSlots == null || logicalSlots.isEmpty()) {
             return false;
         }

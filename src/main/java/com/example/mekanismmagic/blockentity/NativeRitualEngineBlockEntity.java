@@ -80,6 +80,27 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 !inventory.getStackInSlot(DICTIONARY_SLOT).isEmpty());
     }
 
+    /**
+     * A ritual selector by itself is not enough to start a useful lookup.
+     * Require both the selected miniature ritual and at least one of the
+     * sixteen material inputs before walking Occultism's ritual recipe list.
+     * This keeps a configured but empty ritual engine nearly idle.
+     */
+    @Override
+    protected boolean hasAnyRecipeInput() {
+        if (ritualSlot == null || ritualSlot.getStack().isEmpty()) {
+            return false;
+        }
+        for (int index = 0; index < INPUT_SLOTS; index++) {
+            mekanism.api.inventory.IInventorySlot slot =
+                    logicalSlots().get(index);
+            if (slot != null && !slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected int baseEnergyPerTick() {
         return 1_200;
