@@ -7,7 +7,7 @@
 - Removed the loader-level version gate for Mek Energistics; any installed version
   can load safely, while the ME automation feature requires the runtime API from
   Mek Energistics `3.0.6+`.
-- Lowered the other NeoForge optional dependency baselines:
+- Lowered the NeoForge optional dependency requirements to:
   - JEI `19.20.0+`
   - Mekanism: MoreMachine `1.3.3+`
   - Mekanism Extras `1.4.0+`
@@ -22,7 +22,7 @@
 - 维度矿机继续使用长整数缓存、批量输出和独立弹出节流方案。
 - 移除 Mek Energistics 的加载器版本门槛；任意已安装版本都可以安全加载，
   但 ME 自动化功能仍要求 Mek Energistics `3.0.6+` 的运行时 API。
-- 降低其他 NeoForge 可选依赖最低版本：
+- 将 NeoForge 可选依赖最低版本降低至：
   - JEI `19.20.0+`
   - Mekanism：MoreMachine `1.3.3+`
   - Mekanism Extras `1.4.0+`
