@@ -12,6 +12,7 @@
   - Mekanism: MoreMachine `1.3.3+`
   - Mekanism Extras `1.4.0+`
 - Mek Energistics versions below `3.0.6` load safely, disable the integration, and show a client chat reminder when entering a world.
+- Compact large Dimensional Miner output counts as `0.xk`, `0.xm`, and `0.xb` to prevent slot text overlap.
 - Kept unfinished Ars Nouveau machine content disabled in the release build.
 - Improved runtime recipe scanning caches for Occultism and Ars Nouveau integrations.
 
@@ -26,5 +27,6 @@
   - Mekanism：MoreMachine `1.3.3+`
   - Mekanism Extras `1.4.0+`
 - Mek Energistics `3.0.6` 以下版本仍可安全加载，但会禁用该适配，并在进入世界时通过客户端聊天框提示升级。
+- 维度矿机的大数量输出改为 `0.xk`、`0.xm`、`0.xb` 缩写，避免槽位数字堆叠。
 - 正式发布构建继续关闭尚未完成的新生魔艺机器内容。
 - 改进 Occultism 和新生魔艺适配的运行时配方扫描缓存。
