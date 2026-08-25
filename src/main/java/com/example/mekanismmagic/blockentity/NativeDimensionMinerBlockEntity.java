@@ -108,6 +108,13 @@ public final class NativeDimensionMinerBlockEntity
         return inputSlot == null ? List.of() : List.of(inputSlot);
     }
 
+    public boolean isMinerOutputSlot(
+            mekanism.api.inventory.IInventorySlot inventorySlot) {
+        return inventorySlot != null
+                && minerOutputs != null
+                && minerOutputs.contains(inventorySlot);
+    }
+
     @Override
     public boolean mekanismMagicSupportsPatternAutomation() {
         return false;

@@ -172,10 +172,11 @@ Mekanism Extras 变成硬性前置。
 - 使用 Source，或安装 Mekanism Extras 创造升级；
 - 收容实体只在内存中创建用于计算，不加入世界。
 
-安装 Mek Energistics `3.0.6` 或更高版本后，`mekanism_magic:dimension_miner`
-也会注册到其 ME 升级兼容清单。维度矿机安装 ME 升级后使用 Mek Energistics
-的输出弹出机制；未安装该模组或仅安装 `3.0.5` 时，继续使用 Mekanism
-原生自动弹出。旧版不会阻止进入世界，客户端首次进入世界会收到升级提示。
+安装任意版本的 Mek Energistics 都不会阻止游戏加载。只有检测到 `3.0.6`
+或更高版本时，`mekanism_magic:dimension_miner` 才会注册到其 ME 升级兼容
+清单，并在安装 ME 升级后使用 Mek Energistics 的输出弹出机制；低于 `3.0.6`
+或版本信息无法识别时，继续使用 Mekanism 原生自动弹出。旧版会保持功能关闭，
+客户端首次进入世界会收到升级提示。
 
 ## Occultism 灵火与交易配方
 
