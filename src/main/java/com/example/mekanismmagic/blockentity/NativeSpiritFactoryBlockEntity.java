@@ -19,6 +19,7 @@ import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.recipe.IMekanismRecipeTypeProvider;
 import mekanism.common.recipe.MekanismRecipeType;
 import mekanism.common.recipe.lookup.IRecipeLookupHandler;
+import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.tile.factory.TileEntityItemToItemFactory;
 import mekanism.common.tile.factory.TileEntityFactory;
 import mekanism.common.tier.FactoryTier;
@@ -41,7 +42,6 @@ import java.util.Set;
 public final class NativeSpiritFactoryBlockEntity
         extends TileEntityItemToItemFactory<SpiritFactoryRecipe>
         implements IMekanismMagicAutomation {
-    private static final int EJECTOR_CALLS_PER_TICK = 11;
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
 
@@ -130,6 +130,17 @@ public final class NativeSpiritFactoryBlockEntity
         return (IMekanismRecipeTypeProvider) MekanismRecipeType.CRUSHING;
     }
 
+    /**
+     * Spirit factories reuse Mekanism's item-to-item factory pipeline, so the
+     * internal recipe cache is exposed as CRUSHING above. They are not,
+     * however, Mekanism crushing factories. Returning a null factory type
+     * prevents integrations from treating the machine as a Crusher.
+     */
+    @Override
+    public FactoryType getFactoryType() {
+        return null;
+    }
+
     @Override
     protected int getNeededInput(SpiritFactoryRecipe recipe, ItemStack input) {
         return recipe.inputCount();
@@ -190,21 +201,6 @@ public final class NativeSpiritFactoryBlockEntity
     @Override
     protected void onUpdateServer() {
         super.onUpdateServer();
-        if (level instanceof net.minecraft.server.level.ServerLevel
-                && hasStoredOutput()) {
-            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
-                ejectorComponent.tickServer();
-            }
-        }
-    }
-
-    private boolean hasStoredOutput() {
-        for (IInventorySlot slot : outputSlots) {
-            if (!slot.getStack().isEmpty()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

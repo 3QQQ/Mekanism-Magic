@@ -25,7 +25,8 @@ public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBl
     @Override
     protected void createMachineSlots(InventorySlotHelper helper, IContentsListener listener) {
         inputSlot = registerLogicalSlot(helper, 0, InputInventorySlot.at(listener, 64, 17));
-        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT, OutputInventorySlot.at(listener, 116, 35));
+        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
+                OutputInventorySlot.at(listener, 116, 35));
         containmentSlot = registerLogicalSlot(helper, CONTAINMENT_SLOT,
                 BasicInventorySlot.at(OccultismRecipeBridge::isSpiritSource, listener, 64, 53));
         var itemConfig = setupNativeItemIO(

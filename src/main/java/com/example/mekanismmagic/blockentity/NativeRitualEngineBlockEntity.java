@@ -40,7 +40,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                         InputInventorySlot.at(listener, 69 + column * 18, 31 + row * 18)));
             }
         }
-        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT, OutputInventorySlot.at(listener, 176, 58));
+        outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
+                OutputInventorySlot.at(listener, 176, 58));
         ritualSlot = registerLogicalSlot(helper, RITUAL_SLOT,
                 InputInventorySlot.at(OccultismRecipeBridge::isRitualSelector, listener, 20, 39));
         activationSlot = registerLogicalSlot(helper, ACTIVATION_SLOT,
@@ -76,6 +77,21 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 inventory.getStackInSlot(ACTIVATION_SLOT),
                 inventory.getStackInSlot(SACRIFICE_SLOT),
                 !inventory.getStackInSlot(DICTIONARY_SLOT).isEmpty());
+    }
+
+    @Override
+    protected boolean hasAnyRecipeInput() {
+        if (ritualSlot == null || ritualSlot.getStack().isEmpty()) {
+            return false;
+        }
+        for (int index = 0; index < INPUT_SLOTS; index++) {
+            mekanism.api.inventory.IInventorySlot slot =
+                    logicalSlots().get(index);
+            if (slot != null && !slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

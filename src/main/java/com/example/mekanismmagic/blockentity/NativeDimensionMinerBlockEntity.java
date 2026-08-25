@@ -33,11 +33,18 @@ public final class NativeDimensionMinerBlockEntity
     public static final int MINER_INPUT_SLOT = 0;
     public static final int MINER_OUTPUT_START = 16;
     public static final int MINER_OUTPUT_COUNT = 27;
-    private static final int MINER_OUTPUT_LIMIT = 256;
+    private static final int MINER_OUTPUT_LIMIT = Integer.MAX_VALUE;
 
     private List<BasicInventorySlot> minerOutputs;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
+    private final List<BufferedOutput> bufferedOutputs = new ArrayList<>();
     private ItemStack pendingInput = ItemStack.EMPTY;
+    private static final int EJECT_INTERVAL_TICKS = 20;
+    private int ejectCooldown;
+    private boolean outputTransferDirty;
+    private long nextOutputTransferGameTime;
+    private long nextNativeEjectGameTime;
+    private boolean ejectRetryPending;
 
     public NativeDimensionMinerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.DIMENSION_MINER_BLOCK, pos, state);
@@ -106,8 +113,19 @@ public final class NativeDimensionMinerBlockEntity
         return false;
     }
 
+    public boolean isMinerOutputSlot(
+            mekanism.api.inventory.IInventorySlot inventorySlot) {
+        return inventorySlot != null
+                && minerOutputs != null
+                && minerOutputs.contains(inventorySlot);
+    }
+
     @Override
     protected void onUpdateServer() {
+        if (ejectCooldown > 0) {
+            ejectCooldown--;
+        }
+        boolean bufferedReady = attemptOutputTransfer();
         nativeBaseUpdate();
         setActive(false);
         if (level == null) {
@@ -126,7 +144,7 @@ public final class NativeDimensionMinerBlockEntity
             progress = 0;
             return;
         }
-        if (!canAccept(pendingOutputs)) {
+        if (!bufferedReady) {
             return;
         }
         FloatingLong usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
@@ -139,11 +157,12 @@ public final class NativeDimensionMinerBlockEntity
         int efficiency = enchantmentLevel(input, Enchantments.BLOCK_EFFICIENCY);
         progress += 1 + minimumRandomBonus(efficiency, 2);
         if (progress >= progressRequired) {
-            if (insertOutputs(pendingOutputs)) {
-                progress = 0;
-                pendingOutputs.clear();
-                setChanged();
-            }
+            progress = 0;
+            mergeBufferedOutputs(pendingOutputs);
+            pendingOutputs.clear();
+            outputTransferDirty = true;
+            attemptOutputTransfer();
+            setChanged();
         }
     }
 
@@ -192,19 +211,6 @@ public final class NativeDimensionMinerBlockEntity
         return result;
     }
 
-    private boolean canAccept(List<ItemStack> stacks) {
-        List<ItemStack> simulated = new ArrayList<>(minerOutputs.size());
-        for (BasicInventorySlot slot : minerOutputs) {
-            simulated.add(slot.getStack().copy());
-        }
-        for (ItemStack stack : stacks) {
-            if (!insertIntoStacks(simulated, stack)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private boolean hasStoredOutput() {
         if (minerOutputs == null) {
             return false;
@@ -217,13 +223,129 @@ public final class NativeDimensionMinerBlockEntity
         return false;
     }
 
-    private boolean insertOutputs(List<ItemStack> stacks) {
-        for (ItemStack stack : stacks) {
-            if (!insertOutput(stack)) {
-                return false;
+    private void mergeBufferedOutputs(List<ItemStack> outputs) {
+        for (ItemStack output : outputs) {
+            if (output.isEmpty()) {
+                continue;
+            }
+            BufferedOutput match = null;
+            for (BufferedOutput candidate : bufferedOutputs) {
+                if (ItemStack.isSameItemSameTags(candidate.stack, output)) {
+                    match = candidate;
+                    break;
+                }
+            }
+            if (match == null) {
+                bufferedOutputs.add(new BufferedOutput(output.copy(),
+                        output.getCount()));
+            } else {
+                match.count = saturatingAdd(match.count, output.getCount());
+            }
+            outputTransferDirty = true;
+        }
+    }
+
+    private boolean attemptOutputTransfer() {
+        if (level == null || bufferedOutputs.isEmpty()) {
+            return bufferedOutputs.isEmpty();
+        }
+        long gameTime = level.getGameTime();
+        if (!outputTransferDirty && gameTime < nextOutputTransferGameTime) {
+            return bufferedOutputs.isEmpty();
+        }
+        pushBufferedOutputsDirectly();
+        boolean ready = flushBufferedOutputs();
+        outputTransferDirty = false;
+        nextOutputTransferGameTime = gameTime + EJECT_INTERVAL_TICKS;
+        return ready;
+    }
+
+    private boolean flushBufferedOutputs() {
+        for (int index = 0; index < bufferedOutputs.size();) {
+            BufferedOutput buffered = bufferedOutputs.get(index);
+            long moved = insertLongIntoOutputs(buffered.stack,
+                    buffered.count);
+            buffered.count -= moved;
+            if (buffered.count <= 0) {
+                bufferedOutputs.remove(index);
+            } else {
+                index++;
             }
         }
-        return true;
+        return bufferedOutputs.isEmpty();
+    }
+
+    private void pushBufferedOutputsDirectly() {
+        if (bufferedOutputs.isEmpty()) {
+            return;
+        }
+        boolean remaining = false;
+        for (BufferedOutput buffered : bufferedOutputs) {
+            while (buffered.count > 0) {
+                int chunk = (int) Math.min(Integer.MAX_VALUE,
+                        buffered.count);
+                ItemStack attempt = buffered.stack.copy();
+                attempt.setCount(chunk);
+                ItemStack remainder = pushDirectlyToTargets(attempt);
+                long moved = chunk - remainder.getCount();
+                if (moved <= 0) {
+                    remaining = true;
+                    break;
+                }
+                buffered.count -= moved;
+            }
+        }
+        bufferedOutputs.removeIf(output -> output.count <= 0);
+    }
+
+    private long insertLongIntoOutputs(ItemStack template, long amount) {
+        long remaining = amount;
+        for (BasicInventorySlot slot : minerOutputs) {
+            if (remaining <= 0) {
+                break;
+            }
+            ItemStack existing = slot.getStack();
+            if (existing.isEmpty()
+                    || !ItemStack.isSameItemSameTags(existing, template)) {
+                continue;
+            }
+            int moved = (int) Math.min(remaining,
+                    Math.max(0, MINER_OUTPUT_LIMIT - existing.getCount()));
+            if (moved > 0) {
+                existing.grow(moved);
+                slot.setStack(existing);
+                remaining -= moved;
+            }
+        }
+        for (BasicInventorySlot slot : minerOutputs) {
+            if (remaining <= 0) {
+                break;
+            }
+            if (!slot.getStack().isEmpty()) {
+                continue;
+            }
+            int moved = (int) Math.min(remaining, MINER_OUTPUT_LIMIT);
+            ItemStack stack = template.copy();
+            stack.setCount(moved);
+            slot.setStack(stack);
+            remaining -= moved;
+        }
+        return amount - remaining;
+    }
+
+    private static long saturatingAdd(long left, long right) {
+        return right > 0 && left > Long.MAX_VALUE - right
+                ? Long.MAX_VALUE : left + right;
+    }
+
+    private static final class BufferedOutput {
+        private final ItemStack stack;
+        private long count;
+
+        private BufferedOutput(ItemStack stack, long count) {
+            this.stack = stack;
+            this.count = count;
+        }
     }
 
     private static boolean insertIntoStacks(List<ItemStack> targets,
@@ -293,7 +415,10 @@ public final class NativeDimensionMinerBlockEntity
         private MinerOutputInventorySlot(IContentsListener listener, int x, int y) {
             super(MINER_OUTPUT_LIMIT,
                     BasicInventorySlot.alwaysTrueBi,
-                    BasicInventorySlot.internalOnly,
+                    (stack, automation) ->
+                            automation == AutomationType.INTERNAL
+                                    || automation
+                                    == AutomationType.EXTERNAL,
                     BasicInventorySlot.alwaysTrue,
                     listener, x, y);
             obeyStackLimit = false;
@@ -309,6 +434,41 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     @Override
+    protected boolean shouldEjectOutputs() {
+        long gameTime = level == null ? Long.MAX_VALUE : level.getGameTime();
+        return ejectRetryPending || gameTime >= nextNativeEjectGameTime
+                || outputBufferNeedsEject();
+    }
+
+    @Override
+    protected boolean useFastEjectPath() {
+        return true;
+    }
+
+    private boolean outputBufferNeedsEject() {
+        for (BasicInventorySlot slot : minerOutputs) {
+            if (slot.getCount() >= MINER_OUTPUT_LIMIT) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected void onFastEjectFinished(boolean outputRemaining,
+                                       boolean nativeFallbackRequired) {
+        if (outputRemaining) {
+            ejectRetryPending = true;
+            nextNativeEjectGameTime = (level == null ? 0 : level.getGameTime())
+                    + EJECT_INTERVAL_TICKS;
+        } else {
+            ejectRetryPending = false;
+            nextNativeEjectGameTime = (level == null ? 0 : level.getGameTime())
+                    + EJECT_INTERVAL_TICKS;
+        }
+    }
+
+    @Override
     public void saveAdditional(net.minecraft.nbt.CompoundTag tag) {
         super.saveAdditional(tag);
         if (!pendingInput.isEmpty()) {
@@ -321,6 +481,17 @@ public final class NativeDimensionMinerBlockEntity
         }
         if (!outputs.isEmpty()) {
             tag.put("miner_pending_outputs", outputs);
+        }
+        net.minecraft.nbt.ListTag buffered = new net.minecraft.nbt.ListTag();
+        for (BufferedOutput output : bufferedOutputs) {
+            net.minecraft.nbt.CompoundTag entry =
+                    new net.minecraft.nbt.CompoundTag();
+            entry.put("stack", output.stack.save(new net.minecraft.nbt.CompoundTag()));
+            entry.putLong("count", output.count);
+            buffered.add(entry);
+        }
+        if (!buffered.isEmpty()) {
+            tag.put("miner_long_buffer", buffered);
         }
     }
 
@@ -341,6 +512,18 @@ public final class NativeDimensionMinerBlockEntity
                 pendingOutputs.add(output);
             }
         }
+        bufferedOutputs.clear();
+        net.minecraft.nbt.ListTag buffered = tag.getList(
+                "miner_long_buffer", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int index = 0; index < buffered.size(); index++) {
+            net.minecraft.nbt.CompoundTag entry = buffered.getCompound(index);
+            ItemStack stack = ItemStack.of(entry.getCompound("stack"));
+            long count = entry.getLong("count");
+            if (!stack.isEmpty() && count > 0) {
+                bufferedOutputs.add(new BufferedOutput(stack, count));
+            }
+        }
+        outputTransferDirty = !bufferedOutputs.isEmpty();
         if (pendingOutputs.isEmpty()) {
             pendingInput = ItemStack.EMPTY;
             progress = 0;

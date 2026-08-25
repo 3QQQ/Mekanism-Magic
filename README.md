@@ -44,7 +44,7 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 - Forge 47.4.22
 - Mekanism 10.4.16.80
 - Occultism 1.158.0
-- JEI 15.49.0.190
+- JEI 15.20.0.100
 - Java 17
 
 IDEA 工程路径：

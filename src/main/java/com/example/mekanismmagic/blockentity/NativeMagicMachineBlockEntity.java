@@ -36,13 +36,19 @@ import mekanism.common.tile.interfaces.IUpgradeTile;
 import mekanism.common.upgrade.IUpgradeData;
 import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -57,10 +63,8 @@ import java.util.Optional;
 public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         implements ISideConfiguration, IUpgradeTile,
         IMekanismMagicAutomation {
-    // Mekanism's ejector has an internal ten-tick cooldown. Eleven calls
-    // provide one complete output scan per game tick, but only while an
-    // output slot actually contains an item.
-    private static final int EJECTOR_CALLS_PER_TICK = 11;
+    private static final int FAST_EJECT_BACKOFF_TICKS = 10;
+    private static final int RECIPE_LOOKUP_BACKOFF_TICKS = 5;
     public static final int INPUT_SLOTS = 16;
     public static final int OUTPUT_SLOT = 16;
     public static final int CONTAINMENT_SLOT = 17;
@@ -84,9 +88,15 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     // Do not use a field initializer here: it would run afterwards and erase
     // the output slots registered during the superclass construction.
     private List<IInventorySlot> configuredOutputSlots;
+    private final EnumMap<Direction, LazyOptional<IItemHandler>>
+            fastEjectTargets = new EnumMap<>(Direction.class);
+    private final EnumMap<Direction, Integer> fastEjectBackoff =
+            new EnumMap<>(Direction.class);
     protected int progress;
     protected int progressRequired = 1;
     protected String activeRecipe = "";
+    private int recipeLookupBackoff;
+    private long lastRecipeInputFingerprint = Long.MIN_VALUE;
 
     protected NativeMagicMachineBlockEntity(IBlockProvider block, BlockPos pos, BlockState state) {
         super(block, pos, state);
@@ -199,6 +209,16 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     protected abstract int baseEnergyPerTick();
 
+    protected boolean shouldAttemptRecipeLookup(ItemStackHandler inventory) {
+        for (int slot = 0; slot < MACHINE_INVENTORY_SIZE; slot++) {
+            if (slot != OUTPUT_SLOT
+                    && !inventory.getStackInSlot(slot).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Runs only Mekanism's common tile update. Specialized machines with a
      * different processing shape (for example multi-output miners) can use
@@ -209,11 +229,206 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (energySlot != null) {
             energySlot.fillContainerOrConvert();
         }
-        if (ejectorComponent != null && level instanceof ServerLevel
-                && hasEjectableItem()) {
-            for (int call = 0; call < EJECTOR_CALLS_PER_TICK; call++) {
+        if (ejectorComponent != null && level instanceof ServerLevel) {
+            if (useFastEjectPath()) {
+                if (hasEjectableItem() && shouldEjectOutputs()) {
+                    boolean fallback = fastEjectItems();
+                    onFastEjectFinished(hasEjectableItem(), fallback);
+                    if (fallback) {
+                        ejectorComponent.tickServer();
+                    }
+                }
+            } else {
+                // Match Mekanism's configurable-machine behavior for all
+                // machines except the dimensional miner.
                 ejectorComponent.tickServer();
             }
+        }
+    }
+
+    protected boolean useFastEjectPath() {
+        return false;
+    }
+
+    protected boolean shouldEjectOutputs() {
+        return true;
+    }
+
+    protected void onFastEjectFinished(boolean outputRemaining,
+                                       boolean nativeFallbackRequired) {
+    }
+
+    protected ItemStack pushDirectlyToTargets(ItemStack stack) {
+        if (stack.isEmpty() || !(level instanceof ServerLevel)) {
+            return stack;
+        }
+        ConfigInfo itemConfig = configComponent.getConfig(
+                TransmissionType.ITEM);
+        if (itemConfig == null || !itemConfig.isEjecting()) {
+            return stack;
+        }
+        ItemStack remaining = stack;
+        for (RelativeSide relativeSide : RelativeSide.values()) {
+            if (remaining.isEmpty()) {
+                break;
+            }
+            DataType mode = itemConfig.getDataType(relativeSide);
+            if (mode == null || !mode.canOutput()) {
+                continue;
+            }
+            Direction direction = relativeSide.getDirection(getDirection());
+            LazyOptional<IItemHandler> capability =
+                    fastEjectTargets.get(direction);
+            if (capability == null || !capability.isPresent()) {
+                BlockEntity targetBlock = level.getBlockEntity(
+                        worldPosition.relative(direction));
+                if (targetBlock != null) {
+                    capability = targetBlock.getCapability(
+                            ForgeCapabilities.ITEM_HANDLER,
+                            direction.getOpposite());
+                    fastEjectTargets.put(direction, capability);
+                }
+            }
+            IItemHandler target = capability == null
+                    ? null : capability.orElse(null);
+            if (target == null
+                    || target instanceof mekanism.common.capabilities.item
+                    .CursedTransporterItemHandler) {
+                continue;
+            }
+            int accepted = acceptedAmount(target, remaining);
+            if (accepted <= 0) {
+                continue;
+            }
+            ItemStack extracted = remaining.copyWithCount(accepted);
+            ItemStack remainder = insertIntoTarget(target, extracted);
+            remaining = remaining.copyWithCount(
+                    remaining.getCount() - accepted
+                            + remainder.getCount());
+        }
+        return remaining;
+    }
+
+    /**
+     * @return {@code true} when a Mekanism logistical transporter was found
+     * and needs the native ejector fallback.
+     */
+    private boolean fastEjectItems() {
+        ConfigInfo itemConfig = configComponent.getConfig(
+                TransmissionType.ITEM);
+        if (itemConfig == null || !itemConfig.isEjecting()) {
+            return false;
+        }
+        boolean needsNativeFallback = false;
+        for (RelativeSide relativeSide : RelativeSide.values()) {
+            DataType mode = itemConfig.getDataType(relativeSide);
+            if (mode == null || !mode.canOutput()) {
+                continue;
+            }
+            Direction direction = relativeSide.getDirection(getDirection());
+            int backoff = fastEjectBackoff.getOrDefault(direction, 0);
+            if (backoff > 0) {
+                fastEjectBackoff.put(direction, backoff - 1);
+                continue;
+            }
+            LazyOptional<IItemHandler> capability =
+                    fastEjectTargets.get(direction);
+            if (capability == null || !capability.isPresent()) {
+                BlockEntity targetBlock = level.getBlockEntity(
+                        worldPosition.relative(direction));
+                if (targetBlock == null) {
+                    fastEjectTargets.remove(direction);
+                    fastEjectBackoff.put(direction,
+                            FAST_EJECT_BACKOFF_TICKS);
+                    continue;
+                }
+                capability = targetBlock.getCapability(
+                        ForgeCapabilities.ITEM_HANDLER,
+                        direction.getOpposite());
+                LazyOptional<IItemHandler> tracked = capability;
+                capability.addListener(ignored -> {
+                    if (fastEjectTargets.get(direction) == tracked) {
+                        fastEjectTargets.remove(direction);
+                        fastEjectBackoff.remove(direction);
+                    }
+                });
+                fastEjectTargets.put(direction, capability);
+            }
+            IItemHandler target = capability.orElse(null);
+            if (target == null) {
+                fastEjectBackoff.put(direction,
+                        FAST_EJECT_BACKOFF_TICKS);
+                continue;
+            }
+            if (target instanceof mekanism.common.capabilities.item
+                    .CursedTransporterItemHandler) {
+                needsNativeFallback = true;
+                continue;
+            }
+            boolean moved = false;
+            for (IInventorySlot output : configuredOutputSlots) {
+                moved |= moveIntoTarget(output, target);
+            }
+            fastEjectBackoff.put(direction,
+                    moved ? 0 : FAST_EJECT_BACKOFF_TICKS);
+        }
+        return needsNativeFallback;
+    }
+
+    private static boolean moveIntoTarget(IInventorySlot source,
+                                          IItemHandler target) {
+        ItemStack available = source.getStack();
+        if (available.isEmpty()) {
+            return false;
+        }
+        ItemStack simulated = source.extractItem(available.getCount(),
+                Action.SIMULATE, AutomationType.EXTERNAL);
+        if (simulated.isEmpty()) {
+            return false;
+        }
+        int accepted = acceptedAmount(target, simulated);
+        if (accepted <= 0) {
+            return false;
+        }
+        ItemStack extracted = source.extractItem(accepted,
+                Action.EXECUTE, AutomationType.EXTERNAL);
+        if (extracted.isEmpty()) {
+            return false;
+        }
+        ItemStack remainder = insertIntoTarget(target, extracted);
+        if (!remainder.isEmpty()) {
+            restoreToSource(source, remainder);
+        }
+        return remainder.getCount() < extracted.getCount();
+    }
+
+    private static int acceptedAmount(IItemHandler target, ItemStack stack) {
+        ItemStack remainder = stack.copy();
+        for (int slot = 0; slot < target.getSlots()
+                && !remainder.isEmpty(); slot++) {
+            remainder = target.insertItem(slot, remainder, true);
+        }
+        return stack.getCount() - remainder.getCount();
+    }
+
+    private static ItemStack insertIntoTarget(IItemHandler target,
+                                              ItemStack stack) {
+        ItemStack remainder = stack;
+        for (int slot = 0; slot < target.getSlots()
+                && !remainder.isEmpty(); slot++) {
+            remainder = target.insertItem(slot, remainder, false);
+        }
+        return remainder;
+    }
+
+    private static void restoreToSource(IInventorySlot source,
+                                        ItemStack remainder) {
+        ItemStack current = source.getStack();
+        if (current.isEmpty()) {
+            source.setStack(remainder);
+        } else if (ItemStack.isSameItemSameTags(current, remainder)) {
+            current.grow(remainder.getCount());
+            source.setStack(current);
         }
     }
 
@@ -341,25 +556,53 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (level == null) {
             return;
         }
+        if (!hasAnyRecipeInput()) {
+            progress = 0;
+            progressRequired = 1;
+            activeRecipe = "";
+            recipeLookupBackoff = 0;
+            lastRecipeInputFingerprint = Long.MIN_VALUE;
+            return;
+        }
         ItemStackHandler snapshot = snapshotInventory();
+        if (!shouldAttemptRecipeLookup(snapshot)) {
+            progress = 0;
+            progressRequired = 1;
+            activeRecipe = "";
+            recipeLookupBackoff = 0;
+            lastRecipeInputFingerprint = Long.MIN_VALUE;
+            return;
+        }
+        long inputFingerprint = recipeInputFingerprint(snapshot);
+        if (activeRecipe.isEmpty()
+                && recipeLookupBackoff > 0
+                && inputFingerprint == lastRecipeInputFingerprint) {
+            recipeLookupBackoff--;
+            return;
+        }
+        lastRecipeInputFingerprint = inputFingerprint;
         Optional<OccultismRecipeBridge.RecipeResult> found = findRecipe(snapshot);
         if (found.isEmpty()) {
             progress = 0;
             progressRequired = 1;
             activeRecipe = "";
+            recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
             return;
         }
+        recipeLookupBackoff = 0;
         OccultismRecipeBridge.RecipeResult recipe = found.get();
         progressRequired = Math.max(1, mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()));
         ItemStack output = snapshot.getStackInSlot(OUTPUT_SLOT);
         if (!recipe.output().isEmpty() && !output.isEmpty()
                 && (!ItemStack.isSameItemSameTags(output, recipe.output())
                 || output.getCount() + recipe.output().getCount() > output.getMaxStackSize())) {
+            recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
             return;
         }
         FloatingLong usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
                 this, FloatingLong.create(baseEnergyPerTick()));
         if (energyContainer == null || energyContainer.getEnergy().smallerThan(usage)) {
+            recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
             return;
         }
         String recipeKey = recipeKey(recipe);
@@ -407,14 +650,35 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return snapshot;
     }
 
-    protected final void tickEjectorAdditional(int calls) {
-        if (!(level instanceof net.minecraft.server.level.ServerLevel)
-                || ejectorComponent == null) {
-            return;
+    private static long recipeInputFingerprint(ItemStackHandler inventory) {
+        long fingerprint = 1;
+        for (int slot = 0; slot < MACHINE_INVENTORY_SIZE; slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            fingerprint = 31 * fingerprint + slot;
+            if (stack.isEmpty()) {
+                continue;
+            }
+            fingerprint = 31 * fingerprint
+                    + net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .getId(stack.getItem());
+            fingerprint = 31 * fingerprint + stack.getCount();
+            fingerprint = 31 * fingerprint
+                    + (stack.getTag() == null ? 0 : stack.getTag().hashCode());
         }
-        for (int index = 0; index < calls; index++) {
-            ejectorComponent.tickServer();
+        return fingerprint;
+    }
+
+    protected boolean hasAnyRecipeInput() {
+        if (logicalSlots == null || logicalSlots.isEmpty()) {
+            return false;
         }
+        for (Map.Entry<Integer, IInventorySlot> entry : logicalSlots.entrySet()) {
+            if (entry.getKey() != OUTPUT_SLOT
+                    && !entry.getValue().getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void copyBack(ItemStackHandler snapshot) {

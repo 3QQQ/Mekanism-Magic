@@ -7,7 +7,7 @@
 - Java `17`
 - Mekanism `10.4.16.80`
 - Occultism `1.158.0`
-- JEI `15.49.0.190`
+- JEI `15.20.0.100`
 
 Occultism 是本分支的主可选集成目标。默认开发运行加载 Occultism；可用以下参数测试无
 Occultism 模式：
