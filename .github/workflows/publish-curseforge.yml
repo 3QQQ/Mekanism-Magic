@@ -8,7 +8,11 @@ on:
       release_tag:
         description: Release tag to publish
         required: true
-        default: v1.0.0
+      publish_to_curseforge:
+        description: Publish after validation (disabled for dry runs)
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,38 +30,42 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
         run: |
-          if [[ "$RELEASE_TAG" == *"-forge-1.20.1" ]]; then
+          set -euo pipefail
+          if [[ "$RELEASE_TAG" == v*-forge-1.20.1 ]]; then
             echo "loader=forge" >> "$GITHUB_OUTPUT"
             echo "game_version=1.20.1" >> "$GITHUB_OUTPUT"
             echo "java_version=17" >> "$GITHUB_OUTPUT"
-            echo "build_from_source=false" >> "$GITHUB_OUTPUT"
-          else
+            mod_version="${RELEASE_TAG#v}"
+            mod_version="${mod_version%-forge-1.20.1}"
+          elif [[ "$RELEASE_TAG" == v*-neoforge-1.21.1 ]]; then
             echo "loader=neoforge" >> "$GITHUB_OUTPUT"
             echo "game_version=1.21.1" >> "$GITHUB_OUTPUT"
             echo "java_version=21" >> "$GITHUB_OUTPUT"
-            echo "build_from_source=true" >> "$GITHUB_OUTPUT"
+            mod_version="${RELEASE_TAG#v}"
+            mod_version="${mod_version%-neoforge-1.21.1}"
+          else
+            echo "Unsupported release tag: $RELEASE_TAG" >&2
+            echo "Expected v<version>-forge-1.20.1 or " \
+              "v<version>-neoforge-1.21.1" >&2
+            exit 1
+          fi
+          if [[ -z "$mod_version" ]]; then
+            echo "Release tag does not contain a mod version" >&2
+            exit 1
+          fi
+          echo "mod_version=$mod_version" >> "$GITHUB_OUTPUT"
+          if [[ "$RELEASE_TAG" == *-forge-1.20.1 ]]; then
+            echo "expected_jar=mekanism_magic-${mod_version}-forge-1.20.1.jar" \
+              >> "$GITHUB_OUTPUT"
+          else
+            echo "expected_jar=mekanism_magic-${mod_version}-neoforge-1.21.1.jar" \
+              >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout
-        if: steps.target.outputs.build_from_source == 'true'
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
-
-      - name: Set up Java
-        if: steps.target.outputs.build_from_source == 'true'
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ steps.target.outputs.java_version }}
-          cache: gradle
-
-      - name: Build mod jar
-        if: steps.target.outputs.build_from_source == 'true'
-        run: bash ./gradlew --no-daemon clean build -Pmekanism_magic.compile_mekextras=false
-
-      - name: Download Forge release asset
-        if: steps.target.outputs.build_from_source == 'false'
+      # Publish the exact artifact that was reviewed and attached to GitHub.
+      # Rebuilding here previously produced a smaller NeoForge jar with the
+      # binary-only AE/Mek Energistics/Mekanism Extras bridges omitted.
+      - name: Download release asset
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,7 +77,67 @@ jobs:
             --pattern "*.jar" \
             --dir build/libs
 
+      - name: Validate release asset
+        shell: bash
+        env:
+          TARGET_LOADER: ${{ steps.target.outputs.loader }}
+          TARGET_GAME_VERSION: ${{ steps.target.outputs.game_version }}
+          EXPECTED_MOD_VERSION: ${{ steps.target.outputs.mod_version }}
+          EXPECTED_JAR: ${{ steps.target.outputs.expected_jar }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          jars=(build/libs/*.jar)
+          if [[ ${#jars[@]} -ne 1 ]]; then
+            echo "Expected exactly one release jar, found ${#jars[@]}" >&2
+            exit 1
+          fi
+          jar="${jars[0]}"
+          if [[ "${jar##*/}" != "$EXPECTED_JAR" ]]; then
+            echo "Unexpected release asset: ${jar##*/}" >&2
+            echo "Expected: $EXPECTED_JAR" >&2
+            exit 1
+          fi
+          unzip -Z1 "$jar" > build/release-entries.txt
+          if [[ "$TARGET_LOADER" == "neoforge" ]]; then
+            metadata_entry="META-INF/neoforge.mods.toml"
+          else
+            metadata_entry="META-INF/mods.toml"
+          fi
+          unzip -p "$jar" "$metadata_entry" \
+            | tr -d '\r' > build/release-metadata.toml
+          required_metadata=(
+            'modId="mekanism_magic"'
+            "version=\"$EXPECTED_MOD_VERSION\""
+            "modId=\"$TARGET_LOADER\""
+            'modId="minecraft"'
+            "versionRange=\"[$TARGET_GAME_VERSION]\""
+          )
+          for line in "${required_metadata[@]}"; do
+            if ! grep -Fxq "$line" build/release-metadata.toml; then
+              echo "Release metadata does not match target: $line" >&2
+              exit 1
+            fi
+          done
+          if [[ "$TARGET_LOADER" == "neoforge" ]]; then
+            required=(
+              "com/example/mekanismmagic/integration/mekextras/MekanismExtrasSpiritFactories.class"
+              "com/example/mekanismmagic/integration/mekextras/MekanismExtrasImbuementFactories.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2ArsCompat.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompat.class"
+              "ae2_compat.mixins.json"
+              "mekenergistics_compat.mixins.json"
+            )
+            for entry in "${required[@]}"; do
+              if ! grep -Fxq "$entry" build/release-entries.txt; then
+                echo "Release jar is missing required integration: $entry" >&2
+                exit 1
+              fi
+            done
+          fi
+
       - name: Publish to CurseForge
+        if: github.event_name == 'release' || inputs.publish_to_curseforge == true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}

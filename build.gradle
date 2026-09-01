@@ -151,7 +151,7 @@ dependencies {
     }
     if (mekExtrasRuntimeEnabled) {
         localRuntime files(
-                'libs/mekanism_extras-1.21.1-1.4.0.jar'
+                "libs/mekanism_extras-1.21.1-${mekanism_extras_version}.jar"
         )
     }
     if (mekmmRuntimeEnabled) {
@@ -214,6 +214,9 @@ processResources {
             mod_license            : mod_license,
             mod_version            : mod_version,
             ars_machine_content    : arsMachineContentEnabled,
+            mekanism_extras_integration: compileMekanismExtras,
+            mekenergistics_integration: compileMekEnergistics,
+            ae2_integration        : compileAe2,
             // The optional bridge is guarded by a runtime Mixin plugin. Keep
             // the config in builds that include the API so a released jar
             // automatically adapts when Mek Energistics is added later.
@@ -257,4 +260,97 @@ tasks.named('classes') {
 
 tasks.named('jar') {
     dependsOn tasks.named('validateMachineContracts')
+}
+
+def requireFullIntegrations = providers.gradleProperty(
+        'mekanism_magic.require_full_integrations')
+        .map { it.toBoolean() }
+        .orElse(false)
+
+tasks.register('validatePackagedIntegrations') {
+    group = 'verification'
+    description = 'Verifies that enabled optional integrations are present in the packaged jar.'
+    dependsOn tasks.named('jar')
+
+    def archive = tasks.named('jar', Jar).flatMap { it.archiveFile }
+    inputs.file(archive)
+    inputs.property('compileMekanismExtras', compileMekanismExtras)
+    inputs.property('compileMekEnergistics', compileMekEnergistics)
+    inputs.property('compileAe2', compileAe2)
+    inputs.property('requireFullIntegrations', requireFullIntegrations)
+
+    doLast {
+        boolean requireFull = requireFullIntegrations.get()
+        Map<String, Boolean> integrationFlags = [
+                'Mekanism Extras': compileMekanismExtras,
+                'Mek Energistics': compileMekEnergistics,
+                'AE2'            : compileAe2
+        ]
+        if (requireFull) {
+            List<String> disabled = integrationFlags.findAll {
+                !it.value
+            }.keySet().toList()
+            if (!disabled.isEmpty()) {
+                throw new GradleException(
+                        'Full release integrations were requested, but the '
+                                + 'following compile inputs are unavailable: '
+                                + disabled.join(', '))
+            }
+        }
+
+        List<String> requiredEntries = [
+                'META-INF/mekanism_magic_features.properties'
+        ]
+        if (compileMekanismExtras || requireFull) {
+            requiredEntries.addAll([
+                    'com/example/mekanismmagic/integration/mekextras/'
+                            + 'MekanismExtrasSpiritFactories.class',
+                    'com/example/mekanismmagic/integration/mekextras/'
+                            + 'MekanismExtrasImbuementFactories.class'
+            ])
+        }
+        if (compileMekEnergistics || requireFull) {
+            requiredEntries.addAll([
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'MekEnergisticsCompat.class',
+                    'mekenergistics_compat.mixins.json'
+            ])
+        }
+        if (compileAe2 || requireFull) {
+            requiredEntries.addAll([
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2ArsCompat.class',
+                    'ae2_compat.mixins.json'
+            ])
+        }
+
+        File jarFile = archive.get().asFile
+        Set<String> packagedEntries = new HashSet<>()
+        java.util.zip.ZipFile zip = new java.util.zip.ZipFile(jarFile)
+        try {
+            zip.entries().each { packagedEntries.add(it.name) }
+        } finally {
+            zip.close()
+        }
+        List<String> missing = requiredEntries.findAll {
+            !packagedEntries.contains(it)
+        }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    "Packaged integration contract failed for ${jarFile.name}; "
+                            + 'missing entries: ' + missing.join(', '))
+        }
+    }
+}
+
+// A caller that explicitly requests a full-integration jar must not be able
+// to bypass the archive contract by invoking `jar` without `check`.
+if (requireFullIntegrations.get()) {
+    tasks.named('jar') {
+        finalizedBy tasks.named('validatePackagedIntegrations')
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('validatePackagedIntegrations')
 }

@@ -8,6 +8,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * Registers all content currently backed by Occultism recipes and data.
  */
@@ -44,11 +46,25 @@ public final class OccultismContentModule
             return;
         }
         try {
-            Class.forName("com.example.mekanismmagic.integration.mekextras."
-                            + "MekanismExtrasSpiritFactories")
+            Class<?> factoryBridge = Class.forName(
+                    "com.example.mekanismmagic.integration.mekextras."
+                            + "MekanismExtrasSpiritFactories");
+            try {
+                factoryBridge
                     .getMethod("register", IEventBus.class)
                     .invoke(null, modBus);
-        } catch (ReflectiveOperationException | LinkageError failure) {
+            } catch (InvocationTargetException failure) {
+                throw new IllegalStateException(
+                        "Mekanism Extras spirit factory registration failed",
+                        failure.getCause());
+            }
+        } catch (ClassNotFoundException missingBridge) {
+            MekanismMagic.LOGGER.warn(
+                    "Mekanism Extras is installed, but this build does not "
+                            + "contain its optional spirit factory bridge; "
+                            + "continuing without those factories");
+        } catch (NoSuchMethodException | IllegalAccessException
+                | LinkageError failure) {
             MekanismMagic.LOGGER.warn(
                     "Skipping optional Mekanism Extras spirit factories "
                             + "because their runtime API is incompatible",

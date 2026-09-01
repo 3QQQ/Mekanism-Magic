@@ -24,15 +24,22 @@ Occultism 是本模组的主可选集成目标。未加载 Occultism 时，Mekan
 * Repository variable：`CURSEFORGE_PROJECT_ID`，填写 CurseForge 项目数字 ID。
 * Repository secret：`CURSEFORGE_TOKEN`，填写 CurseForge API Token。
 
-发布工作流默认只处理正式 GitHub Release；手动运行 `workflow_dispatch` 可用于测试。
-版本号来自 Release tag，上传文件来自 `build/libs/*.jar`。工作流使用 Java 21、
-NeoForge loader 和 Minecraft 1.21.1。
+发布工作流默认只处理正式 GitHub Release；手动运行 `workflow_dispatch` 默认只下载并
+校验产物，不上传 CurseForge。只有显式启用 `publish_to_curseforge` 后，手动任务才会
+真正发布。
+版本号来自 Release tag。工作流下载并发布 GitHub Release 中已经审核过的同一份
+JAR，不再于 CI 中重新构建一个可能缺少二进制可选桥接的缩水包。NeoForge 发布前
+会硬校验 Mekanism Extras、Mek Energistics 与 AE2 集成类和 Mixin 配置；缺失时
+工作流直接失败，不会上传不完整文件。Release tag 必须使用
+`v<版本>-forge-1.20.1` 或 `v<版本>-neoforge-1.21.1`，且 JAR 文件名、内部模组版本、
+加载器和 Minecraft 版本必须与 tag 一致。
 
 本项目固定 Minecraft `1.21.1`，以较低依赖版本作为编译基线：
 
 * NeoForge `21.1.194` 或更高版本
 * Mekanism `10.7.15` 或更高版本
 * Occultism `1.222.0` 或更高版本
+* Ars Nouveau `5.11.0` 或更高版本（可选）
 
 已分别使用最低基线组合和 Mekanism `10.7.19.85`、Occultism `1.224.2`
 组合完成编译验证。Ars Nouveau `5.13.0` 内置的 Nuggets 要求 NeoForge

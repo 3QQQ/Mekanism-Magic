@@ -8,6 +8,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * Registers machines and items backed by Ars Nouveau.
  */
@@ -46,13 +48,35 @@ public final class ArsNouveauContentModule
         }
         if (ModCompatibility.mekanismExtrasLoaded()) {
             try {
-                Class.forName("com.example.mekanismmagic.integration.mekextras."
-                                + "MekanismExtrasImbuementFactories")
+                Class<?> factoryBridge = Class.forName(
+                        "com.example.mekanismmagic.integration.mekextras."
+                                + "MekanismExtrasImbuementFactories");
+                try {
+                    factoryBridge
                         .getMethod("register", IEventBus.class)
                         .invoke(null, modBus);
-            } catch (ReflectiveOperationException | LinkageError failure) {
-                throw new IllegalStateException(
-                        "Failed to register Extras imbuement factories",
+                } catch (InvocationTargetException failure) {
+                    // Once registration has started, continuing after a
+                    // failure could leave partially attached registries.
+                    throw new IllegalStateException(
+                            "Mekanism Extras imbuement factory registration "
+                                    + "failed",
+                            failure.getCause());
+                }
+            } catch (ClassNotFoundException missingBridge) {
+                // A core-only distribution may intentionally omit this
+                // binary-only bridge. The base Ars machines remain usable.
+                MekanismMagic.LOGGER.warn(
+                        "Mekanism Extras is installed, but this build "
+                                + "does not contain its optional imbuement "
+                                + "factory bridge; continuing without those "
+                                + "factories");
+            } catch (NoSuchMethodException | IllegalAccessException
+                    | LinkageError failure) {
+                MekanismMagic.LOGGER.warn(
+                        "Skipping optional Mekanism Extras imbuement "
+                                + "factories because their runtime API is "
+                                + "incompatible",
                         failure);
             }
         }

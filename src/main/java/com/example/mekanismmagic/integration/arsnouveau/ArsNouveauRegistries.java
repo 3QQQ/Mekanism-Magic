@@ -676,23 +676,24 @@ public final class ArsNouveauRegistries {
             return null;
         }
         try {
+            Class<?> integration = Class.forName(
+                    "com.example.mekanismmagic.integration.mekextras."
+                            + "MekanismExtrasImbuementFactories");
+            Field field = integration.getField("ABSOLUTE_BLOCK");
+            BlockRegistryObject<?, ?> targetBlock =
+                    (BlockRegistryObject<?, ?>) field.get(null);
             Class<?> attributeClass = Class.forName(
                     "com.jerry.mekextras.common.block.attribute."
                             + "ExtraAttributeUpgradeable");
             Constructor<?> constructor = attributeClass.getConstructor(
                     Supplier.class);
-            Supplier<BlockRegistryObject<?, ?>> target = () -> {
-                try {
-                    Class<?> integration = Class.forName(
-                            "com.example.mekanismmagic.integration.mekextras."
-                                    + "MekanismExtrasImbuementFactories");
-                    Field field = integration.getField("ABSOLUTE_BLOCK");
-                    return (BlockRegistryObject<?, ?>) field.get(null);
-                } catch (ReflectiveOperationException failure) {
-                    throw new IllegalStateException(failure);
-                }
-            };
+            Supplier<BlockRegistryObject<?, ?>> target = () -> targetBlock;
             return (Attribute) constructor.newInstance(target);
+        } catch (ClassNotFoundException missingBridge) {
+            // The content module emits one concise warning when a core-only
+            // jar is used alongside Mekanism Extras. Avoid a second stack
+            // trace while constructing the standard factory upgrade chain.
+            return null;
         } catch (ReflectiveOperationException | LinkageError failure) {
             MekanismMagic.LOGGER.warn(
                     "Mekanism Extras imbuement factory upgrade is unavailable",

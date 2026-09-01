@@ -40,7 +40,7 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="ars_nouveau"
 type="optional"
-versionRange="[5.0.0,)"
+versionRange="[5.11.0,)"
 ordering="AFTER"
 side="BOTH"
 
