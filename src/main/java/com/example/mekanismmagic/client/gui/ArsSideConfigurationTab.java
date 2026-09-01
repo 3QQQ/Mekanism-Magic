@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.client.gui;
 
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceModeHost;
-import mekanism.client.SpecialColors;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.tab.window.GuiWindowCreatorTab;
 import mekanism.client.render.MekanismRenderer;
@@ -14,8 +13,8 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.function.Supplier;
 
 /**
- * Mekanism side configuration tab whose window also contains the Ars Source
- * direction column.
+ * Mekanism side configuration tab whose native window also exposes Source as
+ * a transmission-style configuration page.
  */
 public final class ArsSideConfigurationTab<TILE extends
         mekanism.common.tile.base.TileEntityMekanism
@@ -40,15 +39,15 @@ public final class ArsSideConfigurationTab<TILE extends
 
     @Override
     protected void colorTab(GuiGraphics graphics) {
-        MekanismRenderer.color(graphics,
-                SpecialColors.TAB_CONFIGURATION);
+        MekanismRenderer.color(graphics, MagicGuiTheme.accentSource());
     }
 
     @Override
     protected mekanism.client.gui.element.window.GuiWindow createWindow(
             SelectedWindowData data) {
         return new ArsSideConfigurationWindow(
-                gui(), (getGuiWidth() - 156) / 2, 15,
+                gui(), (getGuiWidth()
+                - ArsSideConfigurationWindow.WINDOW_WIDTH) / 2, 15,
                 tile, data);
     }
 

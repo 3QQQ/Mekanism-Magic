@@ -29,13 +29,15 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 - 安装 AE2 后，灌注处理机支持带 `recipe_id/catalyst_id` 虚拟上下文的 AE 自动化。
 - 魔法灌注工厂包含 Mekanism 四级工厂；安装 Mekanism Extras 时扩展至
   绝对、至尊、宇宙、无限等级（最高 17 个并行进程）。
-- 安装 Mek Energistics 时，维度矿机支持 ME 升级弹出机制。
+- 安装 AE2 后，维度矿机与德格米模拟器可直接连接 AE 线缆，
+  无需 ME 工厂升级即可把全部输出写入网络；在线时按 20 tick 聚合相同
+  物品后整批写入，并在 GUI 显示在线、离线或存储受阻状态。
 - Mekanism 风格 GUI、能量槽、侧面配置、速度/能量升级和 JEI 配方分类。
 - Ars Nouveau 收容罐、Occultism 灵魂容器、刷怪蛋和魔灵职业数据兼容。
-- Ars Nouveau 收容罐兼容；魔源增幅器、灌注处理机、附魔装置处理机和
+- Ars Nouveau 收容罐兼容；FE魔源增强器、灌注处理机、附魔装置处理机和
   德格米生态模拟器在完成全部适配验证前不在发布版中启用。
-- 开发构建提供参考 Mekanism 连接形态的魔力管道，用于 Ars Source 的相邻
-  管道传输。
+- 开发构建提供基础、高级、精英、终极四级魔力管道；支持 Mekanism 合金
+  原地升级，并按相邻输出端的管道等级限制 Ars Source 传输速率。
 
 ## 1.21.1 NeoForge
 
@@ -56,10 +58,8 @@ IDEA 中以 Gradle 项目打开根目录，刷新 Gradle 后运行 `client` 或 
 - `Ars Compatibility Client`：启动带 Ars Nouveau 运行时和开发机器内容的客户端；
 - `Ars Compatibility Server`：启动同样开关的专用服务器。
 
-这些配置只在当前 IDEA 启动时传入
-`-Pmekanism_magic.ars_runtime=true` 和
-`-Pmekanism_magic.ars_machine_content=true`，不会修改
-`gradle.properties`，因此普通 `build` 和正式发布包仍保持关闭 Ars 开发机器内容。
+这些配置会为 IDEA 启动加入 Ars Nouveau 运行时；Ars 机器内容现已默认进入普通
+`build` 和发布包，以保证方块注册 ID 在重启及重新进入存档后保持稳定。
 
 ## 1.20.1 Forge
 
@@ -74,10 +74,10 @@ IDEA 中以 Gradle 项目打开根目录，刷新 Gradle 后运行 `client` 或 
 - JEI 15.49.0.190
 - Java 17
 
-Forge 分支工程位于：
+Forge 版本位于 `codex/1.20.1` 分支，可通过独立 worktree 或 checkout 使用：
 
 ```text
-E:\IdeaProjects\Mekanism Magic Forge 1.20.1
+git switch codex/1.20.1
 ```
 
 构建和启动：

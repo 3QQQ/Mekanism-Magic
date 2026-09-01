@@ -1,13 +1,3 @@
 {
-  "parent": "mekanism:block/crusher",
-  "textures": {
-    "particle": "mekanism_magic:block/dimension_miner/front",
-    "sides": "mekanism_magic:block/dimension_miner/side",
-    "front": "mekanism_magic:block/dimension_miner/front",
-    "west": "mekanism_magic:block/dimension_miner/side",
-    "east": "mekanism_magic:block/dimension_miner/side",
-    "south": "mekanism_magic:block/dimension_miner/back",
-    "up": "mekanism_magic:block/dimension_miner/top",
-    "down": "mekanism_magic:block/dimension_miner/bottom"
-  }
+  "parent": "mekanism_magic:block/dimension_miner_base"
 }

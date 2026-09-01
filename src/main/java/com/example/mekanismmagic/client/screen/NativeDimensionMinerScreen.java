@@ -3,12 +3,12 @@ package com.example.mekanismmagic.client.screen;
 import com.example.mekanismmagic.blockentity.NativeDimensionMinerBlockEntity;
 import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
-import java.util.Locale;
+import com.example.mekanismmagic.client.gui.MagicItemCountRenderer;
 
 public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
         NativeDimensionMinerBlockEntity,
@@ -33,40 +33,21 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
     }
 
     @Override
-    protected void renderSlotContents(GuiGraphics graphics,
-                                      net.minecraft.world.item.ItemStack stack,
-                                      Slot slot,
-                                      String countText) {
-        if (isMinerOutputSlot(slot) && stack.getCount() >= 100) {
-            countText = formatCompactCount(stack.getCount());
-        }
-        super.renderSlotContents(graphics, stack, slot, countText);
+    protected int energyBarHeight() {
+        // Align the status bar with the bottom of the three output rows.
+        return 80;
+    }
+
+    @Override
+    protected boolean usesCompactSlotCount(ItemStack stack, Slot slot) {
+        return isMinerOutputSlot(slot)
+                && MagicItemCountRenderer.needsCompactCount(stack.getCount());
     }
 
     private boolean isMinerOutputSlot(Slot slot) {
         return slot instanceof InventoryContainerSlot inventorySlot
                 && getTileEntity().isMinerOutputSlot(
                         inventorySlot.getInventorySlot());
-    }
-
-    private static String formatCompactCount(int count) {
-        final double unit;
-        final String suffix;
-        if (count >= 100_000_000) {
-            unit = 1_000_000_000D;
-            suffix = "b";
-        } else if (count >= 100_000) {
-            unit = 1_000_000D;
-            suffix = "m";
-        } else {
-            unit = 1_000D;
-            suffix = "k";
-        }
-        // Truncate instead of rounding so 999,999 is shown as 999.9k
-        // rather than overflowing visually to 1000k.
-        double scaled = Math.floor(count / unit * 10D) / 10D;
-        return String.format(Locale.ROOT, "%.1f%s", scaled, suffix)
-                .replace(".0", "");
     }
 
 }

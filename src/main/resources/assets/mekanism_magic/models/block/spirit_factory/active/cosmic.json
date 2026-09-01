@@ -1,23 +1,26 @@
 {
   "loader": "neoforge:composite",
   "parent": "block/block",
-  "textures": {"particle": "mekanism_magic:block/spirit_factory/cosmic/front_active"},
+  "textures": {
+    "particle": "mekanism_magic:block/spirit_factory/front"
+  },
   "children": {
-    "opaque_core": {
-      "parent": "mekanism_magic:block/spirit_factory/opaque_core",
-      "textures": {"core": "mekanism_magic:block/spirit_factory/cosmic/side"}
-    },
     "base": {
       "parent": "mekanism_magic:block/spirit_factory/base_active",
       "textures": {
-        "particle": "mekanism_magic:block/spirit_factory/cosmic/front_active",
-        "front": "mekanism_magic:block/spirit_factory/cosmic/front_active",
-        "top": "mekanism_magic:block/spirit_factory/cosmic/top",
-        "back_panel": "mekanism_magic:block/spirit_factory/cosmic/back",
-        "side": "mekanism_magic:block/spirit_factory/cosmic/side",
-        "bottom": "mekanism_magic:block/spirit_factory/cosmic/bottom"
+        "particle": "mekanism_magic:block/spirit_factory/front",
+        "front": "mekanism_magic:block/spirit_factory/front",
+        "top": "mekanism_magic:block/spirit_factory/top",
+        "back_panel": "mekanism_magic:block/spirit_factory/back",
+        "side": "mekanism_magic:block/spirit_factory/side",
+        "bottom": "mekanism_magic:block/spirit_factory/bottom"
       }
     },
-    "front_led": {"parent": "mekanism_extras:block/factory/front_led/active/cosmic"}
+    "front_led": {
+      "parent": "mekanism_magic:block/spirit_factory/front_led/active/cosmic"
+    },
+    "binding_rig": {
+      "parent": "mekanism_magic:block/spirit_factory/binding_rig_active"
+    }
   }
 }

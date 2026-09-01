@@ -1,0 +1,384 @@
+{
+  "credit": "Mekanism Magic original Source Manifold Factory chassis",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism_magic:block/imbuement_factory/front",
+    "front": "mekanism_magic:block/imbuement_factory/front",
+    "top": "mekanism:block/factory/infusing/infusing_factory_top",
+    "side": "mekanism:block/factory/infusing/infusing_factory_side",
+    "back": "mekanism:block/factory/infusing/infusing_factory_back",
+    "bottom": "mekanism:block/factory/infusing/infusing_factory_bottom",
+    "ports": "mekanism:block/models/ports",
+    "ports_led": "mekanism:block/models/ports_led",
+    "back_panel": "mekanism:block/factory/factory_front_back"
+  },
+  "elements": [
+    {
+      "name": "factory_floor",
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        3,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#front"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "factory_front_crown",
+      "from": [
+        0,
+        3,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        3
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#front"
+        },
+        "south": {
+          "texture": "#back_panel"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "west_drive_bank",
+      "from": [
+        0,
+        3,
+        3
+      ],
+      "to": [
+        3,
+        13,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "east_drive_bank",
+      "from": [
+        13,
+        3,
+        3
+      ],
+      "to": [
+        16,
+        13,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "rear_drive_bank",
+      "from": [
+        3,
+        3,
+        13
+      ],
+      "to": [
+        13,
+        13,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#back"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#back"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#back"
+        },
+        "east": {
+          "texture": "#back"
+        }
+      }
+    },
+    {
+      "name": "central_process_floor",
+      "from": [
+        3,
+        3,
+        3
+      ],
+      "to": [
+        13,
+        5,
+        13
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#bottom"
+        },
+        "south": {
+          "texture": "#bottom"
+        },
+        "west": {
+          "texture": "#bottom"
+        },
+        "east": {
+          "texture": "#bottom"
+        }
+      }
+    },
+    {
+      "name": "west_roof_cartridge",
+      "from": [
+        0,
+        13,
+        3
+      ],
+      "to": [
+        5,
+        16,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "east_roof_cartridge",
+      "from": [
+        11,
+        13,
+        3
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "name": "rear_roof_bridge",
+      "from": [
+        5,
+        13,
+        13
+      ],
+      "to": [
+        11,
+        16,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#back"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#back"
+        },
+        "south": {
+          "texture": "#back"
+        },
+        "west": {
+          "texture": "#back"
+        },
+        "east": {
+          "texture": "#back"
+        }
+      }
+    },
+    {
+      "name": "factory_output_port",
+      "from": [
+        4,
+        5,
+        15.78
+      ],
+      "to": [
+        12,
+        12,
+        15.94
+      ],
+      "faces": {
+        "north": {
+          "texture": "#ports"
+        },
+        "east": {
+          "texture": "#ports"
+        },
+        "south": {
+          "texture": "#ports"
+        },
+        "west": {
+          "texture": "#ports"
+        },
+        "up": {
+          "texture": "#ports"
+        },
+        "down": {
+          "texture": "#ports"
+        }
+      }
+    },
+    {
+      "name": "factory_output_port_led",
+      "from": [
+        4.15,
+        5.15,
+        15.95
+      ],
+      "to": [
+        11.85,
+        11.85,
+        15.99
+      ],
+      "faces": {
+        "north": {
+          "texture": "#ports_led"
+        },
+        "east": {
+          "texture": "#ports_led"
+        },
+        "south": {
+          "texture": "#ports_led"
+        },
+        "west": {
+          "texture": "#ports_led"
+        },
+        "up": {
+          "texture": "#ports_led"
+        },
+        "down": {
+          "texture": "#ports_led"
+        }
+      },
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15
+      }
+    }
+  ]
+}

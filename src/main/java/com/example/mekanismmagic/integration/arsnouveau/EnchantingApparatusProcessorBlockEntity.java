@@ -6,7 +6,6 @@ import mekanism.api.inventory.IInventorySlot;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
-import mekanism.common.tile.component.config.DataType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
@@ -41,21 +40,30 @@ public final class EnchantingApparatusProcessorBlockEntity
             for (int column = 0; column < 3; column++) {
                 if (row == 1 && column == 1) {
                     inputSlot = registerLogicalSlot(helper, REAGENT_SLOT,
-                            InputInventorySlot.at(listener, 87, 49));
+                            InputInventorySlot.at(listener,
+                                    ArsThreeByThreeMachineLayout.slotX(column),
+                                    ArsThreeByThreeMachineLayout.slotY(row)));
                 } else {
                     pedestalSlots.add(registerLogicalSlot(helper, logical++,
                             InputInventorySlot.at(listener,
-                                    69 + column * 18,
-                                    31 + row * 18)));
+                                    ArsThreeByThreeMachineLayout.slotX(column),
+                                    ArsThreeByThreeMachineLayout.slotY(row))));
                 }
             }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
-                OutputInventorySlot.at(listener, 176, 58));
-        var itemConfig = setupArsItemIO(
-                List.of(inputSlot), List.of(outputSlot), List.of());
-        addNativeItemSlotInfo(itemConfig, DataType.INPUT_2,
-                true, false, pedestalSlots);
+                OutputInventorySlot.at(listener,
+                        ArsThreeByThreeMachineLayout.SOURCE_SAFE_OUTPUT_X,
+                        ArsThreeByThreeMachineLayout.OUTPUT_Y));
+        // Keep the existing logical slot ids so old worlds load without moving
+        // any stacks, but expose every cell as the same kind of input. The
+        // recipe bridge now discovers which stack is the reagent instead of
+        // permanently assigning that role to the centre cell.
+        List<IInventorySlot> apparatusInputs =
+                new ArrayList<>(PEDESTAL_SLOT_COUNT + 1);
+        apparatusInputs.add(inputSlot);
+        apparatusInputs.addAll(pedestalSlots);
+        setupArsItemIO(apparatusInputs, List.of(outputSlot), List.of());
     }
 
     @Override
@@ -63,7 +71,7 @@ public final class EnchantingApparatusProcessorBlockEntity
             ItemStackHandler inventory) {
         return ArsNouveauRecipeBridge.findApparatusRecipe(
                 level, inventory, REAGENT_SLOT,
-                PEDESTAL_SLOT_START, PEDESTAL_SLOT_COUNT);
+                PEDESTAL_SLOT_COUNT + 1);
     }
 
     @Override
@@ -73,30 +81,23 @@ public final class EnchantingApparatusProcessorBlockEntity
 
     @Override
     protected int energySlotX() {
-        return 30;
+        return ArsThreeByThreeMachineLayout.ENERGY_SLOT_X;
     }
 
     @Override
     protected int energySlotY() {
-        return 35;
+        return ArsThreeByThreeMachineLayout.ENERGY_SLOT_Y;
     }
 
     void seedDevelopmentTest() {
-        inputSlot.setStack(new net.minecraft.world.item.ItemStack(
-                Items.SCULK_SENSOR));
+        // Intentionally seed an outer cell: this command is also the
+        // regression check that the reagent is no longer tied to the centre.
+        pedestalSlots.getFirst().setStack(
+                new net.minecraft.world.item.ItemStack(Items.SCULK_SENSOR));
         setSource(getMaxSource());
         if (energyContainer != null) {
             energyContainer.setEnergy(energyContainer.getMaxEnergy());
         }
     }
 
-    @Override
-    public List<IInventorySlot> mekanismMagicPatternInputs() {
-        List<IInventorySlot> slots =
-                new ArrayList<>(super.mekanismMagicPatternInputs());
-        if (pedestalSlots != null) {
-            slots.addAll(pedestalSlots);
-        }
-        return List.copyOf(slots);
-    }
 }

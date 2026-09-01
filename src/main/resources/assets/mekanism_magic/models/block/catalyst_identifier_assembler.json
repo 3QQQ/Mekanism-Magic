@@ -1,13 +1,3 @@
 {
-  "parent": "mekanism:block/enrichment_chamber",
-  "textures": {
-    "particle": "mekanism_magic:block/source_generator/front",
-    "sides": "mekanism_magic:block/source_generator/side",
-    "front": "mekanism_magic:block/source_generator/front",
-    "west": "mekanism_magic:block/source_generator/side",
-    "east": "mekanism_magic:block/source_generator/side",
-    "south": "mekanism_magic:block/source_generator/back",
-    "up": "mekanism_magic:block/source_generator/top",
-    "down": "mekanism_magic:block/source_generator/bottom"
-  }
+  "parent": "mekanism_magic:block/catalyst_identifier_assembler_base"
 }

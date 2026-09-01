@@ -1,8 +1,6 @@
 {
-  "parent": "mekanism_magic:block/enchanting_apparatus_processor",
+  "parent": "mekanism_magic:block/enchanting_apparatus_processor_base",
   "textures": {
-    "front": "mekanism_magic:block/enchanting_apparatus_processor/front_active",
-    "west": "mekanism_magic:block/enchanting_apparatus_processor/side_active",
-    "east": "mekanism_magic:block/enchanting_apparatus_processor/side_active"
+    "7": "mekanism:item/empty"
   }
 }

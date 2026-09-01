@@ -7,18 +7,17 @@ import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
+public final class MiniRitualJeiCategory extends MagicJeiCategory<
         OccultismRecipeBridge.PentacleJeiData> {
     private static final int SLOT_SPACING = 18;
 
     public MiniRitualJeiCategory(IGuiHelper guiHelper) {
-        super(MekanismMagicJeiPlugin.MINI_RITUAL_TYPE,
+        super(guiHelper, MekanismMagicJeiPlugin.MINI_RITUAL_TYPE,
                 Component.translatable("jei.mekanism_magic.mini_ritual"),
                 guiHelper.createDrawableItemLike(
                         NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.asItem()),
@@ -33,9 +32,9 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
             int row = index / 8;
             int column = index % 8;
             JeiSlotMarker.mark(
-                            builder.addInputSlot(4 + column * SLOT_SPACING,
-                                            4 + row * SLOT_SPACING)
-                                    .setStandardSlotBackground(),
+                            input(builder.addInputSlot(
+                                    4 + column * SLOT_SPACING,
+                                    4 + row * SLOT_SPACING)),
                             JeiSlotMarker.Kind.INPUT, "input_" + index)
                     .addItemStack(recipe.materials().get(index));
         }
@@ -49,16 +48,15 @@ public final class MiniRitualJeiCategory extends AbstractRecipeCategory<
             int row = index / 8;
             int column = index % 8;
             JeiSlotMarker.mark(
-                            builder.addSlot(RecipeIngredientRole.CATALYST,
-                                            4 + column * SLOT_SPACING,
-                                            46 + row * SLOT_SPACING)
-                                    .setStandardSlotBackground(),
+                            input(builder.addSlot(
+                                    RecipeIngredientRole.CATALYST,
+                                    4 + column * SLOT_SPACING,
+                                    46 + row * SLOT_SPACING)),
                             JeiSlotMarker.Kind.CHALK, "chalk_" + index)
                     .addItemStack(chalk);
         }
         JeiSlotMarker.mark(
-                        builder.addOutputSlot(148, 31)
-                                .setOutputSlotBackground(),
+                        output(builder.addOutputSlot(148, 31)),
                         JeiSlotMarker.Kind.OUTPUT, "output")
                 .addItemStack(recipe.output());
         builder.addInvisibleIngredients(RecipeIngredientRole.OUTPUT)

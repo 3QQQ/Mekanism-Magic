@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="Mekanism Magic contributors"
-description='''Mekanism-style machines for Occultism rituals and spirit recipes.'''
+description='''Mekanism-style automation for Occultism and Ars Nouveau, with AE2-aware machines, factories, and Source transport.'''
 
 [[dependencies.${mod_id}]]
 modId="neoforge"
@@ -72,4 +72,43 @@ versionRange="[0,)"
 ordering="NONE"
 side="BOTH"
 
+[[dependencies.${mod_id}]]
+modId="ae2"
+type="optional"
+versionRange="[19.2.17,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="arseng"
+type="optional"
+versionRange="[2.1.1-beta,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="extendedae"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="pipez"
+type="optional"
+versionRange="[1.21.1-1.2.17,)"
+ordering="AFTER"
+side="BOTH"
+
 ${mekenergistics_mixins}
+
+${ae2_mixins}
+
+[[mixins]]
+config="mekanism_magic.mixins.json"
+
+[[mixins]]
+config="mekanism_magic.client.mixins.json"
+
+[[mixins]]
+config="pipez_compat.mixins.json"

@@ -9,12 +9,18 @@ import net.minecraft.resources.ResourceLocation;
  * the supplied Mek Energistics API is available.
  */
 public final class MekEnergisticsCompat {
+    private static final String[] SAFETY_GATE_CLASSES = {
+            "com.beipuo.mekenergistics.item.MeTierInstallerItem",
+            "com.beipuo.mekenergistics.item.MeInstallerUpgradeHandler",
+            "com.beipuo.mekenergistics.item.MeInstallerTargetResolver"
+    };
+
     private MekEnergisticsCompat() {
     }
 
     public static void registerBlocks() {
+        verifySafetyGateClasses();
         String[] paths = {
-                "source_generator",
                 "imbuement_processor",
                 "basic_imbuement_factory",
                 "advanced_imbuement_factory",
@@ -25,7 +31,6 @@ public final class MekEnergisticsCompat {
                 "cosmic_imbuement_factory",
                 "infinite_imbuement_factory",
                 "enchanting_apparatus_processor",
-                "dimension_miner",
                 "spirit_processor",
                 "ritual_engine",
                 "mini_ritual_assembler",
@@ -42,6 +47,29 @@ public final class MekEnergisticsCompat {
             MePatternAutomation.registerBlock(
                     ResourceLocation.fromNamespaceAndPath(
                             MekanismMagic.MOD_ID, path));
+        }
+        MekanismMagic.LOGGER.info(
+                "Registered {} Mekanism Magic machines for in-place ME "
+                        + "upgrades; replacement safety gates verified",
+                paths.length);
+    }
+
+    /**
+     * Force the three replacement entry points to transform during startup.
+     * With defaultRequire=1 this turns a future incompatible Mek Energistics
+     * ABI into an immediate, visible compatibility failure instead of leaving
+     * a dormant unsafe path that can replace a player's machine later.
+     */
+    private static void verifySafetyGateClasses() {
+        ClassLoader loader = MekEnergisticsCompat.class.getClassLoader();
+        for (String className : SAFETY_GATE_CLASSES) {
+            try {
+                Class.forName(className, true, loader);
+            } catch (ClassNotFoundException exception) {
+                throw new IllegalStateException(
+                        "Missing required Mek Energistics safety gate: "
+                                + className, exception);
+            }
         }
     }
 }

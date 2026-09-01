@@ -2,6 +2,8 @@ package com.example.mekanismmagic.integration.arsnouveau;
 
 import com.hollingsworth.arsnouveau.api.source.ISourceCap;
 import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import mekanism.common.MekanismLang;
 import mekanism.common.lib.distribution.SplitInfo;
 import mekanism.common.lib.distribution.Target;
@@ -10,6 +12,7 @@ import mekanism.common.network.PacketUtils;
 import mekanism.common.network.to_client.transmitter.PacketNetworkScale;
 import mekanism.common.util.EmitUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.Direction;
 
 import java.util.Collection;
 import java.util.Map;
@@ -21,15 +24,17 @@ import java.util.UUID;
 public final class MagicSourceNetwork extends DynamicBufferedNetwork<
         ISourceCap, MagicSourceNetwork, SourceStorage,
         MagicSourceTransmitter> {
-    private static final int TRANSFER_RATE = 1_000;
     public final SourceStorage sourceStorage;
     public int lastTransferAmount;
     public int lastSource;
 
     public MagicSourceNetwork(UUID networkId) {
         super(networkId);
-        sourceStorage = new SourceStorage(1, TRANSFER_RATE,
-                TRANSFER_RATE) {
+        // Match Mekanism's FluidNetwork: the shared network storage and normal
+        // output are unrestricted by pump rate. Only PULL connections apply
+        // the local pipe tier's pull limit.
+        sourceStorage = new SourceStorage(1, Integer.MAX_VALUE,
+                Integer.MAX_VALUE) {
             @Override
             public int getSourceCapacity() {
                 return (int) Math.max(1, Math.min(
@@ -119,24 +124,34 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
     public void onUpdate() {
         float previousScale = currentScale;
         super.onUpdate();
-        int amount = Math.min(
-                TRANSFER_RATE, sourceStorage.getSource());
+        // A freshly split/rebuilt network calculates its correct scale while
+        // transmitters are committed, before the first update tick. In that
+        // case previousScale already equals currentScale, but needsUpdate is
+        // still set by DynamicBufferedNetwork.validTransmittersAdded(). Send
+        // the initial scale anyway or the new client network remains at zero
+        // until its contents happen to change again.
+        if (!isRemote() && (needsUpdate || previousScale != currentScale)) {
+            PacketUtils.sendToAllTracking(
+                    this, new PacketNetworkScale(this));
+        }
+        needsUpdate = false;
+        int amount = sourceStorage.getSource();
         if (amount <= 0) {
             lastTransferAmount = 0;
+            lastSource = 0;
             return;
         }
         SourceTarget target = null;
-        for (Map<net.minecraft.core.Direction, ISourceCap> acceptors
-                : acceptorCache.getAcceptorValues()) {
-            for (ISourceCap acceptor : acceptors.values()) {
-                if (!acceptor.canAcceptSource(1)) {
-                    continue;
-                }
+        ObjectIterator<Long2ObjectMap.Entry<Map<Direction, ISourceCap>>>
+                iterator = acceptorCache.getAcceptorFastIterator();
+        while (iterator.hasNext()) {
+            Long2ObjectMap.Entry<Map<Direction, ISourceCap>> entry =
+                    iterator.next();
+            for (ISourceCap acceptor : entry.getValue().values()) {
                 if (target == null) {
-                    target = new SourceTarget(
-                            acceptorCache.getAcceptorCount());
+                    target = new SourceTarget();
                 }
-                target.addHandler(acceptor);
+                target.addHandler(new SourceEndpoint(acceptor));
             }
         }
         lastTransferAmount = target == null ? 0
@@ -145,10 +160,6 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
             sourceStorage.extractSource(lastTransferAmount, false);
         }
         lastSource = sourceStorage.getSource();
-        if (!isRemote() && previousScale != currentScale) {
-            PacketUtils.sendToAllTracking(
-                    this, new PacketNetworkScale(this));
-        }
     }
 
     @Override
@@ -197,27 +208,33 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
     }
 
     private static final class SourceTarget
-            extends Target<ISourceCap, Integer> {
-        private SourceTarget(int expectedSize) {
-            super(Math.max(1, expectedSize));
+            extends Target<SourceEndpoint, Integer> {
+        private SourceTarget() {
+            // Avoid a second full acceptor-cache traversal merely to obtain
+            // an exact allocation size. Most Source networks have only a
+            // handful of endpoints, and ArrayList grows cheaply when needed.
+            super(8);
         }
 
         @Override
         protected void acceptAmount(
-                ISourceCap handler, SplitInfo splitInfo,
+                SourceEndpoint handler, SplitInfo splitInfo,
                 Integer resource, long amount) {
-            int accepted = handler.receiveSource(
-                    Math.min(Integer.MAX_VALUE, (int) amount),
-                    false);
+            int accepted = handler.receive(amount, false);
             splitInfo.send(accepted);
         }
 
         @Override
         protected long simulate(
-                ISourceCap handler, Integer resource, long amount) {
-            return handler.receiveSource(
-                    Math.min(Integer.MAX_VALUE, (int) amount),
-                    true);
+                SourceEndpoint handler, Integer resource, long amount) {
+            return handler.receive(amount, true);
+        }
+    }
+
+    private record SourceEndpoint(ISourceCap acceptor) {
+        private int receive(long requested, boolean simulate) {
+            int amount = (int) Math.min(Integer.MAX_VALUE, requested);
+            return acceptor.receiveSource(amount, simulate);
         }
     }
 }

@@ -1,10 +1,12 @@
 package com.example.mekanismmagic.integration.mekenergistics;
 
-import com.example.mekanismmagic.integration.ModCompatibility;
 import org.objectweb.asm.tree.ClassNode;
+import org.spongepowered.asm.service.MixinService;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
@@ -15,20 +17,46 @@ import java.util.Set;
  */
 public final class MekEnergisticsCompatMixinPlugin
         implements IMixinConfigPlugin {
-    private static final String API_CLASS =
-            "com.beipuo.mekenergistics.api.upgrade.IMePatternAutomationHost";
+    private static final String[] REQUIRED_ABI_CLASSES = {
+            "com.beipuo.mekenergistics.api.upgrade."
+                    + "IMePatternAutomationHost",
+            "com.beipuo.mekenergistics.api.upgrade.MePatternAutomation",
+            "com.beipuo.mekenergistics.blockentity.support."
+                    + "AbstractMeAeSupport",
+            "com.beipuo.mekenergistics.blockentity.support."
+                    + "MeSmartPatternMultiplication",
+            "com.beipuo.mekenergistics.common.machine.MeMekanismMachine",
+            "com.beipuo.mekenergistics.item.MeTierInstallerItem",
+            "com.beipuo.mekenergistics.item.MeInstallerUpgradeHandler",
+            "com.beipuo.mekenergistics.item.MeInstallerTargetResolver",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MePatternAutomationProfiles",
+            "com.beipuo.mekenergistics.upgrade.MeUpgradeMachineProfile",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MeUpgradeRecipeMachineAdapter",
+            "com.beipuo.mekenergistics.upgrade.MeUpgradeType"
+    };
 
     private static boolean loaded() {
-        String resource = API_CLASS.replace('.', '/') + ".class";
-        if (MekEnergisticsCompatMixinPlugin.class.getClassLoader()
-                .getResource(resource) == null) {
-            return false;
+        // Mixin plugins run before the normal FML ModList is ready. Querying
+        // ModList here made every compatibility mixin silently opt out even
+        // with Mek Energistics 3.0.6 installed. MixinService is the loader's
+        // authoritative early resource view; this list is the exact ABI
+        // surface referenced by the optional bridge mixins.
+        for (String className : REQUIRED_ABI_CLASSES) {
+            if (!classPresent(className)) {
+                return false;
+            }
         }
-        try {
-            return ModCompatibility.mekenergisticsAutomationSupported();
-        } catch (Throwable ignored) {
-            // A partially initialized loader must never make the optional
-            // integration prevent the game from starting.
+        return true;
+    }
+
+    private static boolean classPresent(String className) {
+        String resource = className.replace('.', '/') + ".class";
+        try (InputStream stream = MixinService.getService()
+                .getResourceAsStream(resource)) {
+            return stream != null;
+        } catch (IOException | RuntimeException ignored) {
             return false;
         }
     }

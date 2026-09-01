@@ -1,0 +1,10 @@
+{
+  "parent": "mekanism:block/transmitter/large/large",
+  "textures": {
+    "side": "mekanism_magic:block/elite_magic_source_pipe/magic_source_pipe_vertical",
+    "center_down": "mekanism_magic:block/elite_magic_source_pipe/magic_source_pipe",
+    "side_opaque": "mekanism_magic:block/elite_magic_source_pipe/opaque/magic_source_pipe_vertical",
+    "center_opaque": "mekanism_magic:block/elite_magic_source_pipe/opaque/magic_source_pipe",
+    "particle": "mekanism_magic:block/magic_source_flow_reverse"
+  }
+}

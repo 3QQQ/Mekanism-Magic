@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.example.mekanismmagic.integration.ae2.mixin",
+  "plugin": "com.example.mekanismmagic.integration.ae2.Ae2CompatMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "Ae2PatternDecoderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

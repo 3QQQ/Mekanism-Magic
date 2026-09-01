@@ -1,3 +1,6 @@
 {
-  "parent": "mekanism_magic:block/catalyst_identifier_assembler"
+  "parent": "mekanism_magic:block/catalyst_identifier_assembler_base",
+  "textures": {
+    "7": "mekanism:item/empty"
+  }
 }

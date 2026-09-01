@@ -1,6 +1,13 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
+import com.example.mekanismmagic.api.IRecipeEntityDisplay;
+import com.example.mekanismmagic.api.IRecipeItemDisplay;
+import com.example.mekanismmagic.api.RecipeEntityDisplayState;
+import com.example.mekanismmagic.api.RecipeItemDisplayState;
+import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
+import com.example.mekanismmagic.integration.common.network
+        .MachineDirectOutputHooks.DirectNetworkStatus;
 import com.example.mekanismmagic.integration.common.recipe.InputUse;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
@@ -20,6 +27,7 @@ import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.container.MekanismContainer;
+import mekanism.common.inventory.container.sync.SyncableBoolean;
 import mekanism.common.inventory.container.sync.SyncableInt;
 import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
@@ -50,6 +58,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,8 +70,12 @@ import java.util.Optional;
  */
 public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         implements ISideConfiguration, IUpgradeTile,
-        IMekanismMagicAutomation {
+        IMekanismMagicAutomation, IRecipeEntityDisplay,
+        IRecipeItemDisplay {
     private static final int FAST_EJECT_BACKOFF_TICKS = 10;
+    private static final int FAST_EJECT_REJECTED_BACKOFF_TICKS = 10;
+    protected static final int MAX_DIRECT_PUSH_CALLS_PER_TICK = 256;
+    protected static final int DIRECT_NETWORK_BATCH_INTERVAL_TICKS = 20;
     private static final int RECIPE_LOOKUP_BACKOFF_TICKS = 5;
     public static final int INPUT_SLOTS = 16;
     public static final int OUTPUT_SLOT = 16;
@@ -85,6 +98,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected EnergyInventorySlot energySlot;
     protected BasicInventorySlot containmentSlot;
     private Map<Integer, IInventorySlot> logicalSlots;
+    // Access declared by the machine's DataType configuration. The shared
+    // top INPUT_OUTPUT port necessarily exposes several DataTypes at once,
+    // so keep the original per-slot permissions here instead of widening an
+    // input-only special slot into an externally extractable one.
+    private Map<IInventorySlot, NativeSlotAccess> nativeSlotAccess;
     private List<IInventorySlot> configuredInputSlots;
     // Populated while TileEntityMekanism's constructor builds the inventory.
     // Do not use a field initializer here: it would run afterwards and erase
@@ -98,8 +116,24 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected int progress;
     protected int progressRequired = 1;
     protected String activeRecipe = "";
+    private boolean notEnoughEnergyWarning;
+    private boolean reducedEnergyWarning;
+    private boolean inputDoesntProduceOutputWarning;
+    private DirectNetworkStatus syncedDirectNetworkStatus =
+            DirectNetworkStatus.UNAVAILABLE;
     private int recipeLookupBackoff;
     private long lastRecipeInputFingerprint = Long.MIN_VALUE;
+    /**
+     * The immutable recipe description currently being processed. Keeping it
+     * here avoids rebuilding a 73-slot snapshot and walking an optional mod's
+     * complete recipe list on every working tick.
+     */
+    private MachineRecipeResult cachedActiveRecipe;
+    private long cachedActiveRecipeFingerprint = Long.MIN_VALUE;
+    private final RecipeEntityDisplayState recipeEntityDisplay =
+            new RecipeEntityDisplayState();
+    private final RecipeItemDisplayState recipeItemDisplay =
+            new RecipeItemDisplayState();
 
     protected NativeMagicMachineBlockEntity(Holder<Block> block, BlockPos pos, BlockState state) {
         super(block, pos, state);
@@ -137,7 +171,46 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 listener, energySlotX(), energySlotY());
         helper.addSlot(energySlot);
         createMachineSlots(helper, listener);
+        createMachineAddonSlots(helper, listener);
+        completeNativeItemIOContract();
+        DefaultMachineSideConfig.apply(configComponent);
         return helper.build();
+    }
+
+    /**
+     * Repairs the most common omission in a newly added machine: registering
+     * its slots but forgetting to create an item side configuration. Standard
+     * Mekanism input/output slot types can be inferred safely. Custom slots
+     * remain manual-only until the machine deliberately exposes them with
+     * {@link #addNativeItemSlotInfo}; guessing permissions for a catalyst or
+     * persistent container is more dangerous than leaving it unexposed.
+     */
+    private void completeNativeItemIOContract() {
+        if (configuredInputSlots != null && configuredOutputSlots != null) {
+            return;
+        }
+        List<IInventorySlot> inputs = new ArrayList<>();
+        List<IInventorySlot> outputs = new ArrayList<>();
+        List<IInventorySlot> extras = new ArrayList<>();
+        if (logicalSlots != null) {
+            for (IInventorySlot slot : logicalSlots.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(Map.Entry::getValue).toList()) {
+                if (slot instanceof InputInventorySlot) {
+                    inputs.add(slot);
+                } else if (slot instanceof OutputInventorySlot) {
+                    outputs.add(slot);
+                } else {
+                    extras.add(slot);
+                }
+            }
+        }
+        setupNativeItemIO(inputs, outputs, List.of());
+        com.example.mekanismmagic.MekanismMagic.LOGGER.warn(
+                "Machine {} omitted setupNativeItemIO; inferred {} input, "
+                        + "{} output; left {} custom slots manual-only",
+                getClass().getName(), inputs.size(), outputs.size(),
+                extras.size());
     }
 
     protected int energySlotX() {
@@ -150,6 +223,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     protected abstract void createMachineSlots(InventorySlotHelper helper, IContentsListener listener);
 
+    /** Optional slots supplied by integration-specific machine families. */
+    protected void createMachineAddonSlots(InventorySlotHelper helper,
+                                           IContentsListener listener) {
+    }
+
     @Override
     public void addContainerTrackers(MekanismContainer container) {
         super.addContainerTrackers(container);
@@ -157,6 +235,23 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 value -> progress = value));
         container.track(SyncableInt.create(() -> progressRequired,
                 value -> progressRequired = Math.max(1, value)));
+        container.track(SyncableBoolean.create(
+                () -> notEnoughEnergyWarning,
+                value -> notEnoughEnergyWarning = value));
+        container.track(SyncableBoolean.create(
+                () -> reducedEnergyWarning,
+                value -> reducedEnergyWarning = value));
+        container.track(SyncableBoolean.create(
+                () -> inputDoesntProduceOutputWarning,
+                value -> inputDoesntProduceOutputWarning = value));
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            container.track(SyncableInt.create(
+                    () -> MachineDirectOutputHooks.status(this).ordinal(),
+                    value -> syncedDirectNetworkStatus =
+                            DirectNetworkStatus.values()[Math.max(0,
+                                    Math.min(DirectNetworkStatus.values()
+                                            .length - 1, value))]));
+        }
     }
 
     protected final ConfigInfo setupNativeItemIO(
@@ -167,18 +262,15 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         List<IInventorySlot> outputSlots = new java.util.ArrayList<>(outputs);
         configuredInputSlots = List.copyOf(inputSlots);
         configuredOutputSlots = List.copyOf(outputSlots);
+        registerNativeSlotAccess(inputSlots, true, false);
+        registerNativeSlotAccess(outputSlots, false, true);
+        if (energySlot != null) {
+            registerNativeSlotAccess(List.of(energySlot), true, true);
+        }
         var itemConfig = configComponent.setupItemIOConfig(
                 inputSlots, outputSlots, energySlot, false);
         addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
                 true, true, extras);
-        // Match Mekanism's normal machine behavior for newly placed machines:
-        // every item side exposes the configured inventory and automatic
-        // ejection is enabled. Players can still change these modes through
-        // the standard side-configuration window.
-        for (RelativeSide side : RelativeSide.values()) {
-            itemConfig.setDataType(DataType.INPUT_OUTPUT, side);
-        }
-        itemConfig.setEjecting(true);
         return itemConfig;
     }
 
@@ -187,9 +279,26 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             boolean canInput, boolean canOutput,
             List<? extends IInventorySlot> slots) {
         if (itemConfig != null && !slots.isEmpty()) {
+            registerNativeSlotAccess(slots, canInput, canOutput);
             itemConfig.addSlotInfo(type,
                     new InventorySlotInfo(canInput, canOutput,
                             new java.util.ArrayList<>(slots)));
+        }
+    }
+
+    private void registerNativeSlotAccess(
+            List<? extends IInventorySlot> slots,
+            boolean canInput, boolean canOutput) {
+        if (slots.isEmpty()) {
+            return;
+        }
+        if (nativeSlotAccess == null) {
+            nativeSlotAccess = new IdentityHashMap<>();
+        }
+        for (IInventorySlot slot : slots) {
+            nativeSlotAccess.merge(slot,
+                    new NativeSlotAccess(canInput, canOutput),
+                    NativeSlotAccess::merge);
         }
     }
 
@@ -198,9 +307,103 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (logicalSlots == null) {
             logicalSlots = new HashMap<>();
         }
+        if (logicalSlots.containsKey(index)) {
+            throw new IllegalStateException("Duplicate logical machine slot "
+                    + index + " in " + getClass().getName());
+        }
         logicalSlots.put(index, slot);
         helper.addSlot(slot);
         return slot;
+    }
+
+    @Override
+    public ItemStack insertItem(int slot, ItemStack stack, Direction side,
+                                Action action) {
+        IInventorySlot inventorySlot = getInventorySlot(slot, side);
+        if (inventorySlot == null) {
+            return stack;
+        }
+        NativeSlotAccess access = nativeSlotAccess == null ? null
+                : nativeSlotAccess.get(inventorySlot);
+        if (side != null && (access == null || !access.canInput())) {
+            return stack;
+        }
+        return inventorySlot.insertItem(stack, action,
+                AutomationType.handler(side));
+    }
+
+    @Override
+    public ItemStack extractItem(int slot, int amount, Direction side,
+                                 Action action) {
+        IInventorySlot inventorySlot = getInventorySlot(slot, side);
+        if (inventorySlot == null) {
+            return ItemStack.EMPTY;
+        }
+        NativeSlotAccess access = nativeSlotAccess == null ? null
+                : nativeSlotAccess.get(inventorySlot);
+        if (side != null && (access == null || !access.canOutput())) {
+            return ItemStack.EMPTY;
+        }
+        if (side != null && amount > 0
+                && com.example.mekanismmagic.integration.pipez
+                .PipezItemHandlerCompat.isBulkExtractionActive()) {
+            ItemStack stored = inventorySlot.getStack();
+            if (stored.isEmpty()
+                    || stored.getCount() <= stored.getMaxStackSize()
+                    || inventorySlot.extractItem(1, Action.SIMULATE,
+                    AutomationType.handler(side)).isEmpty()) {
+                return inventorySlot.extractItem(amount, action,
+                        AutomationType.handler(side));
+            }
+            ItemStack template = stored.copy();
+            int requested = Math.min(amount, template.getCount());
+            int extracted = inventorySlot.shrinkStack(requested, action);
+            if (extracted <= 0) {
+                return ItemStack.EMPTY;
+            }
+            return template.copyWithCount(extracted);
+        }
+        return inventorySlot.extractItem(amount, action,
+                AutomationType.handler(side));
+    }
+
+    @Override
+    public boolean isItemValid(int slot, ItemStack stack, Direction side) {
+        IInventorySlot inventorySlot = getInventorySlot(slot, side);
+        if (inventorySlot == null) {
+            return false;
+        }
+        NativeSlotAccess access = nativeSlotAccess == null ? null
+                : nativeSlotAccess.get(inventorySlot);
+        return (side == null || access != null && access.canInput())
+                && inventorySlot.isItemValid(stack);
+    }
+
+    @Override
+    public void setStackInSlot(int slot, ItemStack stack, Direction side) {
+        IInventorySlot inventorySlot = getInventorySlot(slot, side);
+        if (inventorySlot == null) {
+            return;
+        }
+        if (side != null) {
+            NativeSlotAccess access = nativeSlotAccess == null ? null
+                    : nativeSlotAccess.get(inventorySlot);
+            if (access == null) {
+                return;
+            }
+            ItemStack current = inventorySlot.getStack();
+            boolean same = ItemStack.isSameItemSameComponents(current, stack);
+            boolean adds = !stack.isEmpty() && (current.isEmpty() || !same
+                    || stack.getCount() > current.getCount());
+            boolean removes = !current.isEmpty() && (stack.isEmpty() || !same
+                    || stack.getCount() < current.getCount());
+            if ((adds && (!access.canInput()
+                    || !inventorySlot.isItemValid(stack)))
+                    || (removes && !access.canOutput())) {
+                return;
+            }
+        }
+        inventorySlot.setStack(stack);
     }
 
     protected final Map<Integer, IInventorySlot> logicalSlots() {
@@ -269,7 +472,16 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      * this without invoking the default single-output recipe loop again.
      */
     protected final boolean nativeBaseUpdate() {
-        return updateNativeBase();
+        boolean changed = false;
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            // Drain visible fallback slots into AE before the physical
+            // ejector scans them. Long-buffer producers use the same
+            // AE-first ordering, preventing the same output from taking both
+            // expensive paths during one server tick.
+            changed |= MachineDirectOutputHooks.tick(this);
+        }
+        changed |= updateNativeBase();
+        return changed;
     }
 
     protected ItemStack getSpiritSourceForUpgrade() {
@@ -354,9 +566,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             net.minecraft.core.HolderLookup.Provider registries) {
         return new SpiritMachineUpgradeData(registries, redstone, getControlType(),
                 energyContainer, new int[]{progress}, energySlot,
-                inputSlot == null ? List.of() : List.of(inputSlot),
-                outputSlot == null ? List.of() : List.of(outputSlot),
-                false, getComponents(), getSpiritSourceForUpgrade());
+                configuredInputSlots == null ? List.of()
+                        : List.copyOf(configuredInputSlots),
+                configuredOutputSlots == null ? List.of()
+                        : List.copyOf(configuredOutputSlots),
+                false, getComponents(), getSpiritSourceForUpgrade(),
+                new int[]{Math.max(1, progressRequired)},
+                snapshotLogicalSlotsForUpgrade());
     }
 
     @Override
@@ -375,18 +591,54 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             energySlot.deserializeNBT(registries,
                     upgrade.energySlot.serializeNBT(registries));
         }
-        if (inputSlot != null && !upgrade.inputSlots.isEmpty()) {
-            inputSlot.deserializeNBT(registries,
-                    upgrade.inputSlots.getFirst().serializeNBT(registries));
-        }
-        if (outputSlot != null && !upgrade.outputSlots.isEmpty()) {
-            outputSlot.setStack(upgrade.outputSlots.getFirst().getStack());
+        restoreUpgradeSlots(registries, configuredInputSlots,
+                upgrade.inputSlots);
+        restoreUpgradeSlots(registries, configuredOutputSlots,
+                upgrade.outputSlots);
+        if (upgrade.progress.length > 0) {
+            progress = Math.max(0, upgrade.progress[0]);
         }
         for (mekanism.common.tile.component.ITileComponent component : getComponents()) {
             component.read(upgrade.components, registries);
         }
         if (upgrade instanceof SpiritMachineUpgradeData spiritUpgrade) {
             setSpiritSourceFromUpgrade(spiritUpgrade.spiritSource);
+            if (logicalSlots != null) {
+                spiritUpgrade.logicalSlots.forEach((index, stack) -> {
+                    IInventorySlot target = logicalSlots.get(index);
+                    if (target != null) {
+                        target.setStack(stack.copy());
+                    }
+                });
+            }
+            if (spiritUpgrade.requiredTicks.length > 0) {
+                progressRequired = Math.max(1,
+                        spiritUpgrade.requiredTicks[0]);
+            }
+        }
+    }
+
+    private Map<Integer, ItemStack> snapshotLogicalSlotsForUpgrade() {
+        if (logicalSlots == null || logicalSlots.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, ItemStack> snapshot = new java.util.TreeMap<>();
+        logicalSlots.forEach((index, slot) ->
+                snapshot.put(index, slot.getStack().copy()));
+        return snapshot;
+    }
+
+    private static void restoreUpgradeSlots(
+            net.minecraft.core.HolderLookup.Provider registries,
+            @Nullable List<IInventorySlot> targets,
+            List<IInventorySlot> sources) {
+        if (targets == null || targets.isEmpty() || sources.isEmpty()) {
+            return;
+        }
+        int slots = Math.min(targets.size(), sources.size());
+        for (int slot = 0; slot < slots; slot++) {
+            targets.get(slot).deserializeNBT(registries,
+                    sources.get(slot).serializeNBT(registries));
         }
     }
 
@@ -401,15 +653,63 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return progressRequired;
     }
 
+    public boolean hasNotEnoughEnergyWarning() {
+        return notEnoughEnergyWarning;
+    }
+
+    public boolean hasReducedEnergyWarning() {
+        return reducedEnergyWarning;
+    }
+
+    public boolean hasInputDoesntProduceOutputWarning() {
+        return inputDoesntProduceOutputWarning && hasAnyRecipeInput();
+    }
+
+    public final DirectNetworkStatus getDirectNetworkStatus() {
+        if (level != null && level.isClientSide()) {
+            return syncedDirectNetworkStatus;
+        }
+        return MachineDirectOutputHooks.status(this);
+    }
+
+    protected final void clearNativeRecipeWarnings() {
+        notEnoughEnergyWarning = false;
+        reducedEnergyWarning = false;
+        inputDoesntProduceOutputWarning = false;
+    }
+
+    protected final void setNotEnoughEnergyWarning(boolean warning) {
+        notEnoughEnergyWarning = warning;
+        if (warning) {
+            reducedEnergyWarning = false;
+        }
+    }
+
+    protected final void setReducedEnergyWarning(boolean warning) {
+        reducedEnergyWarning = warning;
+        if (warning) {
+            notEnoughEnergyWarning = false;
+        }
+    }
+
+    protected final void setInputDoesntProduceOutputWarning(boolean warning) {
+        inputDoesntProduceOutputWarning = warning;
+    }
+
     @Override
     protected boolean onUpdateServer() {
         boolean changed = updateNativeBase();
-        setActive(false);
+        notEnoughEnergyWarning = false;
+        reducedEnergyWarning = false;
         if (level == null) {
-            return changed;
+            inputDoesntProduceOutputWarning = false;
+            return finishServerUpdate(clearRecipeDisplays() || changed,
+                    false);
         }
         if (!canFunction()) {
-            return changed;
+            inputDoesntProduceOutputWarning = false;
+            return finishServerUpdate(clearRecipeDisplays() || changed,
+                    false);
         }
         if (!hasAnyRecipeInput()) {
             progress = 0;
@@ -417,58 +717,94 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             activeRecipe = "";
             recipeLookupBackoff = 0;
             lastRecipeInputFingerprint = Long.MIN_VALUE;
-            return changed;
+            clearActiveRecipeCache();
+            inputDoesntProduceOutputWarning = false;
+            return finishServerUpdate(clearRecipeDisplays() || changed,
+                    false);
         }
-        ItemStackHandler snapshot = snapshotInventory();
-        if (!shouldAttemptRecipeLookup(snapshot)) {
-            progress = 0;
-            progressRequired = 1;
-            activeRecipe = "";
-            recipeLookupBackoff = 0;
-            lastRecipeInputFingerprint = Long.MIN_VALUE;
-            return changed;
+        long inputFingerprint = recipeInputFingerprint();
+        ItemStackHandler snapshot = null;
+        MachineRecipeResult recipe;
+        boolean usedActiveRecipeCache = !activeRecipe.isEmpty()
+                && cachedActiveRecipe != null
+                && cachedActiveRecipeFingerprint == inputFingerprint
+                && activeRecipe.equals(recipeKey(cachedActiveRecipe));
+        if (usedActiveRecipeCache) {
+            recipe = cachedActiveRecipe;
+        } else {
+            snapshot = snapshotInventory();
+            if (!shouldAttemptRecipeLookup(snapshot)) {
+                progress = 0;
+                progressRequired = 1;
+                activeRecipe = "";
+                recipeLookupBackoff = 0;
+                lastRecipeInputFingerprint = Long.MIN_VALUE;
+                clearActiveRecipeCache();
+                inputDoesntProduceOutputWarning = false;
+                return finishServerUpdate(clearRecipeDisplays() || changed,
+                        false);
+            }
+            if (activeRecipe.isEmpty()
+                    && recipeLookupBackoff > 0
+                    && inputFingerprint == lastRecipeInputFingerprint) {
+                recipeLookupBackoff--;
+                return finishServerUpdate(changed, false);
+            }
+            lastRecipeInputFingerprint = inputFingerprint;
+            Optional<MachineRecipeResult> found = findRecipe(snapshot);
+            if (found.isEmpty()) {
+                progress = 0;
+                progressRequired = 1;
+                activeRecipe = "";
+                recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
+                clearActiveRecipeCache();
+                inputDoesntProduceOutputWarning = true;
+                return finishServerUpdate(clearRecipeDisplays() || changed,
+                        false);
+            }
+            recipe = found.get();
         }
-        long inputFingerprint = recipeInputFingerprint(snapshot);
-        if (activeRecipe.isEmpty()
-                && recipeLookupBackoff > 0
-                && inputFingerprint == lastRecipeInputFingerprint) {
-            recipeLookupBackoff--;
-            return changed;
-        }
-        lastRecipeInputFingerprint = inputFingerprint;
-        Optional<MachineRecipeResult> found = findRecipe(snapshot);
-        if (found.isEmpty()) {
-            progress = 0;
-            progressRequired = 1;
-            activeRecipe = "";
-            recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
-            return changed;
-        }
+        inputDoesntProduceOutputWarning = false;
         recipeLookupBackoff = 0;
-        MachineRecipeResult recipe = found.get();
+        if (!usedActiveRecipeCache) {
+            changed |= recipeEntityDisplay.update(
+                    recipeEntityDisplaySource(recipe));
+            changed |= recipeItemDisplay.updateRecipe(snapshot, recipe);
+        }
         progressRequired = Math.max(1, mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()));
-        ItemStack output = snapshot.getStackInSlot(OUTPUT_SLOT);
+        ItemStack output = outputSlot == null
+                ? ItemStack.EMPTY : outputSlot.getStack();
         if (!recipe.output().isEmpty() && !output.isEmpty()
                 && (!ItemStack.isSameItemSameComponents(output, recipe.output())
                 || output.getCount() + recipe.output().getCount() > output.getMaxStackSize())) {
             recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
-            return changed;
+            return finishServerUpdate(changed, false);
         }
         long usage = energyUsagePerTick(recipe);
         boolean powered = hasEnergyForRecipe(recipe, usage);
         boolean sourceOnly = !powered && canRunWithoutEnergy(recipe);
-        if (!hasRecipeResources(recipe) || (!powered && !sourceOnly)) {
+        boolean resourcesAvailable = hasRecipeResources(recipe);
+        if (!resourcesAvailable || (!powered && !sourceOnly)) {
+            notEnoughEnergyWarning = !powered && !sourceOnly
+                    && resourcesAvailable;
             recipeLookupBackoff = RECIPE_LOOKUP_BACKOFF_TICKS;
-            return changed;
+            return finishServerUpdate(changed, false);
         }
+        reducedEnergyWarning = sourceOnly;
         if (sourceOnly && !isEnergylessTick(recipe)) {
-            return changed;
+            // Source-only recipes intentionally advance on a reduced server
+            // cadence, but they are still continuously processing. Keeping
+            // the active state stable prevents the client animation from
+            // blinking off between those work ticks.
+            return finishServerUpdate(changed, true);
         }
         String recipeKey = recipeKey(recipe);
         if (!activeRecipe.equals(recipeKey)) {
             activeRecipe = recipeKey;
             progress = 0;
         }
+        cachedActiveRecipe = recipe;
+        cachedActiveRecipeFingerprint = inputFingerprint;
         setActive(true);
         if (powered) {
             energyContainer.extract(usage, Action.EXECUTE,
@@ -476,35 +812,52 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         progress++;
         if (progress >= progressRequired) {
+            if (snapshot == null) {
+                snapshot = snapshotInventory();
+            }
             if (level instanceof ServerLevel serverLevel
                     && !recipe.complete(serverLevel, worldPosition)) {
                 progress = 0;
-                setActive(false);
-                return changed;
+                return finishServerUpdate(clearRecipeDisplays() || changed,
+                        false);
             }
             if (!consumeSnapshot(snapshot, recipe)) {
                 progress = 0;
-                setActive(false);
-                return changed;
+                return finishServerUpdate(clearRecipeDisplays() || changed,
+                        false);
             }
             if (!consumeRecipeResources(recipe)) {
                 progress = 0;
-                setActive(false);
-                return changed;
+                return finishServerUpdate(clearRecipeDisplays() || changed,
+                        false);
             }
             if (!recipe.output().isEmpty()) {
-                if (output.isEmpty()) {
+                ItemStack snapshotOutput = snapshot.getStackInSlot(
+                        OUTPUT_SLOT);
+                if (snapshotOutput.isEmpty()) {
                     snapshot.setStackInSlot(OUTPUT_SLOT, recipe.output().copy());
                 } else {
-                    output.grow(recipe.output().getCount());
+                    snapshotOutput.grow(recipe.output().getCount());
                 }
             }
             copyBack(snapshot);
             progress = 0;
             activeRecipe = "";
+            clearActiveRecipeCache();
             onRecipeFinished(recipe);
             changed = true;
         }
+        return changed;
+    }
+
+    /**
+     * Commits the final active state once at the end of a server tick. Calling
+     * {@code setActive(false)} at the start of a tick and {@code setActive(true)}
+     * later made the client restart active models and animations every tick.
+     */
+    protected final boolean finishServerUpdate(boolean changed,
+                                               boolean active) {
+        setActive(active);
         return changed;
     }
 
@@ -516,12 +869,16 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (ejectorComponent != null && level instanceof ServerLevel) {
             if (useFastEjectPath()) {
                 if (hasEjectableItem() && shouldEjectOutputs()) {
-                    // The dimensional miner keeps its dedicated batched
-                    // output path. Logistical transporters still use the
-                    // native colored transit request as a fallback.
-                    boolean fallback = fastEjectItems();
-                    onFastEjectFinished(hasEjectableItem(), fallback);
-                    if (fallback) {
+                    // Long-buffer machines keep a dedicated batched output
+                    // path. This also feeds logistical transporters through
+                    // their item-handler contract so transporter tier limits
+                    // apply without falling back to one native request for
+                    // the whole oversized inventory.
+                    FastEjectResult ejectResult = fastEjectItems();
+                    onFastEjectFinished(hasEjectableItem(),
+                            ejectResult.moved()
+                                    || ejectResult.nativeFallbackRequired());
+                    if (ejectResult.nativeFallbackRequired()) {
                         ejectorComponent.tickServer();
                     }
                 }
@@ -536,9 +893,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     /**
-     * Only the dimensional miner uses the custom long-buffer/batched output
-     * path. All other machines retain Mekanism/Mekanism Extras ejection
-     * timing and transport behavior.
+     * Long-buffer machines such as the dimensional miner and Drygmy
+     * simulator opt into the custom batched output path. Other machines keep
+     * Mekanism/Mekanism Extras ejection timing and transport behavior.
      */
     protected boolean useFastEjectPath() {
         return false;
@@ -549,7 +906,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     protected void onFastEjectFinished(boolean outputRemaining,
-                                       boolean nativeFallbackRequired) {
+                                       boolean continueImmediately) {
     }
 
     /**
@@ -602,18 +959,15 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return remaining;
     }
 
-    /**
-     * @return {@code true} when a Mekanism logistical transporter was found
-     * and needs the native ejector fallback.
-     */
-    private boolean fastEjectItems() {
+    private FastEjectResult fastEjectItems() {
         ConfigInfo itemConfig = configComponent.getConfig(
                 TransmissionType.ITEM);
         if (itemConfig == null || !itemConfig.isEjecting()
                 || !(level instanceof ServerLevel serverLevel)) {
-            return false;
+            return FastEjectResult.NONE;
         }
-        boolean needsNativeFallback = false;
+        boolean movedAny = false;
+        boolean nativeFallbackRequired = false;
         for (RelativeSide relativeSide : RelativeSide.values()) {
             DataType mode = itemConfig.getDataType(relativeSide);
             if (mode == null || !mode.canOutput()) {
@@ -642,14 +996,21 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             }
             if (target instanceof mekanism.common.capabilities.item
                     .CursedTransporterItemHandler) {
-                needsNativeFallback = true;
+                nativeFallbackRequired = true;
                 continue;
             }
             boolean moved = moveBatchedIntoTarget(configuredOutputSlots, target);
+            movedAny |= moved;
             fastEjectBackoff.put(direction,
-                    moved ? 0 : FAST_EJECT_BACKOFF_TICKS);
+                    moved ? 0 : FAST_EJECT_REJECTED_BACKOFF_TICKS);
         }
-        return needsNativeFallback;
+        return new FastEjectResult(movedAny, nativeFallbackRequired);
+    }
+
+    private record FastEjectResult(
+            boolean moved, boolean nativeFallbackRequired) {
+        private static final FastEjectResult NONE =
+                new FastEjectResult(false, false);
     }
 
     private static boolean moveBatchedIntoTarget(
@@ -677,14 +1038,26 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 batch = new OutputBatch(simulated.copy(), new ArrayList<>());
                 batches.add(batch);
             }
-            batch.sources.add(new OutputSource(source, simulated.getCount()));
-            batch.count += simulated.getCount();
+            // IInventorySlot follows the item-handler contract and therefore
+            // never returns more than the item's normal max stack size from
+            // extractItem, even when the backing slot contains millions of
+            // items. These two long-buffer machines deliberately allow
+            // oversized internal stacks, so use the real stored count after
+            // the simulated extraction has confirmed external extraction is
+            // allowed.
+            int availableCount = available.getCount();
+            batch.sources.add(new OutputSource(source, availableCount));
+            batch.count += (long) availableCount;
         }
 
         boolean moved = false;
         for (OutputBatch batch : batches) {
             ItemStack simulated = batch.stack.copy();
-            simulated.setCount(batch.count);
+            // Multiple integer-sized logical output slots can contain the
+            // same item. Keep the aggregate as a long and expose at most one
+            // safe ItemStack-sized batch per target and server tick.
+            simulated.setCount((int) Math.min(Integer.MAX_VALUE,
+                    batch.count));
             int remaining = acceptedAmount(target, simulated);
             if (remaining <= 0) {
                 continue;
@@ -693,17 +1066,27 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                 if (remaining <= 0) {
                     break;
                 }
-                int requested = Math.min(remaining, source.count);
-                ItemStack extracted = source.slot.extractItem(requested,
-                        Action.EXECUTE, AutomationType.EXTERNAL);
-                if (extracted.isEmpty()) {
+                int requested = Math.min(remaining, Math.min(source.count,
+                        source.slot.getCount()));
+                if (requested <= 0) {
                     continue;
                 }
-                ItemStack remainder = insertIntoTarget(target, extracted);
+                // shrinkStack can remove an oversized amount in one operation
+                // without violating IItemHandler's rule that extractItem must
+                // return at most one normal ItemStack. The target still caps
+                // requested via acceptedAmount above, so Mekanism logistical
+                // transporter tier throughput remains authoritative.
+                int extracted = source.slot.shrinkStack(requested,
+                        Action.EXECUTE);
+                if (extracted <= 0) {
+                    continue;
+                }
+                ItemStack transfer = batch.stack.copyWithCount(extracted);
+                ItemStack remainder = insertIntoTarget(target, transfer);
                 if (!remainder.isEmpty()) {
                     restoreToSource(source.slot, remainder);
                 }
-                int accepted = extracted.getCount() - remainder.getCount();
+                int accepted = extracted - remainder.getCount();
                 remaining -= accepted;
                 moved |= accepted > 0;
             }
@@ -714,7 +1097,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     private static final class OutputBatch {
         private final ItemStack stack;
         private final List<OutputSource> sources;
-        private int count;
+        private long count;
 
         private OutputBatch(ItemStack stack, List<OutputSource> sources) {
             this.stack = stack;
@@ -750,8 +1133,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (current.isEmpty()) {
             source.setStack(remainder);
         } else if (ItemStack.isSameItemSameComponents(current, remainder)) {
-            current.grow(remainder.getCount());
-            source.setStack(current);
+            source.growStack(remainder.getCount(), Action.EXECUTE);
         }
     }
 
@@ -770,6 +1152,32 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected void onRecipeFinished(MachineRecipeResult recipe) {
     }
 
+    /**
+     * Entity-bearing recipe outputs (notably Occultism summon rituals) are
+     * displayed by default. Machines whose entity is a persistent catalyst
+     * can return that source instead.
+     */
+    protected ItemStack recipeEntityDisplaySource(
+            MachineRecipeResult recipe) {
+        return recipe.output();
+    }
+
+    @Override
+    public RecipeEntityDisplayState mekanismMagicRecipeEntityDisplay() {
+        return recipeEntityDisplay;
+    }
+
+    @Override
+    public RecipeItemDisplayState mekanismMagicRecipeItemDisplay() {
+        return recipeItemDisplay;
+    }
+
+    private boolean clearRecipeDisplays() {
+        // Non-short-circuiting OR is deliberate: both client display states
+        // must be cleared by the same update packet.
+        return recipeEntityDisplay.clear() | recipeItemDisplay.clear();
+    }
+
     private ItemStackHandler snapshotInventory() {
         ItemStackHandler snapshot = new ItemStackHandler(MACHINE_INVENTORY_SIZE);
         if (logicalSlots != null) {
@@ -778,10 +1186,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return snapshot;
     }
 
-    private static long recipeInputFingerprint(ItemStackHandler inventory) {
+    private long recipeInputFingerprint() {
         long fingerprint = 1;
         for (int slot = 0; slot < MACHINE_INVENTORY_SIZE; slot++) {
-            ItemStack stack = inventory.getStackInSlot(slot);
+            IInventorySlot inventorySlot = logicalSlots == null
+                    ? null : logicalSlots.get(slot);
+            ItemStack stack = inventorySlot == null
+                    ? ItemStack.EMPTY : inventorySlot.getStack();
             fingerprint = 31 * fingerprint + slot;
             if (stack.isEmpty()) {
                 continue;
@@ -796,6 +1207,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return fingerprint;
     }
 
+    private void clearActiveRecipeCache() {
+        cachedActiveRecipe = null;
+        cachedActiveRecipeFingerprint = Long.MIN_VALUE;
+    }
+
     /**
      * Returns whether the machine has enough non-special input state to make a
      * recipe lookup worthwhile. Machines with a selector or other manual
@@ -803,12 +1219,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      * processing inputs are empty.
      */
     protected boolean hasAnyRecipeInput() {
-        if (logicalSlots == null || logicalSlots.isEmpty()) {
+        if (configuredInputSlots == null || configuredInputSlots.isEmpty()) {
             return false;
         }
-        for (Map.Entry<Integer, IInventorySlot> entry : logicalSlots.entrySet()) {
-            if (entry.getKey() != OUTPUT_SLOT
-                    && !entry.getValue().getStack().isEmpty()) {
+        for (IInventorySlot slot : configuredInputSlots) {
+            if (!slot.getStack().isEmpty()) {
                 return true;
             }
         }
@@ -851,20 +1266,140 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     @Override
-    public void saveAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
+    public net.minecraft.nbt.CompoundTag getReducedUpdateTag(
+            net.minecraft.core.HolderLookup.Provider provider) {
+        net.minecraft.nbt.CompoundTag tag =
+                super.getReducedUpdateTag(provider);
+        recipeEntityDisplay.writeUpdateTag(tag);
+        recipeItemDisplay.writeUpdateTag(tag, provider);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider provider) {
+        super.handleUpdateTag(tag, provider);
+        recipeEntityDisplay.readUpdateTag(tag);
+        recipeItemDisplay.readUpdateTag(tag, provider);
+    }
+
+    @Override
+    public final void onLoad() {
+        // BlockCapabilityCache instances permanently stop querying after
+        // their owner is removed. Never reuse a cache retained across chunk
+        // unload/revive; this also covers machines moved by an upgrade.
+        clearFastEjectCapabilityCaches();
+        super.onLoad();
+        onNativeMachineLoaded();
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.onLoad(this);
+        }
+    }
+
+    /**
+     * Lifecycle hook for machine-specific load registration. The public
+     * {@code onLoad} method is final so future machines cannot accidentally
+     * skip Mekanism's component and capability initialization.
+     */
+    protected void onNativeMachineLoaded() {
+    }
+
+    @Override
+    public final void setRemoved() {
+        clearFastEjectCapabilityCaches();
+        super.setRemoved();
+        onNativeMachineRemoved();
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.onRemoved(this);
+        }
+    }
+
+    /** Optional cleanup hook; common capability caches are already cleared. */
+    protected void onNativeMachineRemoved() {
+    }
+
+    @Override
+    public final void clearRemoved() {
+        super.clearRemoved();
+        clearFastEjectCapabilityCaches();
+        onNativeMachineRevived();
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.onRevived(this);
+        }
+    }
+
+    /** Optional revive hook; common capability caches are already fresh. */
+    protected void onNativeMachineRevived() {
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.onChunkUnloaded(this);
+        }
+    }
+
+    @Override
+    public void blockRemoved() {
+        super.blockRemoved();
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.onBlockRemoved(this);
+        }
+    }
+
+    private void clearFastEjectCapabilityCaches() {
+        fastEjectTargets.clear();
+        fastEjectBackoff.clear();
+    }
+
+    @Override
+    public final void saveAdditional(net.minecraft.nbt.CompoundTag tag,
+                                     net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("magic_progress", progress);
         tag.putInt("magic_progress_required", progressRequired);
         tag.putString("magic_active_recipe", activeRecipe);
+        saveNativeMachineData(tag, registries);
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.save(this, tag, registries);
+        }
     }
 
     @Override
-    public void loadAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
+    public final void loadAdditional(net.minecraft.nbt.CompoundTag tag,
+                                     net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         progress = tag.getInt("magic_progress");
         progressRequired = Math.max(1, tag.getInt("magic_progress_required"));
         activeRecipe = tag.getString("magic_active_recipe");
+        // The cached result is runtime-only and may refer to recipe data from
+        // before a chunk reload or datapack refresh. Rebuild it once from the
+        // persisted inputs on the next server tick.
+        clearActiveRecipeCache();
+        loadNativeMachineData(tag, registries);
+        if (mekanismMagicSupportsDirectNetworkOutput()) {
+            MachineDirectOutputHooks.load(this, tag, registries);
+        }
+    }
+
+    /** Machine-specific persistent data, always chained after common data. */
+    protected void saveNativeMachineData(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
+    }
+
+    /** Machine-specific persistent data, always chained after common data. */
+    protected void loadNativeMachineData(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
+    }
+
+    private record NativeSlotAccess(boolean canInput, boolean canOutput) {
+        private NativeSlotAccess merge(NativeSlotAccess other) {
+            return new NativeSlotAccess(canInput || other.canInput,
+                    canOutput || other.canOutput);
+        }
     }
 }

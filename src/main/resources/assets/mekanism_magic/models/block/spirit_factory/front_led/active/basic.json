@@ -1,0 +1,50 @@
+{
+  "credit": "Mekanism Magic embedded original factory tier indicator",
+  "ambientocclusion": false,
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism:block/factory/led",
+    "led": "mekanism:block/factory/led"
+  },
+  "elements": [
+    {
+      "name": "embedded_tier_indicator_basic",
+      "from": [
+        4.98,
+        2.9,
+        0.01
+      ],
+      "to": [
+        11.02,
+        3.5,
+        0.12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6,
+            1
+          ],
+          "texture": "#led",
+          "cullface": "north"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6,
+            1
+          ],
+          "rotation": 180,
+          "texture": "#led"
+        }
+      },
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15
+      }
+    }
+  ]
+}

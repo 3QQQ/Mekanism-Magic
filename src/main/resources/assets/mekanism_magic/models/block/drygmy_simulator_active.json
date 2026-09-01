@@ -1,8 +1,3 @@
 {
-  "parent": "mekanism_magic:block/drygmy_simulator",
-  "textures": {
-    "front": "mekanism_magic:block/drygmy_simulator/front_active",
-    "west": "mekanism_magic:block/drygmy_simulator/side_active",
-    "east": "mekanism_magic:block/drygmy_simulator/side_active"
-  }
+  "parent": "mekanism_magic:block/drygmy_simulator_base"
 }

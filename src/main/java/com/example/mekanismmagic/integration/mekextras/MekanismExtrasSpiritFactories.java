@@ -2,12 +2,14 @@ package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.MekanismMagic;
 import com.jerry.mekextras.common.block.attribute.ExtraAttributeUpgradeable;
-import com.jerry.mekextras.common.block.prefab.BlockExtraFactoryMachine;
 import com.jerry.mekextras.common.content.blocktype.ExtraFactory;
 import com.jerry.mekextras.common.tier.ExtraFactoryTier;
+import mekanism.common.block.attribute.AttributeGui;
 import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.registration.impl.BlockDeferredRegister;
 import mekanism.common.registration.impl.BlockRegistryObject;
+import mekanism.common.registration.impl.ContainerTypeDeferredRegister;
+import mekanism.common.registration.impl.ContainerTypeRegistryObject;
 import mekanism.common.registration.impl.TileEntityTypeDeferredRegister;
 import mekanism.common.registration.impl.TileEntityTypeRegistryObject;
 import net.minecraft.world.item.BlockItem;
@@ -24,6 +26,14 @@ public final class MekanismExtrasSpiritFactories {
             new BlockDeferredRegister(MekanismMagic.MOD_ID);
     private static final TileEntityTypeDeferredRegister TILES =
             new TileEntityTypeDeferredRegister(MekanismMagic.MOD_ID);
+    private static final ContainerTypeDeferredRegister CONTAINERS =
+            new ContainerTypeDeferredRegister(MekanismMagic.MOD_ID);
+
+    public static final ContainerTypeRegistryObject<
+            ExtraSpiritFactoryContainer> SPIRIT_FACTORY_CONTAINER =
+            CONTAINERS.register("extra_spirit_factory",
+                    ExtraSpiritFactoryBlockEntity.class,
+                    ExtraSpiritFactoryContainer::new);
 
     public static final ExtraFactory<ExtraSpiritFactoryBlockEntity> ABSOLUTE_TYPE =
             createType(MekanismExtrasSpiritFactories::absoluteTile,
@@ -42,25 +52,25 @@ public final class MekanismExtrasSpiritFactories {
                     ExtraFactoryTier.INFINITE, null);
 
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
+            SpiritExtraFactoryBlock,
             BlockItem> ABSOLUTE_BLOCK =
             BLOCKS.register("absolute_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(ABSOLUTE_TYPE));
+                    () -> new SpiritExtraFactoryBlock(ABSOLUTE_TYPE));
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
+            SpiritExtraFactoryBlock,
             BlockItem> SUPREME_BLOCK =
             BLOCKS.register("supreme_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(SUPREME_TYPE));
+                    () -> new SpiritExtraFactoryBlock(SUPREME_TYPE));
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
+            SpiritExtraFactoryBlock,
             BlockItem> COSMIC_BLOCK =
             BLOCKS.register("cosmic_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(COSMIC_TYPE));
+                    () -> new SpiritExtraFactoryBlock(COSMIC_TYPE));
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<ExtraSpiritFactoryBlockEntity>,
+            SpiritExtraFactoryBlock,
             BlockItem> INFINITE_BLOCK =
             BLOCKS.register("infinite_spirit_factory",
-                    () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(INFINITE_TYPE));
+                    () -> new SpiritExtraFactoryBlock(INFINITE_TYPE));
 
     public static final TileEntityTypeRegistryObject<ExtraSpiritFactoryBlockEntity>
             ABSOLUTE_TILE = tile(ABSOLUTE_BLOCK);
@@ -77,6 +87,7 @@ public final class MekanismExtrasSpiritFactories {
     public static void register(IEventBus bus) {
         BLOCKS.register(bus);
         TILES.register(bus);
+        CONTAINERS.register(bus);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -86,6 +97,8 @@ public final class MekanismExtrasSpiritFactories {
         ExtraFactory.ExtraFactoryBuilder builder =
                 ExtraFactory.ExtraFactoryBuilder.createFactory(
                         tile, FactoryType.CRUSHING, tier);
+        builder.replace(new AttributeGui(
+                () -> SPIRIT_FACTORY_CONTAINER, null));
         if (next != null) {
             builder.replace(new ExtraAttributeUpgradeable(next));
         }

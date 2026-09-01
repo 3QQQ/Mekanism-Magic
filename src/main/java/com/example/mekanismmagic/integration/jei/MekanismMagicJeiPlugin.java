@@ -14,6 +14,7 @@ import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
@@ -52,6 +53,9 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             registration.registerSubtypeInterpreter(
                     MekanismMagic.MINI_RITUAL.get(),
                     MiniRitualSubtypeInterpreter.INSTANCE);
+        }
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            invokeOptionalJeiSubtypeRegistration(registration);
         }
     }
 
@@ -169,6 +173,38 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         }
     }
 
+    @Override
+    public void registerRecipeTransferHandlers(
+            IRecipeTransferRegistration registration) {
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            try {
+                Class.forName("com.example.mekanismmagic.integration."
+                                + "ae2.Ae2IdentifierImbuementJeiTransfer")
+                        .getMethod("register",
+                                IRecipeTransferRegistration.class)
+                        .invoke(null, registration);
+            } catch (ClassNotFoundException missing) {
+                // AE2 is optional, but an installed AE2 with a build that
+                // omitted the bridge must not fail silently as a seemingly
+                // successful recipe transfer.
+                if (net.neoforged.fml.ModList.get().isLoaded("ae2")) {
+                    com.example.mekanismmagic.MekanismMagic.LOGGER.error(
+                            "AE2 is loaded but the imbuement pattern transfer "
+                                    + "bridge is missing", missing);
+                }
+            } catch (LinkageError incompatible) {
+                com.example.mekanismmagic.MekanismMagic.LOGGER.error(
+                        "AE2 imbuement pattern transfer is incompatible with "
+                                + "the installed AE2/JEI version",
+                        incompatible);
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException(
+                        "Failed to register AE2 imbuement pattern transfer",
+                        failure);
+            }
+        }
+    }
+
     private static void registerOccultismCatalysts(
             IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(
@@ -230,6 +266,21 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         } catch (ReflectiveOperationException | LinkageError failure) {
             throw new IllegalStateException(
                     "Failed to register optional Ars JEI ingredients",
+                    failure);
+        }
+    }
+
+    private static void invokeOptionalJeiSubtypeRegistration(
+            ISubtypeRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "arsnouveau.client.ArsNouveauJeiIntegration")
+                    .getMethod("registerSubtypes",
+                            ISubtypeRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Ars JEI subtypes",
                     failure);
         }
     }

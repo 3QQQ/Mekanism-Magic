@@ -1,11 +1,17 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.ModCompatibility;
+import com.example.mekanismmagic.integration.common.network
+        .MagicSourceExternalEndpointHooks;
 import com.hollingsworth.arsnouveau.api.source.ISourceCap;
 import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import mekanism.api.Action;
+import mekanism.api.tier.BaseTier;
+import mekanism.api.tier.ITier;
 import mekanism.common.block.attribute.Attribute;
 import mekanism.common.content.network.transmitter.BufferedTransmitter;
+import mekanism.common.content.network.transmitter.IUpgradeableTransmitter;
 import mekanism.common.content.network.transmitter.Transmitter;
 import mekanism.common.lib.transmitter.CompatibleTransmitterValidator;
 import mekanism.common.lib.transmitter.ConnectionType;
@@ -13,13 +19,16 @@ import mekanism.common.lib.transmitter.acceptor.AbstractAcceptorCache;
 import mekanism.common.lib.transmitter.acceptor.AcceptorCache;
 import mekanism.common.tier.PipeTier;
 import mekanism.common.tile.transmitter.TileEntityTransmitter;
+import mekanism.common.upgrade.transmitter.TransmitterUpgradeData;
 import mekanism.common.util.EnumUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Block;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -29,8 +38,12 @@ import java.util.UUID;
  */
 public final class MagicSourceTransmitter extends BufferedTransmitter<
         ISourceCap, MagicSourceNetwork, SourceStorage,
-        MagicSourceTransmitter> {
+        MagicSourceTransmitter> implements
+        IUpgradeableTransmitter<MagicSourcePipeUpgradeData> {
+    private static final ITier EXTRAS_SAFE_TERMINAL_TIER =
+            () -> BaseTier.CREATIVE;
     public final PipeTier tier;
+    public final MagicSourcePipeTier sourceTier;
     private final SourceStorage buffer;
     private int saveShare;
 
@@ -51,8 +64,15 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
          */
         super(tile);
         tier = Attribute.getTier(blockProvider, PipeTier.class);
-        buffer = new SourceStorage(tier.getPipeCapacity(),
-                tier.getPipePullAmount(), tier.getPipePullAmount()) {
+        AttributeMagicSourcePipeTier sourceTierAttribute = Attribute.get(
+                blockProvider, AttributeMagicSourcePipeTier.class);
+        sourceTier = sourceTierAttribute == null
+                ? MagicSourcePipeTier.valueOf(tier.name())
+                : sourceTierAttribute.tier();
+        // Mekanism's local pipe buffer is capacity-limited, not pump-rate
+        // limited. The tier pull rate is applied only by pullFromAcceptors().
+        buffer = new SourceStorage(getTierCapacity(),
+                getTierCapacity(), getTierCapacity()) {
             @Override
             public void onContentsChanged() {
                 MagicSourceTransmitter.this.onContentsChanged();
@@ -106,10 +126,10 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
 
     private int getAvailablePull() {
         if (hasTransmitterNetwork()) {
-            return Math.min(tier.getPipePullAmount(),
+            return Math.min(getTransferRate(),
                     getTransmitterNetwork().getNeeded());
         }
-        return Math.min(tier.getPipePullAmount(),
+        return Math.min(getTransferRate(),
                 buffer.getSourceCapacity() - buffer.getSource());
     }
 
@@ -124,7 +144,51 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
 
     @Override
     public long getCapacity() {
-        return tier.getPipeCapacity();
+        return getTierCapacity();
+    }
+
+    public int getTierCapacity() {
+        return MagicSourcePipeTierStats.capacity(sourceTier);
+    }
+
+    public int getTransferRate() {
+        return MagicSourcePipeTierStats.pullRate(sourceTier);
+    }
+
+    @Override
+    public ITier getTier() {
+        /*
+         * Mekanism Extras 1.4.0's radiance-alloy item hard-casts every
+         * ultimate transmitter to one of Mekanism's five built-in tile
+         * classes. A custom ultimate transmitter would otherwise reach its
+         * null target path and can crash. Until Extras exposes a generic
+         * Ultimate -> Absolute hook, report this pipe as terminal only to the
+         * alloy API while retaining the real PipeTier for all Source stats.
+         */
+        if (sourceTier.isExtendedTier()
+                || tier == PipeTier.ULTIMATE
+                && ModCompatibility.mekanismExtrasLoaded()) {
+            return EXTRAS_SAFE_TERMINAL_TIER;
+        }
+        return tier;
+    }
+
+    @Override
+    public MagicSourcePipeUpgradeData getUpgradeData() {
+        return new MagicSourcePipeUpgradeData(redstoneReactive,
+                getConnectionTypesRaw(), buffer.getSource());
+    }
+
+    @Override
+    public boolean dataTypeMatches(@NotNull TransmitterUpgradeData data) {
+        return data instanceof MagicSourcePipeUpgradeData;
+    }
+
+    @Override
+    public void parseUpgradeData(@NotNull MagicSourcePipeUpgradeData data) {
+        redstoneReactive = data.redstoneReactive;
+        setConnectionTypesRaw(data.connectionTypes);
+        buffer.setSource(Math.min(data.source, buffer.getSourceCapacity()));
     }
 
     @Override
@@ -143,8 +207,8 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
     @Override
     public SourceStorage releaseShare() {
         SourceStorage share = new SourceStorage(
-                (int) getCapacity(), tier.getPipePullAmount(),
-                tier.getPipePullAmount());
+                (int) getCapacity(), (int) getCapacity(),
+                (int) getCapacity());
         share.setSource(buffer.getSource());
         buffer.setSource(0);
         return share;
@@ -189,7 +253,7 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
         }
         return switch (getConnectionTypeRaw(side)) {
             case NONE -> null;
-            case NORMAL -> base;
+            case NORMAL -> new SourceSidedView(base, true, true);
             case PUSH -> new SourceSidedView(base, false, true);
             case PULL -> new SourceSidedView(base, true, false);
         };
@@ -233,10 +297,21 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
     protected boolean isValidAcceptor(
             @Nullable net.minecraft.world.level.block.entity.BlockEntity tile,
             Direction side) {
-        if (tile instanceof TileEntityTransmitter) {
+        // Keep Mekanism's native Source-capability decision first. Optional
+        // storage integrations may additionally identify structural endpoints
+        // without hard-linking this Ars class to their API.
+        if (super.isValidAcceptor(tile, side)) {
+            return true;
+        }
+        if (tile == null) {
             return false;
         }
-        return getAcceptorCache().getConnectedAcceptor(side) != null;
+        var blockId = BuiltInRegistries.BLOCK.getKey(
+                tile.getBlockState().getBlock());
+        return ("ae2".equals(blockId.getNamespace())
+                && "interface".equals(blockId.getPath()))
+                || MagicSourceExternalEndpointHooks.isEndpoint(
+                getLevel(), tile.getBlockPos(), side.getOpposite());
     }
 
     @Override
@@ -355,12 +430,12 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
 
         @Override
         public void setSource(int amount) {
-            source.setSource(amount);
+            // Sided pipe capabilities must use rate-limited receive/extract.
         }
 
         @Override
         public void setMaxSource(int amount) {
-            source.setMaxSource(amount);
+            // Network capacity is derived from connected transmitter tiers.
         }
 
         @Override

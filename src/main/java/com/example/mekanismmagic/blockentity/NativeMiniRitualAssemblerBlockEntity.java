@@ -14,6 +14,7 @@ import mekanism.common.inventory.container.sync.SyncableBoolean;
 import mekanism.common.inventory.container.sync.SyncableInt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -38,6 +39,11 @@ public final class NativeMiniRitualAssemblerBlockEntity
     private int inputSettleTicks;
     private String requestedPentacle = "";
     private List<MachineRecipeResult> cachedPreviewCandidates;
+    private RecipeManager cachedPreviewRecipeManager;
+    private Object cachedPreviewRecipeState;
+    private List<ResourceLocation> cachedPreviewTargets = List.of();
+    private ResourceLocation cachedLockedPentacleTarget;
+    private ItemStack cachedLockedPentacleStack = ItemStack.EMPTY;
 
     public NativeMiniRitualAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.get()
@@ -115,6 +121,23 @@ public final class NativeMiniRitualAssemblerBlockEntity
                                 candidate.id().toString()));
     }
 
+    /**
+     * A complete material set may start automatically. Pentacle locking is an
+     * optional preference for ambiguous inputs, not a requirement to process
+     * manually inserted materials.
+     */
+    @Override
+    protected boolean hasAnyRecipeInput() {
+        for (int index = 0; index < INPUT_SLOTS; index++) {
+            mekanism.api.inventory.IInventorySlot slot =
+                    logicalSlots().get(index);
+            if (slot != null && !slot.getStack().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void lockPentacle(int targetIndex) {
         List<ResourceLocation> targets = previewTargets();
         if (targets.isEmpty()) {
@@ -146,8 +169,28 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     private List<ResourceLocation> previewTargets() {
-        return level == null ? List.of()
-                : OccultismRecipeBridge.miniRitualPentacleIds(level);
+        if (level == null) {
+            return List.of();
+        }
+        RecipeManager recipeManager = level.getRecipeManager();
+        // RecipeManager replaces its backing recipe map on every reload. Its
+        // values view therefore gives us an allocation-free reload token while
+        // the GUI is rendering, instead of fingerprinting every ritual recipe
+        // once per frame.
+        Object recipeState = recipeManager.getRecipes();
+        if (recipeManager != cachedPreviewRecipeManager
+                || recipeState != cachedPreviewRecipeState) {
+            cachedPreviewTargets = OccultismRecipeBridge
+                    .miniRitualPentacleIds(level);
+            cachedPreviewRecipeManager = recipeManager;
+            cachedPreviewRecipeState = recipeState;
+            if (cachedLockedPentacleTarget != null
+                    && !cachedPreviewTargets.contains(
+                            cachedLockedPentacleTarget)) {
+                clearLockedPentaclePreview();
+            }
+        }
+        return cachedPreviewTargets;
     }
 
     public int getPreviewIndex() {
@@ -163,8 +206,28 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 : requestedPentacle.isEmpty()
                 ? previewTarget()
                 : ResourceLocation.tryParse(requestedPentacle);
-        return target == null ? ItemStack.EMPTY
-                : OccultismRecipeBridge.createPentacleMiniRitual(target);
+        if (target == null) {
+            clearLockedPentaclePreview();
+            return ItemStack.EMPTY;
+        }
+        if (!target.equals(cachedLockedPentacleTarget)) {
+            cachedLockedPentacleTarget = target;
+            cachedLockedPentacleStack = OccultismRecipeBridge
+                    .createPentacleMiniRitual(target);
+        }
+        return cachedLockedPentacleStack;
+    }
+
+    private void clearLockedPentaclePreview() {
+        cachedLockedPentacleTarget = null;
+        cachedLockedPentacleStack = ItemStack.EMPTY;
+    }
+
+    private void clearPentacleCatalogCache() {
+        cachedPreviewRecipeManager = null;
+        cachedPreviewRecipeState = null;
+        cachedPreviewTargets = List.of();
+        clearLockedPentaclePreview();
     }
 
     private ResourceLocation previewTarget() {
@@ -193,7 +256,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
             MachineRecipeResult candidate) {
         net.minecraft.world.item.component.CustomData data =
                 candidate.output().get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        return data == null ? "" : data.copyTag().getString("pentacle");
+        return data == null ? "" : data.getUnsafe().getString("pentacle");
     }
 
     private static int unmatchedItemCount(MachineRecipeResult candidate,
@@ -238,18 +301,20 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     @Override
-    public void saveAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveNativeMachineData(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveNativeMachineData(tag, registries);
         tag.putInt("mini_ritual_preview", previewIndex);
         tag.putBoolean("mini_ritual_craft_requested", craftRequested);
         tag.putString("mini_ritual_requested_pentacle", requestedPentacle);
     }
 
     @Override
-    public void loadAdditional(net.minecraft.nbt.CompoundTag tag,
-                               net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadNativeMachineData(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadNativeMachineData(tag, registries);
         previewIndex = Math.max(0, tag.getInt("mini_ritual_preview"));
         craftRequested = tag.getBoolean("mini_ritual_craft_requested");
         requestedPentacle = tag.getString("mini_ritual_requested_pentacle");
@@ -257,6 +322,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
             craftRequested = true;
         }
         cachedPreviewCandidates = null;
+        clearPentacleCatalogCache();
     }
 
     @Override

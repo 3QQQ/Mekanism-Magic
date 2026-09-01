@@ -1,8 +1,16 @@
 {
-  "parent": "mekanism_magic:block/ritual_engine",
+  "parent": "mekanism_magic:block/ritual_engine_base",
   "textures": {
     "front": "mekanism_magic:block/ritual_engine/front_active",
-    "west": "mekanism_magic:block/ritual_engine/side_active",
-    "east": "mekanism_magic:block/ritual_engine/side_active"
+    "side": "mekanism_magic:block/ritual_engine/side_active",
+    "accent": "mekanism_magic:block/ritual_engine/accent_active",
+    "accent_b": "mekanism_magic:block/ritual_engine/accent_b_active",
+    "binding": "mekanism_magic:block/occult_machine/binding_active",
+    "spirit": "mekanism_magic:block/occult_machine/spirit_active",
+    "glass": "mekanism_magic:block/occult_machine/spirit_glass_active",
+    "soul": "mekanism_magic:block/occult_machine/soul_active",
+    "void": "mekanism_magic:block/occult_machine/void_active",
+    "chalk": "mekanism_magic:block/occult_machine/chalk_active",
+    "ritual_surface": "mekanism:item/empty"
   }
 }

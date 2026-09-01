@@ -1,8 +1,15 @@
 {
-  "parent": "mekanism_magic:block/dimension_miner",
+  "parent": "mekanism_magic:block/dimension_miner_base",
   "textures": {
     "front": "mekanism_magic:block/dimension_miner/front_active",
-    "west": "mekanism_magic:block/dimension_miner/side_active",
-    "east": "mekanism_magic:block/dimension_miner/side_active"
+    "side": "mekanism_magic:block/dimension_miner/side_active",
+    "accent": "mekanism_magic:block/dimension_miner/accent_active",
+    "accent_b": "mekanism_magic:block/dimension_miner/accent_b_active",
+    "binding": "mekanism_magic:block/occult_machine/binding_active",
+    "spirit": "mekanism_magic:block/occult_machine/spirit_active",
+    "glass": "mekanism_magic:block/occult_machine/spirit_glass_active",
+    "soul": "mekanism_magic:block/occult_machine/soul_active",
+    "void": "mekanism_magic:block/occult_machine/void_active",
+    "chalk": "mekanism_magic:block/occult_machine/chalk_active"
   }
 }

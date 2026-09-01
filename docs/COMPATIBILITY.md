@@ -80,73 +80,95 @@ Foliot、Djinni、Afrit 或 Marid；这些额外容器槽位均不消耗容器�
 
 ## Ars Nouveau 机器与 Source
 
-开发构建还提供 `mekanism_magic:magic_source_pipe` 魔力管道：
+开发构建还提供四级魔力管道，旧的
+`mekanism_magic:magic_source_pipe` ID 保留为基础级：
 
 - 外观和连接形态参考 Mekanism 管道，支持六向连接；
-- 管道自身缓存 `10,000 Source`，传输速率为 `1,000 Source / tick`；
+- 基础/高级/精英/终极容量依次为 `10,000`、`40,000`、`160,000`、
+  `640,000 Source`，单输出端速率依次为 `1,000`、`4,000`、`16,000`、
+  `64,000 Source / tick`；
+- 使用富集合金、强化合金、原子合金右键可按 Mekanism 原版方式原地升级，
+  一次最多处理网络内距离最近的 8 节；升级保留 Source、连接模式和红石响应；
 - 只与相邻的 Ars Source 机器或相邻魔力管道传输，不会跨区段读取 Source；
+- AE2 与 ExtendedAE 的全方块/线缆接口可作为结构连接端点；安装 Ars
+  Énergistique 并将接口槽标记为 Source 后，接口同时成为真实的 Source
+  输入/输出端点，魔力管道的 PULL/PUSH 模式可直接读写其标记库存；
 - 通过 Ars Nouveau `SOURCE_CAPABILITY` 对外提供 Source；
 - 未启用 Ars Nouveau 开发内容时不会注册。
 
 开发树中包含以下 Ars Nouveau `5.13.0` 机器实现：
 
-- `mekanism_magic:source_generator`：增强附近原版魔源连接器的 Source 产量；
-- `mekanism_magic:source_converter`：消耗 FE 直接生成 Ars Source；
-- `mekanism_magic:catalyst_identifier_assembler`：读取 3 个真实灌注材料，
+- `mekanism_magic:source_generator`（FE魔源增强器）：增强附近原版魔源连接器的 Source 产量；
+- `mekanism_magic:source_converter`（FE魔源转换器）：消耗 FE 直接生成 Ars Source；
+- `mekanism_magic:catalyst_identifier_assembler`：读取 1–9 个真实灌注材料，
   生成一个不消耗的催化剂标识；
 - `mekanism_magic:imbuement_processor`：处理灌注室配方；
 - `mekanism_magic:enchanting_apparatus_processor`：处理附魔装置体系配方；
-- Ars 机器支持 Mekanism Extras 的 `upgrade_creative`，并额外注册
-  `mekanism_magic:creative_source_upgrade` 作为同类型的“创造魔力升级”物品。
-  两者都可以放入 Mekanism 原版升级界面，用额外 FE 替代配方 Source 消耗。
+- Ars 配方机器额外注册独立的 Mekanism 原生升级类型
+  `mekanism_magic:creative_source_upgrade`。它通过原版升级输入槽安装并免除
+  配方的 Source 消耗，不影响机器的 FE 消耗。
+- Mekanism Extras 的 `upgrade_creative` 保持原有逻辑；它与创造魔力升级
+  类型不同，因此两者可以在同一台机器中同时安装。
+- 创造魔力升级生效时，机器保留已有 Source 与输出能力，但拒绝管道、AE、
+  Relay、绑定罐和附近魔源罐继续输入；移除升级后输入立即恢复。
 
-这些机器和插件在默认发布构建中暂不注册，对应配方、掉落和 JEI 催化剂也不会
-加载。当前发布版仅保留已经验证的 Ars Nouveau 收容罐兼容；完成全部特殊配方和
-多人服务器测试后再启用机器内容。
+这些机器、配方、掉落和 JEI 催化剂默认随发布构建注册。构建会从
+`src/arsDev/resources` 打包 Ars 专用数据，并在发布 JAR 中写入
+`ars_nouveau_machine_content=true`，保证存档重新加载时注册映射保持一致。
 
-开发构建可使用
-`-Pmekanism_magic.ars_machine_content=true` 启用，并从
-`src/arsDev/resources` 打包专用配方和掉落。默认发布 JAR 会写入
-`ars_nouveau_machine_content=false`，不会意外注册这些内容。
-
-三台机器均公开 Ars Nouveau `SOURCE_CAPABILITY`，容量为 `10,000 Source`。
-灌注机和附魔装置机支持每次 `1,000 Source` 的双向传输；魔源增幅器只允许输出。
-灌注机提供三个材料槽，附魔装置机提供八个材料槽；
-物品可在槽内堆叠，实际处理时按配方数量消耗。
+三台机器均公开 Ars Nouveau `SOURCE_CAPABILITY`，基础容量为
+`100,000 Source`；支持堆叠升级的机器会继续按倍率扩容。
+灌注机和附魔装置机支持每次 `10,000 Source` 的双向传输；FE魔源增强器只允许输出。
+灌注机提供核心输入和可展开的催化剂标识库，附魔装置机提供八个材料槽；
+附魔装置材料可在槽内堆叠，实际处理时按配方数量消耗。
 
 Ars 机器支持无电慢速运行：正常供电时按 Mekanism 速度运行；当 FE 不足时，
 只要配方需要的 Source 仍然足够，机器每 5 tick 推进一次处理，不会完全停机。
 Source 仍按原配方在完成时消耗；安装创造魔力升级后不再启用该 Source 后备模式，
-而是继续使用其额外 FE 替代逻辑。
+配方不再消耗 Source，但机器仍需要自身正常运行所需的 FE。
 
 Ars 机器 GUI 侧边新增“魔力配置”标签，六个方向分别支持：
 关闭、输入、输出、输入输出。该配置独立于物品、流体、气体和能量配置，
 并会同步保存到机器数据；魔力管道只会连接已启用 Source 的侧面。
 
-魔源增幅器每轮从半径 4 格内的原版魔源连接器抽取 `100 Source`，消耗
+FE魔源增强器每轮从半径 4 格内的原版魔源连接器抽取 `100 Source`，消耗
 `10,000 FE` 后输出 `150 Source`，不会脱离原版生产条件凭空生成魔源。
-魔源转换机每轮消耗约 `50,000 FE`，生成 `100 Source`，并通过
-`SOURCE_CAPABILITY` 输出到 Ars Source 网络；支持速度、能量和创造魔力升级。
+魔源转换机每轮消耗约 `500,000 FE`，生成 `1,000 Source`，保持
+`500 FE / Source` 的固定换算效率，并通过
+`SOURCE_CAPABILITY` 输出到 Ars Source 网络；支持速度、能量及
+Mekanism Extras 堆叠升级。
 
-催化剂标识制作机的输出物品保存 `catalyst_id` 和匹配的灌注配方 ID 列表。
+催化剂标识制作机为包含 1–9 个基座材料的配方生成标识，输出物品保存
+`catalyst_id`、匹配的灌注配方 ID 列表和当前催化剂配方签名。服务器启动和
+数据包重载时会重新扫描；催化剂材料或标签内容改变后，旧签名自动失效并按新组合生成
+标识。标识名称使用目标输出物品的本地化名称，因此会自动跟随 Ars Nouveau 的中英文
+翻译和整合包新增配方。
 灌注处理机现在使用一个可展开的催化剂标识库，不再需要同时摆放 3 个真实催化剂；
-JEI 会动态显示当前配方对应的标识变体，玩家可将目标标识拖入配方锁定槽。
+JEI 会将每个 `catalyst_id` 注册为独立物品子类型和独立制作配方。玩家可将目标标识
+从 JEI 拖入配方锁定槽进行虚拟选择，不要求标识库中已有实体，也不会免费生成可取出的
+标识物品。
 标识物品在处理时不消耗，实际只消耗核心输入和 Source。
+不含基座催化剂的灌注配方不生成实体标识，灌注机和工厂可在空锁定槽下直接按
+核心材料处理。
 
 魔法灌注工厂等级：
 
 - 基础、高级、精英、终极：分别使用 Mekanism 原版工厂等级；
 - 安装 Mekanism Extras 时增加绝对、至尊、宇宙、无限工厂；
 - Extras 高阶工厂分别提供 11、13、15、17 个并行进程；
-- 全部工厂共用不消耗的催化剂锁定槽，支持 Source 能力、创造魔力升级、
+- 全部工厂共用不消耗的催化剂锁定槽（无催化剂配方可留空），支持 Source 能力、创造魔力升级、
   JEI 灌注配方催化剂和 Mek Energistics 可选自动化。
+- 全部工厂在 FE 不足但 Source 足够时以每 5 tick 一次进度的速度继续运行；
+  恢复供电后自动回到正常速度。
 
 安装 AE2 后，灌注处理机可作为可选 AE Crafting Provider：
 每个 Ars 灌注配方会生成一个 AE Pattern，Pattern 内部保存
 `recipe_id` 和 `catalyst_id` 虚拟上下文。AE 推送时只发送实际消耗的核心输入，
-不会发送或消耗催化剂标识物品；机器从标识库验证 `catalyst_id` 后处理。
-创造魔力升级按 `200 FE / Source` 计算，放置在 Mekanism 原版升级界面，
-不再占用机器额外物品槽。
+不会发送或消耗催化剂标识物品；机器直接使用样板中的虚拟 `catalyst_id` 锁定组合。
+配方数据包改变后，已连接的 AE Crafting Provider 会刷新其动态样板目录。
+无催化剂配方保留独立虚拟 Pattern 身份，但推送时跳过标识库选择。
+创造魔力升级放置在 Mekanism 原版升级界面，不再占用机器额外物品槽；
+安装后配方不消耗 Source，也不会额外增加机器耗电。
 Mekanism 速度和能量升级继续正常生效。
 
 ## 维度矿机与 Mekanism Extras 堆叠升级
@@ -172,11 +194,19 @@ Mekanism Extras 变成硬性前置。
 - 使用 Source，或安装 Mekanism Extras 创造升级；
 - 收容实体只在内存中创建用于计算，不加入世界。
 
+维度矿机和德格米模拟器的原生 AE 节点采用批量输出：网络在线时先把结果
+合并进持久化 `long` 缓存，每 20 tick 按物品类型整批写入 AE。网络拒绝时
+机器进入背压并保留缓存，不会无限继续生产；网络离线时立即回退到可见输出槽
+和第三方物品管道。两台机器 GUI 会显示 AE 在线、离线或存储受阻状态。
+
+安装 AE2 后，`mekanism_magic:dimension_miner` 与
+`mekanism_magic:drygmy_simulator` 会自带需要频道的原生 AE 节点；线缆可直接
+连接机器，无需 ME 工厂升级。输出使用 AE 网络供电、安全权限和存储容量语义，
+只扣除网络实际接受的数量；断电、满仓或缺少频道时物品保留在机器内。
+
 安装任意版本的 Mek Energistics 都不会阻止游戏加载。只有检测到 `3.0.6`
-或更高版本时，`mekanism_magic:dimension_miner` 才会注册到其 ME 升级兼容
-清单，并在安装 ME 升级后使用 Mek Energistics 的输出弹出机制；低于 `3.0.6`
-或版本信息无法识别时，继续使用 Mekanism 原生自动弹出。旧版会保持功能关闭，
-客户端首次进入世界会收到升级提示。
+或更高版本时，配方机器的原地 ME 样板升级才会启用；低于 `3.0.6` 或版本
+信息无法识别时继续使用原生逻辑，并在客户端首次进入世界时提示升级。
 
 ## Occultism 灵火与交易配方
 

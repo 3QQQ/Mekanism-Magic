@@ -1,0 +1,376 @@
+{
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "mekanism_magic:block/occult_machine/gold",
+		"1": "mekanism_magic:block/occult_machine/binding",
+		"2": "mekanism_magic:block/occult_machine/soul",
+		"4": "mekanism_magic:block/occult_machine/chalk",
+		"5": "mekanism_magic:block/ars_series/lab_dark",
+		"6": "mekanism_magic:block/ars_series/lab_shell",
+		"7": "mekanism_magic:block/ars_series/lab_spine",
+		"8": "mekanism_magic:block/ars_series/precision_metal",
+		"particle": "mekanism_magic:block/occult_machine/gold"
+	},
+	"elements": [
+		{
+			"name": "assembler_base_shadow",
+			"from": [1, 0.5, 1],
+			"to": [15, 1.5, 15],
+			"faces": {
+				"north": {"uv": [0, 0, 14, 1], "texture": "#5"},
+				"east": {"uv": [0, 0, 14, 1], "texture": "#5"},
+				"south": {"uv": [0, 0, 14, 1], "texture": "#5"},
+				"west": {"uv": [0, 0, 14, 1], "texture": "#5"},
+				"up": {"uv": [0, 0, 14, 14], "texture": "#5"},
+				"down": {"uv": [0, 0, 14, 14], "texture": "#5"}
+			}
+		},
+		{
+			"name": "assembler_front_recess",
+			"from": [3, 2.2, 0.75],
+			"to": [13, 3.8, 1.5],
+			"faces": {
+				"north": {"uv": [0, 0, 10, 1.6], "texture": "#5"},
+				"east": {"uv": [0, 0, 0.75, 1.6], "texture": "#5"},
+				"south": {"uv": [0, 0, 10, 1.6], "texture": "#5"},
+				"west": {"uv": [0, 0, 0.75, 1.6], "texture": "#5"},
+				"up": {"uv": [0, 0, 10, 0.75], "texture": "#5"},
+				"down": {"uv": [0, 0, 10, 0.75], "texture": "#5"}
+			}
+		},
+		{
+			"name": "assembler_base_body",
+			"from": [1.5, 1.5, 1.5],
+			"to": [14.5, 4.25, 14.5],
+			"faces": {
+				"north": {"uv": [0, 0, 13, 2.75], "texture": "#6"},
+				"east": {"uv": [0, 0, 13, 2.75], "texture": "#6"},
+				"south": {"uv": [0, 0, 13, 2.75], "texture": "#6"},
+				"west": {"uv": [0, 0, 13, 2.75], "texture": "#6"},
+				"up": {"uv": [0, 0, 13, 13], "texture": "#6"},
+				"down": {"uv": [0, 0, 13, 13], "texture": "#6"}
+			}
+		},
+		{
+			"name": "assembler_upper_deck",
+			"from": [2, 4.25, 2.5],
+			"to": [14, 5, 14],
+			"faces": {
+				"north": {"uv": [0, 0, 12, 0.75], "texture": "#6"},
+				"east": {"uv": [0, 0, 11.5, 0.75], "texture": "#6"},
+				"south": {"uv": [0, 0, 12, 0.75], "texture": "#6"},
+				"west": {"uv": [0, 0, 11.5, 0.75], "texture": "#6"},
+				"up": {"uv": [0, 0, 12, 11.5], "texture": "#6"},
+				"down": {"uv": [0, 0, 12, 11.5], "texture": "#6"}
+			}
+		},
+		{
+			"name": "assembler_front_binding_line_upper",
+			"from": [5.5, 3.15, 0.5],
+			"to": [10.5, 3.55, 0.75],
+			"faces": {
+				"north": {"uv": [0, 0, 5, 0.4], "texture": "#1"},
+				"east": {"uv": [0, 0, 0.25, 0.4], "texture": "#1"},
+				"south": {"uv": [0, 0, 5, 0.4], "texture": "#1"},
+				"west": {"uv": [0, 0, 0.25, 0.4], "texture": "#1"},
+				"up": {"uv": [0, 0, 5, 0.25], "texture": "#1"},
+				"down": {"uv": [0, 0, 5, 0.25], "texture": "#1"}
+			}
+		},
+		{
+			"name": "assembler_front_soul_line_lower",
+			"from": [4, 2.5, 0.5],
+			"to": [12, 2.9, 0.75],
+			"faces": {
+				"north": {"uv": [0, 0, 8, 0.4], "texture": "#2"},
+				"east": {"uv": [0, 0, 0.25, 0.4], "texture": "#2"},
+				"south": {"uv": [0, 0, 8, 0.4], "texture": "#2"},
+				"west": {"uv": [0, 0, 0.25, 0.4], "texture": "#2"},
+				"up": {"uv": [0, 0, 8, 0.25], "texture": "#2"},
+				"down": {"uv": [0, 0, 8, 0.25], "texture": "#2"}
+			}
+		},
+		{
+			"name": "assembler_west_side_line_lower",
+			"from": [1.25, 2.3, 5],
+			"to": [1.5, 2.8, 11],
+			"faces": {
+				"north": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"east": {"uv": [0, 0, 6, 0.5], "texture": "#7"},
+				"south": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"west": {"uv": [0, 0, 6, 0.5], "texture": "#7"},
+				"up": {"uv": [0, 0, 0.25, 6], "texture": "#7"},
+				"down": {"uv": [0, 0, 0.25, 6], "texture": "#7"}
+			}
+		},
+		{
+			"name": "assembler_west_side_line_upper",
+			"from": [1.25, 3, 6.25],
+			"to": [1.5, 3.5, 9.75],
+			"faces": {
+				"north": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"east": {"uv": [0, 0, 3.5, 0.5], "texture": "#7"},
+				"south": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"west": {"uv": [0, 0, 3.5, 0.5], "texture": "#7"},
+				"up": {"uv": [0, 0, 0.25, 3.5], "texture": "#7"},
+				"down": {"uv": [0, 0, 0.25, 3.5], "texture": "#7"}
+			}
+		},
+		{
+			"name": "assembler_east_side_line_lower",
+			"from": [14.5, 2.3, 5],
+			"to": [14.75, 2.8, 11],
+			"faces": {
+				"north": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"east": {"uv": [0, 0, 6, 0.5], "texture": "#7"},
+				"south": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"west": {"uv": [0, 0, 6, 0.5], "texture": "#7"},
+				"up": {"uv": [0, 0, 0.25, 6], "texture": "#7"},
+				"down": {"uv": [0, 0, 0.25, 6], "texture": "#7"}
+			}
+		},
+		{
+			"name": "assembler_east_side_line_upper",
+			"from": [14.5, 3, 6.25],
+			"to": [14.75, 3.5, 9.75],
+			"faces": {
+				"north": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"east": {"uv": [0, 0, 3.5, 0.5], "texture": "#7"},
+				"south": {"uv": [0, 0, 0.25, 0.5], "texture": "#7"},
+				"west": {"uv": [0, 0, 3.5, 0.5], "texture": "#7"},
+				"up": {"uv": [0, 0, 0.25, 3.5], "texture": "#7"},
+				"down": {"uv": [0, 0, 0.25, 3.5], "texture": "#7"}
+			}
+		},
+		{
+			"name": "precision_scribing_bed",
+			"from": [3, 5, 3],
+			"to": [13, 5.5, 13],
+			"faces": {
+				"north": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 10, 10], "texture": "#8"},
+				"down": {"uv": [0, 0, 10, 10], "texture": "#8"}
+			}
+		},
+		{
+			"name": "scribing_track_north",
+			"from": [3, 5.5, 3],
+			"to": [13, 6, 4],
+			"faces": {
+				"north": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 10, 1], "texture": "#8"},
+				"down": {"uv": [0, 0, 10, 1], "texture": "#8"}
+			}
+		},
+		{
+			"name": "scribing_track_south",
+			"from": [3, 5.5, 12],
+			"to": [13, 6, 13],
+			"faces": {
+				"north": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 10, 0.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 10, 1], "texture": "#8"},
+				"down": {"uv": [0, 0, 10, 1], "texture": "#8"}
+			}
+		},
+		{
+			"name": "scribing_track_west",
+			"from": [3, 5.5, 4],
+			"to": [4, 6, 12],
+			"faces": {
+				"north": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 8, 0.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 8, 0.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 1, 8], "texture": "#8"},
+				"down": {"uv": [0, 0, 1, 8], "texture": "#8"}
+			}
+		},
+		{
+			"name": "scribing_track_east",
+			"from": [12, 5.5, 4],
+			"to": [13, 6, 12],
+			"faces": {
+				"north": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 8, 0.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 1, 0.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 8, 0.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 1, 8], "texture": "#8"},
+				"down": {"uv": [0, 0, 1, 8], "texture": "#8"}
+			}
+		},
+		{
+			"name": "chalk_scribing_surface",
+			"from": [4, 5.5, 4],
+			"to": [12, 5.8, 12],
+			"faces": {
+				"north": {"uv": [0, 0, 8, 0.3], "texture": "#4"},
+				"east": {"uv": [0, 0, 8, 0.3], "texture": "#4"},
+				"south": {"uv": [0, 0, 8, 0.3], "texture": "#4"},
+				"west": {"uv": [0, 0, 8, 0.3], "texture": "#4"},
+				"up": {"uv": [0, 0, 8, 8], "texture": "#4"},
+				"down": {"uv": [0, 0, 8, 8], "texture": "#4"}
+			}
+		},
+		{
+			"name": "west_gantry_support",
+			"from": [3, 6, 7],
+			"to": [4, 9.5, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 1, 3.5], "texture": "#6"},
+				"east": {"uv": [0, 0, 2, 3.5], "texture": "#6"},
+				"south": {"uv": [0, 0, 1, 3.5], "texture": "#6"},
+				"west": {"uv": [0, 0, 2, 3.5], "texture": "#6"},
+				"up": {"uv": [0, 0, 1, 2], "texture": "#6"},
+				"down": {"uv": [0, 0, 1, 2], "texture": "#6"}
+			}
+		},
+		{
+			"name": "east_gantry_support",
+			"from": [12, 6, 7],
+			"to": [13, 9.5, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 1, 3.5], "texture": "#6"},
+				"east": {"uv": [0, 0, 2, 3.5], "texture": "#6"},
+				"south": {"uv": [0, 0, 1, 3.5], "texture": "#6"},
+				"west": {"uv": [0, 0, 2, 3.5], "texture": "#6"},
+				"up": {"uv": [0, 0, 1, 2], "texture": "#6"},
+				"down": {"uv": [0, 0, 1, 2], "texture": "#6"}
+			}
+		},
+		{
+			"name": "plotter_crossbeam",
+			"from": [4, 9.5, 7],
+			"to": [12, 10.5, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 8, 1], "texture": "#5"},
+				"east": {"uv": [0, 0, 2, 1], "texture": "#5"},
+				"south": {"uv": [0, 0, 8, 1], "texture": "#5"},
+				"west": {"uv": [0, 0, 2, 1], "texture": "#5"},
+				"up": {"uv": [0, 0, 8, 2], "texture": "#5"},
+				"down": {"uv": [0, 0, 8, 2], "texture": "#5"}
+			}
+		},
+		{
+			"name": "scribing_head",
+			"from": [7.25, 7, 7.25],
+			"to": [8.75, 9.5, 8.75],
+			"faces": {
+				"north": {"uv": [0, 0, 1.5, 2.5], "texture": "#8"},
+				"east": {"uv": [0, 0, 1.5, 2.5], "texture": "#8"},
+				"south": {"uv": [0, 0, 1.5, 2.5], "texture": "#8"},
+				"west": {"uv": [0, 0, 1.5, 2.5], "texture": "#8"},
+				"up": {"uv": [0, 0, 1.5, 1.5], "texture": "#8"},
+				"down": {"uv": [0, 0, 1.5, 1.5], "texture": "#8"}
+			}
+		},
+		{
+			"name": "precision_scribing_nozzle",
+			"from": [7.65, 6, 7.65],
+			"to": [8.35, 7, 8.35],
+			"faces": {
+				"north": {"uv": [0, 0, 0.7, 1], "texture": "#1"},
+				"east": {"uv": [0, 0, 0.7, 1], "texture": "#1"},
+				"south": {"uv": [0, 0, 0.7, 1], "texture": "#1"},
+				"west": {"uv": [0, 0, 0.7, 1], "texture": "#1"},
+				"up": {"uv": [0, 0, 0.7, 0.7], "texture": "#1"},
+				"down": {"uv": [0, 0, 0.7, 0.7], "texture": "#1"}
+			}
+		},
+		{
+			"name": "white_chalk_cartridge",
+			"from": [2.5, 4.25, 1.75],
+			"to": [4.5, 5.25, 2.5],
+			"faces": {
+				"north": {"uv": [0, 0, 2, 1], "texture": "#8"},
+				"east": {"uv": [0, 0, 0.75, 1], "texture": "#8"},
+				"south": {"uv": [0, 0, 2, 1], "texture": "#8"},
+				"west": {"uv": [0, 0, 0.75, 1], "texture": "#8"},
+				"up": {"uv": [0, 0, 2, 0.75], "texture": "#8"},
+				"down": {"uv": [0, 0, 2, 0.75], "texture": "#8"}
+			}
+		},
+		{
+			"name": "red_chalk_cartridge",
+			"from": [5.5, 4.25, 1.75],
+			"to": [7.5, 5.25, 2.5],
+			"faces": {
+				"north": {"uv": [0, 0, 2, 1], "texture": "#2"},
+				"east": {"uv": [0, 0, 0.75, 1], "texture": "#2"},
+				"south": {"uv": [0, 0, 2, 1], "texture": "#2"},
+				"west": {"uv": [0, 0, 0.75, 1], "texture": "#2"},
+				"up": {"uv": [0, 0, 2, 0.75], "texture": "#2"},
+				"down": {"uv": [0, 0, 2, 0.75], "texture": "#2"}
+			}
+		},
+		{
+			"name": "purple_chalk_cartridge",
+			"from": [8.5, 4.25, 1.75],
+			"to": [10.5, 5.25, 2.5],
+			"faces": {
+				"north": {"uv": [0, 0, 2, 1], "texture": "#1"},
+				"east": {"uv": [0, 0, 0.75, 1], "texture": "#1"},
+				"south": {"uv": [0, 0, 2, 1], "texture": "#1"},
+				"west": {"uv": [0, 0, 0.75, 1], "texture": "#1"},
+				"up": {"uv": [0, 0, 2, 0.75], "texture": "#1"},
+				"down": {"uv": [0, 0, 2, 0.75], "texture": "#1"}
+			}
+		},
+		{
+			"name": "gold_chalk_cartridge",
+			"from": [11.5, 4.25, 1.75],
+			"to": [13.5, 5.25, 2.5],
+			"faces": {
+				"north": {"uv": [0, 0, 2, 1], "texture": "#0"},
+				"east": {"uv": [0, 0, 0.75, 1], "texture": "#0"},
+				"south": {"uv": [0, 0, 2, 1], "texture": "#0"},
+				"west": {"uv": [0, 0, 0.75, 1], "texture": "#0"},
+				"up": {"uv": [0, 0, 2, 0.75], "texture": "#0"},
+				"down": {"uv": [0, 0, 2, 0.75], "texture": "#0"}
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "ars_assembler_platform",
+			"origin": [8, 0, 8],
+			"scope": 0,
+			"color": 0,
+			"shade": false,
+			"children": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+		},
+		{
+			"name": "scribing_bed",
+			"origin": [8, 6, 8],
+			"scope": 0,
+			"color": 0,
+			"shade": false,
+			"children": [10, 11, 12, 13, 14, 15]
+		},
+		{
+			"name": "symmetric_gantry",
+			"origin": [8, 9, 8],
+			"scope": 0,
+			"color": 0,
+			"shade": false,
+			"children": [16, 17, 18, 19, 20]
+		},
+		{
+			"name": "material_cartridges",
+			"origin": [8, 5, 2],
+			"scope": 0,
+			"color": 0,
+			"shade": false,
+			"children": [21, 22, 23, 24]
+		}
+	]
+}

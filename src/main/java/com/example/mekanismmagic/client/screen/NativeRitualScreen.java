@@ -2,6 +2,8 @@ package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeRitualEngineBlockEntity;
 import com.example.mekanismmagic.client.gui.GuiDictionaryModuleTab;
+import com.example.mekanismmagic.client.gui.MagicGuiTheme;
+import com.example.mekanismmagic.client.OccultismRecipeViewerTypes;
 import mekanism.client.gui.GuiConfigurableTile;
 import mekanism.client.gui.element.GuiUpArrow;
 import mekanism.client.gui.element.slot.GuiSlot;
@@ -9,6 +11,7 @@ import mekanism.client.gui.element.bar.GuiVerticalPowerBar;
 import mekanism.client.gui.element.progress.GuiProgress;
 import mekanism.client.gui.element.progress.ProgressType;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
+import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
@@ -57,6 +60,12 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     }
 
     @Override
+    protected IRecipeViewerRecipeType<?>[] recipeViewerTypes() {
+        return new IRecipeViewerRecipeType<?>[]{
+                OccultismRecipeViewerTypes.RITUAL};
+    }
+
+    @Override
     protected void addMachineGuiElements() {
         addRenderableWidget(new GuiDictionaryModuleTab(this, getTileEntity(),
                 () -> dictionaryModuleOpen, this::toggleDictionaryModule));
@@ -86,12 +95,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         if (dictionaryModuleOpen) {
             int left = leftPos + 236;
             int top = topPos + 88;
-            graphics.fill(left, top, left + 58, top + 52, 0xFF151A21);
-            graphics.fill(left, top, left + 58, top + 2, 0xFF78838F);
-            graphics.fill(left, top, left + 2, top + 52, 0xFF78838F);
-            graphics.fill(left + 4, top + 14, left + 54, top + 50, 0xFF252B34);
-            graphics.fill(left + 56, top, left + 58, top + 52, 0xFF090C11);
-            graphics.fill(left, top + 50, left + 58, top + 52, 0xFF090C11);
+            MagicGuiTheme.renderDockedPanel(graphics, left, top, 58, 52);
         }
     }
 
@@ -99,9 +103,10 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     protected void drawForegroundText(GuiGraphics graphics, int mouseX, int mouseY) {
         super.drawForegroundText(graphics, mouseX, mouseY);
         if (dictionaryModuleOpen) {
-            graphics.drawString(font,
-                    Component.translatable("gui.mekanism_magic.dictionary"),
-                    240, 92, 0xD8DEE8, false);
+            MagicGuiTheme.renderPanelCaption(graphics, font,
+                    Component.translatable(
+                            "gui.mekanism_magic.dictionary_short"),
+                    236, 88, 58);
         }
     }
 

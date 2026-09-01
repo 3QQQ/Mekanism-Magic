@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8.7",
+  "package": "com.example.mekanismmagic.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "UpgradeMixin",
+    "UpgradeUtilsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

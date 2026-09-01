@@ -1,0 +1,542 @@
+{
+  "credit": "Mekanism Magic original multi-lane Source Manifold",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism_magic:block/source_generator/sourcestone",
+    "rail": "mekanism_magic:block/source_generator/sourcestone",
+    "basin": "mekanism_magic:block/imbuement_processor/basin",
+    "channel": "mekanism_magic:block/imbuement_processor/conduit",
+    "rune": "mekanism_magic:block/imbuement_processor/rune",
+    "core": "mekanism_magic:block/imbuement_processor/core"
+  },
+  "elements": [
+    {
+      "name": "west_manifold_support",
+      "from": [
+        5,
+        5,
+        5
+      ],
+      "to": [
+        6,
+        10,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rail"
+        },
+        "up": {
+          "texture": "#rail"
+        },
+        "north": {
+          "texture": "#rail"
+        },
+        "south": {
+          "texture": "#rail"
+        },
+        "west": {
+          "texture": "#rail"
+        },
+        "east": {
+          "texture": "#rail"
+        }
+      }
+    },
+    {
+      "name": "east_manifold_support",
+      "from": [
+        10,
+        5,
+        5
+      ],
+      "to": [
+        11,
+        10,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rail"
+        },
+        "up": {
+          "texture": "#rail"
+        },
+        "north": {
+          "texture": "#rail"
+        },
+        "south": {
+          "texture": "#rail"
+        },
+        "west": {
+          "texture": "#rail"
+        },
+        "east": {
+          "texture": "#rail"
+        }
+      }
+    },
+    {
+      "name": "factory_infuser_crucible",
+      "from": [
+        5,
+        10,
+        4
+      ],
+      "to": [
+        11,
+        11,
+        13
+      ],
+      "faces": {
+        "down": {
+          "texture": "#basin"
+        },
+        "up": {
+          "texture": "#basin"
+        },
+        "north": {
+          "texture": "#basin"
+        },
+        "south": {
+          "texture": "#basin"
+        },
+        "west": {
+          "texture": "#basin"
+        },
+        "east": {
+          "texture": "#basin"
+        }
+      }
+    },
+    {
+      "name": "left_production_prong",
+      "from": [
+        5,
+        11,
+        4
+      ],
+      "to": [
+        6,
+        13,
+        6
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "center_production_prong",
+      "from": [
+        7.5,
+        11,
+        4
+      ],
+      "to": [
+        8.5,
+        13,
+        6
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "right_production_prong",
+      "from": [
+        10,
+        11,
+        4
+      ],
+      "to": [
+        11,
+        13,
+        6
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "north_factory_channel",
+      "from": [
+        7,
+        11,
+        6
+      ],
+      "to": [
+        9,
+        11.4,
+        8
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "south_factory_channel",
+      "from": [
+        7,
+        11,
+        10
+      ],
+      "to": [
+        9,
+        11.4,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "west_factory_channel",
+      "from": [
+        5,
+        11,
+        8
+      ],
+      "to": [
+        7,
+        11.4,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "east_factory_channel",
+      "from": [
+        9,
+        11,
+        8
+      ],
+      "to": [
+        11,
+        11.4,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#channel"
+        },
+        "up": {
+          "texture": "#channel"
+        },
+        "north": {
+          "texture": "#channel"
+        },
+        "south": {
+          "texture": "#channel"
+        },
+        "west": {
+          "texture": "#channel"
+        },
+        "east": {
+          "texture": "#channel"
+        }
+      }
+    },
+    {
+      "name": "factory_core_mount",
+      "from": [
+        6,
+        11.4,
+        7
+      ],
+      "to": [
+        10,
+        12.5,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rail"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "north": {
+          "texture": "#rail"
+        },
+        "south": {
+          "texture": "#rail"
+        },
+        "west": {
+          "texture": "#rail"
+        },
+        "east": {
+          "texture": "#rail"
+        }
+      }
+    },
+    {
+      "name": "north_factory_rune",
+      "from": [
+        6,
+        14,
+        5
+      ],
+      "to": [
+        10,
+        15,
+        6
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "name": "south_factory_rune",
+      "from": [
+        6,
+        14,
+        11
+      ],
+      "to": [
+        10,
+        15,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "name": "west_factory_rune",
+      "from": [
+        5,
+        14,
+        6
+      ],
+      "to": [
+        6,
+        15,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "name": "east_factory_rune",
+      "from": [
+        10,
+        14,
+        6
+      ],
+      "to": [
+        11,
+        15,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#rune"
+        },
+        "up": {
+          "texture": "#rune"
+        },
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune"
+        },
+        "west": {
+          "texture": "#rune"
+        },
+        "east": {
+          "texture": "#rune"
+        }
+      }
+    },
+    {
+      "name": "factory_source_heart",
+      "from": [
+        7,
+        12.5,
+        8
+      ],
+      "to": [
+        9,
+        16,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#core"
+        },
+        "up": {
+          "texture": "#core"
+        },
+        "north": {
+          "texture": "#core"
+        },
+        "south": {
+          "texture": "#core"
+        },
+        "west": {
+          "texture": "#core"
+        },
+        "east": {
+          "texture": "#core"
+        }
+      }
+    }
+  ]
+}

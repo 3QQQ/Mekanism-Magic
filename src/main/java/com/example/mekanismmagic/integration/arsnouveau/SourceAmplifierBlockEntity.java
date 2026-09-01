@@ -5,23 +5,39 @@ import com.hollingsworth.arsnouveau.common.block.tile.SourcelinkTile;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
+import mekanism.api.Upgrade;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.inventory.container.MekanismContainer;
+import mekanism.common.inventory.container.sync.SyncableInt;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Uses Mekanism energy to amplify Source produced by nearby vanilla
- * Ars Nouveau sourcelinks.
+ * Uses FE to increase new Source production in nearby vanilla Ars Nouveau
+ * sourcelinks. Source never enters this machine and existing Source cannot be
+ * amplified repeatedly.
  */
 public final class SourceAmplifierBlockEntity
         extends ArsSourceMachineBlockEntity {
-    private BlockPos cachedSourcelinkPosition;
+    private static final int SOURCELINK_SCAN_INTERVAL = 20;
+
+    private final Map<BlockPos, Integer> observedSource = new HashMap<>();
+    private List<BlockPos> cachedSourcelinks = List.of();
     private long nextSourcelinkScan;
+    private int activityTicks;
+    private int syncedAmplificationPercent = -1;
 
     public SourceAmplifierBlockEntity(BlockPos pos, BlockState state) {
         super(ArsNouveauRegistries.SOURCE_AMPLIFIER_BLOCK.get()
@@ -56,14 +72,37 @@ public final class SourceAmplifierBlockEntity
     }
 
     @Override
+    protected boolean hasLegacyCreativeMagicUpgradeSlot() {
+        return false;
+    }
+
+    @Override
     public boolean mekanismMagicSupportsPatternAutomation() {
         return false;
     }
 
     @Override
+    protected boolean hasInternalSourceBuffer() {
+        return false;
+    }
+
+    @Override
+    protected int sourceCapacity() {
+        return 0;
+    }
+
+    @Override
     protected int sourceMaxReceive() {
-        // Prevent network feedback: raw Source is taken only from an actual
-        // nearby Ars Nouveau sourcelink.
+        return 0;
+    }
+
+    @Override
+    protected int sourceMaxExtract() {
+        return 0;
+    }
+
+    @Override
+    public int getTransferRate() {
         return 0;
     }
 
@@ -73,80 +112,181 @@ public final class SourceAmplifierBlockEntity
     }
 
     @Override
-    protected boolean onUpdateServer() {
-        boolean changed = nativeBaseUpdate();
-        setActive(false);
-        progressRequired = Math.max(1,
-                mekanism.common.util.MekanismUtils.getTicks(this,
-                        ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_DURATION));
-        if (getMaxSource() - getSource()
-                < ArsNouveauMachineConfig.AMPLIFIED_SOURCE_PER_OPERATION) {
-            progress = 0;
-            return changed;
-        }
-        SourcelinkTile sourcelink = findSourceLink();
-        if (sourcelink == null
-                || sourcelink.getSource()
-                < ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION) {
-            progress = 0;
-            return changed;
-        }
-        long usage = mekanism.common.util.MekanismUtils.getEnergyPerTick(
-                this, baseEnergyPerTick());
-        boolean powered = energyContainer != null
-                && energyContainer.getEnergy() >= usage;
-        boolean sourceOnly = !powered
-                && level.getGameTime()
-                % ArsNouveauMachineConfig.ENERGYLESS_TICK_INTERVAL == 0;
-        if (!powered && !sourceOnly) {
-            return changed;
-        }
-        setActive(true);
-        if (powered) {
-            energyContainer.extract(usage, Action.EXECUTE,
-                    AutomationType.INTERNAL);
-        }
-        progress++;
-        if (progress >= progressRequired) {
-            if (!isUsableSourcelink(sourcelink)
-                    || getMaxSource() - getSource()
-                    < ArsNouveauMachineConfig
-                    .AMPLIFIED_SOURCE_PER_OPERATION) {
-                progress = 0;
-                setActive(false);
-                return changed;
-            }
-            sourcelink.removeSource(
-                    ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION);
-            addSource(
-                    ArsNouveauMachineConfig.AMPLIFIED_SOURCE_PER_OPERATION);
-            progress = 0;
-            changed = true;
-        }
-        return changed;
+    public boolean canProvideSource() {
+        return false;
     }
 
-    private SourcelinkTile findSourceLink() {
+    /** Total yield after amplification, where 100 means unmodified output. */
+    public int getAmplificationPercent() {
+        if (level != null && level.isClientSide
+                && syncedAmplificationPercent >= 0) {
+            return syncedAmplificationPercent;
+        }
+        return calculateAmplificationPercent();
+    }
+
+    private int calculateAmplificationPercent() {
+        return 100 + getAmplificationBonusPercent();
+    }
+
+    @Override
+    public void addContainerTrackers(MekanismContainer container) {
+        super.addContainerTrackers(container);
+        container.track(SyncableInt.create(
+                this::calculateAmplificationPercent,
+                value -> syncedAmplificationPercent = Math.max(100, value)));
+    }
+
+    public int getSpeedUpgradeCount() {
+        return upgradeComponent == null ? 0
+                : upgradeComponent.getUpgrades(Upgrade.SPEED);
+    }
+
+    private int getAmplificationBonusPercent() {
+        int baseBonus = (ArsNouveauMachineConfig
+                .AMPLIFIED_SOURCE_PER_OPERATION
+                - ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION) * 100
+                / ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION;
+        return baseBonus
+                + getSpeedUpgradeCount()
+                * ArsNouveauMachineConfig
+                .SOURCE_AMPLIFICATION_SPEED_BONUS_PERCENT;
+    }
+
+    @Override
+    protected boolean onUpdateServer() {
+        clearNativeRecipeWarnings();
+        boolean changed = nativeBaseUpdate();
+        progressRequired = Math.max(1, MekanismUtils.getTicks(this,
+                ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_DURATION));
+        updateActivityPulse();
         if (level == null) {
-            return null;
+            return finishServerUpdate(changed, activityTicks > 0);
         }
-        if (cachedSourcelinkPosition != null
-                && level.isLoaded(cachedSourcelinkPosition)) {
-            BlockEntity cached =
-                    level.getBlockEntity(cachedSourcelinkPosition);
-            if (cached instanceof SourcelinkTile sourcelink
-                    && isUsableSourcelink(sourcelink)) {
-                return sourcelink;
+
+        refreshSourcelinks();
+        boolean mayAmplify = canFunction();
+        for (BlockPos position : cachedSourcelinks) {
+            if (!level.isLoaded(position)) {
+                continue;
             }
-            cachedSourcelinkPosition = null;
+            BlockEntity blockEntity = level.getBlockEntity(position);
+            if (!(blockEntity instanceof SourcelinkTile sourcelink)
+                    || sourcelink.isRemoved()) {
+                observedSource.remove(position);
+                continue;
+            }
+
+            int currentSource = sourcelink.getSource();
+            Integer previousSource = observedSource.put(position,
+                    currentSource);
+            if (previousSource == null || currentSource <= previousSource) {
+                continue;
+            }
+
+            int newlyProduced = currentSource - previousSource;
+            if (!mayAmplify || sourcelink.isDisabled
+                    || !isPrimaryAmplifierFor(sourcelink)) {
+                continue;
+            }
+            int amplified = amplifyProduction(sourcelink, newlyProduced);
+            if (amplified > 0) {
+                // Baseline the post-amplification value so our own bonus is
+                // never interpreted as fresh production on the next tick.
+                observedSource.put(position, sourcelink.getSource());
+                activityTicks = progressRequired;
+                progress = 1;
+                changed = true;
+            }
         }
-        if (level.getGameTime() < nextSourcelinkScan) {
-            return null;
+        return finishServerUpdate(changed, activityTicks > 0);
+    }
+
+    private void updateActivityPulse() {
+        if (activityTicks <= 0) {
+            activityTicks = 0;
+            progress = 0;
+            return;
         }
-        nextSourcelinkScan = level.getGameTime() + 20;
+        activityTicks--;
+        progress = Math.min(progressRequired, progress + 1);
+        if (activityTicks == 0) {
+            progress = 0;
+        }
+    }
+
+    private int amplifyProduction(SourcelinkTile sourcelink,
+                                  int newlyProduced) {
+        if (energyContainer == null || newlyProduced <= 0) {
+            return 0;
+        }
+        int freeSource = sourcelink.getMaxSource() - sourcelink.getSource();
+        if (freeSource <= 0) {
+            return 0;
+        }
+
+        int bonusPercent = getAmplificationBonusPercent();
+        int rawLimitedBySpace = Math.max(1,
+                (int) ((long) freeSource * 100L / bonusPercent));
+        long energyPerOperation = energyPerOperation();
+        long storedEnergy = energyContainer.getEnergy();
+        int rawLimitedByEnergy = (int) Math.min(Integer.MAX_VALUE,
+                storedEnergy * ArsNouveauMachineConfig
+                        .RAW_SOURCE_PER_OPERATION / energyPerOperation);
+        int amplifiedRaw = Math.min(newlyProduced,
+                Math.min(rawLimitedBySpace, rawLimitedByEnergy));
+        if (amplifiedRaw <= 0) {
+            setNotEnoughEnergyWarning(true);
+            return 0;
+        }
+
+        int bonus = Math.max(1, (int) (((long) amplifiedRaw * bonusPercent
+                + 50L) / 100L));
+        while (bonus > freeSource && amplifiedRaw > 0) {
+            amplifiedRaw--;
+            bonus = amplifiedRaw == 0 ? 0 : Math.max(1,
+                    (int) (((long) amplifiedRaw * bonusPercent + 50L)
+                            / 100L));
+        }
+        if (bonus <= 0) {
+            return 0;
+        }
+
+        long energyCost = ((energyPerOperation * amplifiedRaw)
+                + ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION - 1L)
+                / ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION;
+        if (storedEnergy < energyCost) {
+            setNotEnoughEnergyWarning(true);
+            return 0;
+        }
+        if (amplifiedRaw < newlyProduced) {
+            setReducedEnergyWarning(true);
+        }
+        energyContainer.extract(energyCost, Action.EXECUTE,
+                AutomationType.INTERNAL);
+        int before = sourcelink.getSource();
+        sourcelink.addSource(bonus);
+        return Math.max(0, sourcelink.getSource() - before);
+    }
+
+    private long energyPerOperation() {
+        long energyPerTick = Math.max(1L,
+                MekanismUtils.getEnergyPerTick(this, baseEnergyPerTick()));
+        long duration = Math.max(1, MekanismUtils.getTicks(this,
+                ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_DURATION));
+        return energyPerTick > Long.MAX_VALUE / duration
+                ? Long.MAX_VALUE : energyPerTick * duration;
+    }
+
+    private void refreshSourcelinks() {
+        if (level == null || level.getGameTime() < nextSourcelinkScan) {
+            return;
+        }
+        nextSourcelinkScan = level.getGameTime()
+                + SOURCELINK_SCAN_INTERVAL;
         int radius = ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_RADIUS;
-        SourcelinkTile best = null;
-        int mostSource = 0;
+        List<BlockPos> found = new ArrayList<>();
+        Set<BlockPos> foundSet = new HashSet<>();
         for (BlockPos position : BlockPos.betweenClosed(
                 worldPosition.offset(-radius, -radius, -radius),
                 worldPosition.offset(radius, radius, radius))) {
@@ -154,23 +294,60 @@ public final class SourceAmplifierBlockEntity
                 continue;
             }
             BlockEntity blockEntity = level.getBlockEntity(position);
-            if (blockEntity instanceof SourcelinkTile candidate
-                    && candidate.getSource() > mostSource) {
-                best = candidate;
-                mostSource = candidate.getSource();
+            if (blockEntity instanceof SourcelinkTile sourcelink
+                    && !sourcelink.isRemoved()
+                    && isOriginalArsSourcelink(sourcelink)) {
+                BlockPos immutable = position.immutable();
+                found.add(immutable);
+                foundSet.add(immutable);
+                observedSource.putIfAbsent(immutable,
+                        sourcelink.getSource());
             }
         }
-        cachedSourcelinkPosition =
-                best == null ? null : best.getBlockPos().immutable();
-        return best;
+        cachedSourcelinks = List.copyOf(found);
+        observedSource.keySet().retainAll(foundSet);
     }
 
-    private static boolean isUsableSourcelink(
+    private static boolean isOriginalArsSourcelink(
             SourcelinkTile sourcelink) {
-        return !sourcelink.isRemoved()
-                && !sourcelink.isDisabled
-                && sourcelink.getSource()
-                >= ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION;
+        return "ars_nouveau".equals(BuiltInRegistries.BLOCK.getKey(
+                sourcelink.getBlockState().getBlock()).getNamespace());
+    }
+
+    /**
+     * A sourcelink is owned by one deterministic amplifier. This prevents
+     * nearby amplifiers from treating each other's bonus as new production.
+     */
+    private boolean isPrimaryAmplifierFor(SourcelinkTile sourcelink) {
+        if (level == null) {
+            return false;
+        }
+        int radius = ArsNouveauMachineConfig.SOURCE_AMPLIFICATION_RADIUS;
+        BlockPos sourcePos = sourcelink.getBlockPos();
+        BlockPos bestPosition = null;
+        long bestDistance = Long.MAX_VALUE;
+        for (BlockPos position : BlockPos.betweenClosed(
+                sourcePos.offset(-radius, -radius, -radius),
+                sourcePos.offset(radius, radius, radius))) {
+            if (!level.isLoaded(position)
+                    || !(level.getBlockEntity(position)
+                    instanceof SourceAmplifierBlockEntity amplifier)
+                    || amplifier.isRemoved()) {
+                continue;
+            }
+            long dx = position.getX() - sourcePos.getX();
+            long dy = position.getY() - sourcePos.getY();
+            long dz = position.getZ() - sourcePos.getZ();
+            long distance = dx * dx + dy * dy + dz * dz;
+            if (distance < bestDistance
+                    || distance == bestDistance
+                    && (bestPosition == null
+                    || position.asLong() < bestPosition.asLong())) {
+                bestDistance = distance;
+                bestPosition = position.immutable();
+            }
+        }
+        return worldPosition.equals(bestPosition);
     }
 
     boolean seedDevelopmentTest() {
@@ -182,19 +359,19 @@ public final class SourceAmplifierBlockEntity
                 worldPosition.offset(-radius, -radius, -radius),
                 worldPosition.offset(radius, radius, radius))) {
             BlockEntity blockEntity = level.getBlockEntity(position);
-            if (blockEntity instanceof SourcelinkTile sourcelink) {
+            if (blockEntity instanceof SourcelinkTile sourcelink
+                    && isOriginalArsSourcelink(sourcelink)) {
                 sourcelink.setSource(1_000);
-                cachedSourcelinkPosition = position.immutable();
+                BlockPos immutable = position.immutable();
+                cachedSourcelinks = List.of(immutable);
+                observedSource.clear();
+                observedSource.put(immutable, sourcelink.getSource());
                 if (energyContainer != null) {
-                    energyContainer.setEnergy(
-                            energyContainer.getMaxEnergy());
+                    energyContainer.setEnergy(energyContainer.getMaxEnergy());
                 }
-                progressRequired = Math.max(1,
-                        mekanism.common.util.MekanismUtils.getTicks(
-                                this,
-                                ArsNouveauMachineConfig
-                                        .SOURCE_AMPLIFICATION_DURATION));
-                progress = Math.max(0, progressRequired - 1);
+                // The next server tick observes this as fresh vanilla output.
+                sourcelink.addSource(
+                        ArsNouveauMachineConfig.RAW_SOURCE_PER_OPERATION);
                 return true;
             }
         }

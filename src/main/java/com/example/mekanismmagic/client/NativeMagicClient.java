@@ -10,6 +10,7 @@ import com.example.mekanismmagic.client.screen.NativeSpiritFactoryScreen;
 import com.example.mekanismmagic.client.screen.NativeSpiritScreen;
 import com.example.mekanismmagic.client.screen.NativeDimensionMinerScreen;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,6 +18,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 
 @SuppressWarnings("removal")
 @EventBusSubscriber(modid = "mekanism_magic", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -38,6 +40,10 @@ public final class NativeMagicClient {
                     NativeMiniRitualAssemblerScreen::new);
             event.register(NativeMekanismRegistries.SPIRIT_FACTORY_CONTAINER.get(),
                     NativeSpiritFactoryScreen::new);
+            if (ModCompatibility.mekanismExtrasLoaded()) {
+                registerOptionalScreens(event,
+                        "mekextras.client.MekanismExtrasSpiritClient");
+            }
         }
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             registerOptionalScreens(event,
@@ -48,6 +54,33 @@ public final class NativeMagicClient {
     @SubscribeEvent
     public static void registerRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
+        if (ModCompatibility.occultismLoaded()) {
+            event.registerBlockEntityRenderer(
+                    NativeMekanismRegistries.SPIRIT_TILE.get(),
+                    context -> new MagicMachineAnimationRenderer<>(
+                            context,
+                            MagicMachineAnimationRenderer.Kind.SPIRIT));
+            event.registerBlockEntityRenderer(
+                    NativeMekanismRegistries.DIMENSION_MINER_TILE.get(),
+                    context -> new MagicMachineAnimationRenderer<>(
+                            context,
+                            MagicMachineAnimationRenderer.Kind.DIMENSION));
+            event.registerBlockEntityRenderer(
+                    NativeMekanismRegistries.RITUAL_TILE.get(),
+                    context -> new MagicMachineAnimationRenderer<>(
+                            context,
+                            MagicMachineAnimationRenderer.Kind.RITUAL));
+            event.registerBlockEntityRenderer(
+                    NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_TILE.get(),
+                    context -> new MagicMachineAnimationRenderer<>(
+                            context,
+                            MagicMachineAnimationRenderer.Kind.SCRIBING));
+            registerSpiritFactoryRenderers(event);
+            if (ModCompatibility.mekanismExtrasLoaded()) {
+                registerOptionalRenderers(event,
+                        "mekextras.client.MekanismExtrasSpiritClient");
+            }
+        }
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             try {
                 Class.forName("com.example.mekanismmagic.integration."
@@ -63,6 +96,26 @@ public final class NativeMagicClient {
         }
     }
 
+    private static void registerSpiritFactoryRenderers(
+            EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(
+                NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_TILE.get(),
+                context -> new MagicMachineAnimationRenderer<>(context,
+                        MagicMachineAnimationRenderer.Kind.SPIRIT_FACTORY));
+        event.registerBlockEntityRenderer(
+                NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_TILE.get(),
+                context -> new MagicMachineAnimationRenderer<>(context,
+                        MagicMachineAnimationRenderer.Kind.SPIRIT_FACTORY));
+        event.registerBlockEntityRenderer(
+                NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_TILE.get(),
+                context -> new MagicMachineAnimationRenderer<>(context,
+                        MagicMachineAnimationRenderer.Kind.SPIRIT_FACTORY));
+        event.registerBlockEntityRenderer(
+                NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_TILE.get(),
+                context -> new MagicMachineAnimationRenderer<>(context,
+                        MagicMachineAnimationRenderer.Kind.SPIRIT_FACTORY));
+    }
+
     @SubscribeEvent
     public static void registerItemProperties(FMLClientSetupEvent event) {
         if (!ModCompatibility.occultismLoaded()) {
@@ -73,6 +126,15 @@ public final class NativeMagicClient {
                 ResourceLocation.fromNamespaceAndPath(MekanismMagic.MOD_ID, "ritual"),
                 (stack, level, entity, seed) ->
                         OccultismRecipeBridge.miniRitualModelData(stack)));
+    }
+
+    @SubscribeEvent
+    public static void invalidateAnimationSprites(
+            TextureAtlasStitchedEvent event) {
+        if (TextureAtlas.LOCATION_BLOCKS.equals(
+                event.getAtlas().location())) {
+            MagicMachineAnimationRenderer.invalidateSpriteCache();
+        }
     }
 
     private static void registerOptionalScreens(
@@ -86,6 +148,22 @@ public final class NativeMagicClient {
         } catch (ReflectiveOperationException | LinkageError failure) {
             throw new IllegalStateException(
                     "Failed to register optional integration screens",
+                    failure);
+        }
+    }
+
+    private static void registerOptionalRenderers(
+            EntityRenderersEvent.RegisterRenderers event,
+            String className) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + className)
+                    .getMethod("registerRenderers",
+                            EntityRenderersEvent.RegisterRenderers.class)
+                    .invoke(null, event);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional integration renderers",
                     failure);
         }
     }

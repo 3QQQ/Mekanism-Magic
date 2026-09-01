@@ -1,3 +1,18 @@
 {
-  "parent": "mekanism_magic:block/source_generator"
+  "parent": "mekanism_magic:block/source_generator",
+  "display": {
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, -0.5, 0],
+      "scale": [0.58, 0.58, 0.58]
+    },
+    "ground": {
+      "translation": [0, 2.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "fixed": {
+      "rotation": [0, 180, 0],
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
 }

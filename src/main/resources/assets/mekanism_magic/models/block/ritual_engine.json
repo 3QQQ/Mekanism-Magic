@@ -1,13 +1,3 @@
 {
-  "parent": "mekanism:block/osmium_compressor",
-  "textures": {
-    "particle": "mekanism_magic:block/ritual_engine/front",
-    "sides": "mekanism_magic:block/ritual_engine/side",
-    "front": "mekanism_magic:block/ritual_engine/front",
-    "west": "mekanism_magic:block/ritual_engine/side",
-    "east": "mekanism_magic:block/ritual_engine/side",
-    "south": "mekanism_magic:block/ritual_engine/back",
-    "up": "mekanism_magic:block/ritual_engine/top",
-    "down": "mekanism_magic:block/ritual_engine/bottom"
-  }
+  "parent": "mekanism_magic:block/ritual_engine_base"
 }

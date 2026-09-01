@@ -15,7 +15,7 @@ base {
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 def arsMachineContentEnabled = project.findProperty(
-        'mekanism_magic.ars_machine_content')?.toString()?.toBoolean() ?: false
+        'mekanism_magic.ars_machine_content')?.toString()?.toBoolean() ?: true
 
 repositories {
     maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
@@ -77,15 +77,21 @@ def mekanismExtrasJar = file(
 def mekenergisticsJar = file('libs/mekenergistics-3.0.6.jar')
 def mekmmJar = file("libs/mekmm-1.21.1-${mekmm_runtime_version}.jar")
 def ae2Jar = file('run/mods/appliedenergistics2-19.2.17.jar')
-def compileAe2 = project.findProperty(
-        'mekanism_magic.compile_ae2')?.toString()?.toBoolean()
-        ?: ae2Jar.exists()
-def compileMekEnergistics = project.findProperty(
-        'mekanism_magic.compile_mekenergistics')?.toString()?.toBoolean()
-        ?: mekenergisticsJar.exists()
-def compileMekanismExtras = project.findProperty(
-        'mekanism_magic.compile_mekextras')?.toString()?.toBoolean()
-        ?: mekanismExtrasJar.exists()
+def compileAe2Property = project.findProperty(
+        'mekanism_magic.compile_ae2')
+def compileAe2 = compileAe2Property == null
+        ? ae2Jar.exists()
+        : compileAe2Property.toString().toBoolean()
+def compileMekEnergisticsProperty = project.findProperty(
+        'mekanism_magic.compile_mekenergistics')
+def compileMekEnergistics = compileMekEnergisticsProperty == null
+        ? mekenergisticsJar.exists()
+        : compileMekEnergisticsProperty.toString().toBoolean()
+def compileMekanismExtrasProperty = project.findProperty(
+        'mekanism_magic.compile_mekextras')
+def compileMekanismExtras = compileMekanismExtrasProperty == null
+        ? mekanismExtrasJar.exists()
+        : compileMekanismExtrasProperty.toString().toBoolean()
 if (!compileMekanismExtras) {
     sourceSets.main.java.exclude('com/example/mekanismmagic/integration/mekextras/**')
 }
@@ -95,6 +101,7 @@ if (compileMekEnergistics) {
 }
 if (compileAe2) {
     sourceSets.main.java.srcDir('src/ae2/java')
+    sourceSets.main.resources.srcDir('src/ae2/resources')
 }
 
 configurations {
@@ -158,6 +165,34 @@ dependencies {
     if (ae2RuntimeEnabled) {
         localRuntime files(ae2Jar)
     }
+
+    // Keep the executable compatibility self-tests offline while still
+    // compiling them against the same remapped game/API classpath as main.
+    testCompileOnly files(sourceSets.main.compileClasspath)
+    testRuntimeOnly files(sourceSets.main.runtimeClasspath)
+
+}
+
+tasks.register('testPipezCompat', JavaExec) {
+    group = 'verification'
+    description = 'Runs the offline Pipez high-capacity extraction self-test.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.pipez.PipezItemHandlerCompatSelfTest'
+}
+
+tasks.register('testSourceLinkState', JavaExec) {
+    group = 'verification'
+    description = 'Runs Source Jar link persistence and dimension self-tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.arsnouveau.SourceLinkStateSelfTest'
+}
+
+// The compatibility check above is an executable offline assertion suite,
+// not a JUnit/TestNG class for Gradle's standard test discovery.
+tasks.named('test', Test).configure {
+    failOnNoDiscoveredTests = false
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -184,6 +219,9 @@ processResources {
             // automatically adapts when Mek Energistics is added later.
             mekenergistics_mixins  : compileMekEnergistics
                     ? '[[mixins]]\nconfig="mekenergistics_compat.mixins.json"'
+                    : '',
+            ae2_mixins             : compileAe2
+                    ? '[[mixins]]\nconfig="ae2_compat.mixins.json"'
                     : ''
     ]
     inputs.properties replaceProperties
@@ -201,4 +239,22 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+// A newly registered machine is not allowed into a test/release artifact
+// until its block entity, renderer, resources, loot and one-block geometry
+// satisfy the shared machine contract.
+apply from: 'gradle/machine-contracts.gradle'
+
+tasks.named('check') {
+    dependsOn tasks.named('validateMachineContracts'),
+            tasks.named('testSourceLinkState')
+}
+
+tasks.named('classes') {
+    dependsOn tasks.named('validateMachineContracts')
+}
+
+tasks.named('jar') {
+    dependsOn tasks.named('validateMachineContracts')
 }

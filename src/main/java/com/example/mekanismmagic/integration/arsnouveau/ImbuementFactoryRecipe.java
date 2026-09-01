@@ -14,6 +14,9 @@ import java.util.List;
 
 public final class ImbuementFactoryRecipe
         extends BasicItemStackToItemStackRecipe {
+    private static final ResourceLocation UNKNOWN_CATALYST_ID =
+            ResourceLocation.fromNamespaceAndPath(
+                    "mekanism_magic", "catalyst/unknown");
     private static final RecipeType<ItemStackToItemStackRecipe> TYPE =
             new RecipeType<>() {
             };
@@ -22,17 +25,20 @@ public final class ImbuementFactoryRecipe
                     (RecipeSerializer<?>) RecipeSerializer.SHAPELESS_RECIPE;
     private final ResourceLocation id;
     private final ResourceLocation catalystId;
+    private final boolean requiresIdentifier;
     private final int duration;
     private final int sourceCost;
 
     public ImbuementFactoryRecipe(ItemStack input, ItemStack identifier,
                                   com.example.mekanismmagic.integration.common.recipe
-                                          .MachineRecipeResult result) {
+                                          .MachineRecipeResult result,
+                                  boolean requiresIdentifier) {
         super(ItemStackIngredient.of(new SizedIngredient(
                         Ingredient.of(input.getItem()), 1)),
                 result.output(), TYPE);
         this.id = result.id();
         this.catalystId = CatalystIdentifierItem.catalystId(identifier);
+        this.requiresIdentifier = requiresIdentifier;
         this.duration = result.duration();
         this.sourceCost = result.resourceCost(
                 ArsNouveauMachineConfig.SOURCE_RESOURCE);
@@ -54,9 +60,17 @@ public final class ImbuementFactoryRecipe
         return sourceCost;
     }
 
+    public boolean requiresIdentifier() {
+        return requiresIdentifier;
+    }
+
     public boolean sameIdentifier(ItemStack stack) {
-        return CatalystIdentifierItem.catalystId(stack)
-                .equals(catalystId);
+        return !requiresIdentifier
+                || stack.is(ArsNouveauRegistries
+                .CATALYST_IDENTIFIER_ITEM.get())
+                && !catalystId.equals(UNKNOWN_CATALYST_ID)
+                && CatalystIdentifierItem.matchesCatalystId(
+                stack, catalystId);
     }
 
     @Override

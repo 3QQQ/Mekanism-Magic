@@ -1,8 +1,3 @@
 {
-  "parent": "mekanism_magic:block/source_generator",
-  "textures": {
-    "front": "mekanism_magic:block/source_generator/front_active",
-    "west": "mekanism_magic:block/source_generator/side_active",
-    "east": "mekanism_magic:block/source_generator/side_active"
-  }
+  "parent": "mekanism_magic:block/source_generator_base"
 }

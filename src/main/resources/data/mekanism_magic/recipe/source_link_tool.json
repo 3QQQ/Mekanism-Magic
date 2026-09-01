@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "ars_nouveau:dominion_wand"
+    },
+    {
+      "item": "mekanism:alloy_infused"
+    }
+  ],
+  "result": {
+    "id": "mekanism_magic:source_link_tool",
+    "count": 1
+  }
+}

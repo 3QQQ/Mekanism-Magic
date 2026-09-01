@@ -7,10 +7,13 @@
   "mixins": [
     "MekEnergisticsAutomationMixin",
     "MekEnergisticsExtraSpiritFactoryProfileMixin",
+    "MekEnergisticsImbuementPatternMixin",
     "MekEnergisticsInstallerGuardMixin",
+    "MekEnergisticsNativeAeOutputGuardMixin",
+    "MekEnergisticsTargetResolverGuardMixin",
     "MekEnergisticsSpiritFactoryInstallerMixin"
   ],
   "injectors": {
-    "defaultRequire": 0
+    "defaultRequire": 1
   }
 }

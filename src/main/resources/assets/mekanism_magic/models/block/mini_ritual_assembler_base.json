@@ -1,0 +1,2929 @@
+{
+  "credit": "Mekanism Magic Ars-Style Precision Ritual Assembler",
+  "textures": {
+    "particle": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_dark": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_shell": "mekanism_magic:block/ars_series/lab_spine",
+    "lab_spine": "mekanism_magic:block/ars_series/lab_spine",
+    "precision_metal": "mekanism_magic:block/occult_machine/rail_gray",
+    "gold": "mekanism_magic:block/occult_machine/gold",
+    "binding": "mekanism_magic:block/occult_machine/binding",
+    "soul": "mekanism_magic:block/occult_machine/soul",
+    "void": "mekanism_magic:block/occult_machine/void",
+    "chalk": "mekanism_magic:block/occult_machine/chalk",
+    "scribing_surface": "#chalk"
+  },
+  "elements": [
+    {
+      "name": "assembler_base_shadow",
+      "from": [
+        1,
+        0.5,
+        1
+      ],
+      "to": [
+        15,
+        1.5,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "assembler_front_recess",
+      "from": [
+        3,
+        2.2,
+        0.75
+      ],
+      "to": [
+        13,
+        3.8,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "assembler_base_body",
+      "from": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "to": [
+        14.5,
+        4.25,
+        14.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "assembler_upper_deck",
+      "from": [
+        2,
+        4.25,
+        2.5
+      ],
+      "to": [
+        14,
+        5,
+        14
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            12,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            11.5,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            12,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            11.5,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            12,
+            11.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            12,
+            11.5
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "assembler_front_binding_line_upper",
+      "from": [
+        5.5,
+        3.15,
+        0.5
+      ],
+      "to": [
+        10.5,
+        3.55,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "assembler_front_soul_line_lower",
+      "from": [
+        4,
+        2.5,
+        0.5
+      ],
+      "to": [
+        12,
+        2.9,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "assembler_west_side_line_lower",
+      "from": [
+        1.25,
+        2.3,
+        5
+      ],
+      "to": [
+        1.5,
+        2.8,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "assembler_west_side_line_upper",
+      "from": [
+        1.25,
+        3,
+        6.25
+      ],
+      "to": [
+        1.5,
+        3.5,
+        9.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "assembler_east_side_line_lower",
+      "from": [
+        14.5,
+        2.3,
+        5
+      ],
+      "to": [
+        14.75,
+        2.8,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "assembler_east_side_line_upper",
+      "from": [
+        14.5,
+        3,
+        6.25
+      ],
+      "to": [
+        14.75,
+        3.5,
+        9.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "precision_scribing_bed",
+      "from": [
+        3,
+        5,
+        3
+      ],
+      "to": [
+        13,
+        5.5,
+        13
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            10
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            10
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "scribing_track_north",
+      "from": [
+        3,
+        5.5,
+        3
+      ],
+      "to": [
+        13,
+        6,
+        4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            1
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "scribing_track_south",
+      "from": [
+        3,
+        5.5,
+        12
+      ],
+      "to": [
+        13,
+        6,
+        13
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            1
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "scribing_track_west",
+      "from": [
+        3,
+        5.5,
+        4
+      ],
+      "to": [
+        4,
+        6,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "scribing_track_east",
+      "from": [
+        12,
+        5.5,
+        4
+      ],
+      "to": [
+        13,
+        6,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "chalk_scribing_surface",
+      "from": [
+        4,
+        5.5,
+        4
+      ],
+      "to": [
+        12,
+        5.8,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.3
+          ],
+          "texture": "#scribing_surface"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.3
+          ],
+          "texture": "#scribing_surface"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.3
+          ],
+          "texture": "#scribing_surface"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.3
+          ],
+          "texture": "#scribing_surface"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#scribing_surface"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#scribing_surface"
+        }
+      }
+    },
+    {
+      "name": "west_gantry_support",
+      "from": [
+        3,
+        6,
+        7
+      ],
+      "to": [
+        4,
+        9.5,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "east_gantry_support",
+      "from": [
+        12,
+        6,
+        7
+      ],
+      "to": [
+        13,
+        9.5,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            3.5
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "plotter_crossbeam",
+      "from": [
+        4,
+        9.5,
+        7
+      ],
+      "to": [
+        12,
+        10.5,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            2
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            2
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "scribing_head",
+      "from": [
+        7.25,
+        7,
+        7.25
+      ],
+      "to": [
+        8.75,
+        9.5,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            2.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            2.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            2.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            2.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "precision_scribing_nozzle",
+      "from": [
+        7.65,
+        6,
+        7.65
+      ],
+      "to": [
+        8.35,
+        7,
+        8.35
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            0.7
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            0.7
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "white_chalk_cartridge",
+      "from": [
+        2.5,
+        4.25,
+        1.75
+      ],
+      "to": [
+        4.5,
+        5.25,
+        2.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "red_chalk_cartridge",
+      "from": [
+        5.5,
+        4.25,
+        1.75
+      ],
+      "to": [
+        7.5,
+        5.25,
+        2.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "purple_chalk_cartridge",
+      "from": [
+        8.5,
+        4.25,
+        1.75
+      ],
+      "to": [
+        10.5,
+        5.25,
+        2.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "gold_chalk_cartridge",
+      "from": [
+        11.5,
+        4.25,
+        1.75
+      ],
+      "to": [
+        13.5,
+        5.25,
+        2.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            0.75
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "west_gantry_binding_cap",
+      "from": [
+        2.7,
+        9.5,
+        6.7
+      ],
+      "to": [
+        4,
+        10.15,
+        9.3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "east_gantry_binding_cap",
+      "from": [
+        12,
+        9.5,
+        6.7
+      ],
+      "to": [
+        13.3,
+        10.15,
+        9.3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "plotter_crossbeam_soul_line_lower",
+      "from": [
+        5,
+        9.72,
+        6.75
+      ],
+      "to": [
+        11,
+        10.08,
+        7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "plotter_crossbeam_binding_line_upper",
+      "from": [
+        6.25,
+        10.15,
+        6.75
+      ],
+      "to": [
+        9.75,
+        10.45,
+        7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "scribing_head_collar_north",
+      "from": [
+        7,
+        7.75,
+        6.95
+      ],
+      "to": [
+        9,
+        8.25,
+        7.25
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "scribing_head_collar_south",
+      "from": [
+        7,
+        7.75,
+        8.75
+      ],
+      "to": [
+        9,
+        8.25,
+        9.05
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "scribing_head_collar_west",
+      "from": [
+        6.95,
+        7.75,
+        7.25
+      ],
+      "to": [
+        7.25,
+        8.25,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "scribing_head_collar_east",
+      "from": [
+        8.75,
+        7.75,
+        7.25
+      ],
+      "to": [
+        9.05,
+        8.25,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "white_chalk_cartridge_clamp",
+      "from": [
+        2.85,
+        4.45,
+        1.55
+      ],
+      "to": [
+        4.15,
+        5.05,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "red_chalk_cartridge_clamp",
+      "from": [
+        5.85,
+        4.45,
+        1.55
+      ],
+      "to": [
+        7.15,
+        5.05,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "purple_chalk_cartridge_clamp",
+      "from": [
+        8.85,
+        4.45,
+        1.55
+      ],
+      "to": [
+        10.15,
+        5.05,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "gold_chalk_cartridge_clamp",
+      "from": [
+        11.85,
+        4.45,
+        1.55
+      ],
+      "to": [
+        13.15,
+        5.05,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "scribing_bed_socket_northwest",
+      "from": [
+        4.3,
+        5.8,
+        4.3
+      ],
+      "to": [
+        5,
+        6.1,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "scribing_bed_socket_northeast",
+      "from": [
+        11,
+        5.8,
+        4.3
+      ],
+      "to": [
+        11.7,
+        6.1,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "scribing_bed_socket_southwest",
+      "from": [
+        4.3,
+        5.8,
+        11
+      ],
+      "to": [
+        5,
+        6.1,
+        11.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "scribing_bed_socket_southeast",
+      "from": [
+        11,
+        5.8,
+        11
+      ],
+      "to": [
+        11.7,
+        6.1,
+        11.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "ars_assembler_platform",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "scribing_bed",
+      "origin": [
+        8,
+        6,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "name": "symmetric_gantry",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "name": "material_cartridges",
+      "origin": [
+        8,
+        5,
+        2
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        21,
+        22,
+        23,
+        24
+      ]
+    }
+  ],
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "render_type": "minecraft:cutout"
+}

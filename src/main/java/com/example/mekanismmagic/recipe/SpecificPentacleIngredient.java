@@ -47,7 +47,7 @@ public record SpecificPentacleIngredient(String pentacle)
         net.minecraft.world.item.component.CustomData data =
                 stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         return data != null && !data.isEmpty()
-                && pentacle.equals(data.copyTag().getString("pentacle"));
+                && pentacle.equals(data.getUnsafe().getString("pentacle"));
     }
 
     @Override

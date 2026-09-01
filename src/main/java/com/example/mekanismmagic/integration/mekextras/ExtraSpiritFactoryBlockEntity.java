@@ -1,7 +1,12 @@
 package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
+import com.example.mekanismmagic.api.IRecipeEntityDisplay;
+import com.example.mekanismmagic.api.IRecipeItemDisplay;
+import com.example.mekanismmagic.api.RecipeEntityDisplayState;
+import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
+import com.example.mekanismmagic.blockentity.DefaultMachineSideConfig;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
 import com.example.mekanismmagic.blockentity.SpiritMachineUpgradeData;
@@ -26,15 +31,21 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 /**
  * Spirit recipe adapter for Mekanism Extras' 11/13/15/17-process factories.
  */
 public final class ExtraSpiritFactoryBlockEntity
         extends TileEntityExtraItemToItemFactory<SpiritFactoryRecipe>
-        implements IMekanismMagicAutomation {
+        implements IMekanismMagicAutomation, IRecipeEntityDisplay,
+        IRecipeItemDisplay {
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
+    private final RecipeEntityDisplayState recipeEntityDisplay =
+            new RecipeEntityDisplayState();
+    private final RecipeItemDisplayState recipeItemDisplay =
+            new RecipeItemDisplayState();
 
     public ExtraSpiritFactoryBlockEntity(Holder<Block> block, BlockPos pos,
                                          BlockState state) {
@@ -55,6 +66,7 @@ public final class ExtraSpiritFactoryBlockEntity
                         side);
             }
         }
+        DefaultMachineSideConfig.apply(configComponent);
         ensureProcessTickCapacity(tier.processes - 1);
     }
 
@@ -161,6 +173,33 @@ public final class ExtraSpiritFactoryBlockEntity
                 spiritSlot, outputSlots.get(process));
     }
 
+    private boolean hasFactoryWarningContext(int process) {
+        return process >= 0 && process < inputSlots.size()
+                && !inputSlots.get(process).getStack().isEmpty()
+                && spiritSlot != null && !spiritSlot.getStack().isEmpty();
+    }
+
+    private boolean hasAnyFactoryWarningContext() {
+        if (spiritSlot == null || spiritSlot.getStack().isEmpty()) {
+            return false;
+        }
+        return inputSlots.stream().anyMatch(
+                slot -> !slot.getStack().isEmpty());
+    }
+
+    @Override
+    public BooleanSupplier getWarningCheck(
+            CachedRecipe.OperationTracker.RecipeError error,
+            int processIndex) {
+        BooleanSupplier warning = super.getWarningCheck(error, processIndex);
+        return error == CachedRecipe.OperationTracker.RecipeError
+                .NOT_ENOUGH_ENERGY
+                ? () -> hasAnyFactoryWarningContext()
+                && warning.getAsBoolean()
+                : () -> hasFactoryWarningContext(processIndex)
+                && warning.getAsBoolean();
+    }
+
     @Override
     public CachedRecipe<SpiritFactoryRecipe> createNewCachedRecipe(
             SpiritFactoryRecipe recipe, int process) {
@@ -188,7 +227,49 @@ public final class ExtraSpiritFactoryBlockEntity
 
     @Override
     protected boolean onUpdateServer() {
-        return super.onUpdateServer();
+        boolean changed = super.onUpdateServer();
+        boolean displayChanged = hasAnyFactoryWarningContext()
+                ? recipeEntityDisplay.update(spiritSlot.getStack())
+                : recipeEntityDisplay.clear();
+        boolean itemDisplayChanged = hasAnyFactoryWarningContext()
+                ? recipeItemDisplay.updateFactory(inputSlots,
+                spiritSlot.getStack(), process -> {
+                    SpiritFactoryRecipe recipe = getRecipe(process);
+                    return recipe == null
+                            || recipe.getOutputDefinition().isEmpty()
+                            ? ItemStack.EMPTY
+                            : recipe.getOutputDefinition().getFirst();
+                }) : recipeItemDisplay.clear();
+        return itemDisplayChanged || displayChanged || changed;
+    }
+
+    @Override
+    public RecipeEntityDisplayState mekanismMagicRecipeEntityDisplay() {
+        return recipeEntityDisplay;
+    }
+
+    @Override
+    public RecipeItemDisplayState mekanismMagicRecipeItemDisplay() {
+        return recipeItemDisplay;
+    }
+
+    @Override
+    public net.minecraft.nbt.CompoundTag getReducedUpdateTag(
+            net.minecraft.core.HolderLookup.Provider provider) {
+        net.minecraft.nbt.CompoundTag tag =
+                super.getReducedUpdateTag(provider);
+        recipeEntityDisplay.writeUpdateTag(tag);
+        recipeItemDisplay.writeUpdateTag(tag, provider);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(
+            net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider provider) {
+        super.handleUpdateTag(tag, provider);
+        recipeEntityDisplay.readUpdateTag(tag);
+        recipeItemDisplay.readUpdateTag(tag, provider);
     }
 
     @Override
@@ -223,16 +304,21 @@ public final class ExtraSpiritFactoryBlockEntity
         return new SpiritMachineUpgradeData(registries, redstone, getControlType(),
                 energyContainer, progress, currentEnergySlot, inputSlots, outputSlots,
                 isSorting(), getComponents(),
-                spiritSlot == null ? ItemStack.EMPTY : spiritSlot.getStack());
+                spiritSlot == null ? ItemStack.EMPTY : spiritSlot.getStack(),
+                processRequiredTicks == null
+                        ? new int[0] : processRequiredTicks);
     }
 
     @Override
     public void parseUpgradeData(net.minecraft.core.HolderLookup.Provider registries,
                                  IUpgradeData data) {
         super.parseUpgradeData(registries, data);
-        if (data instanceof SpiritMachineUpgradeData spiritUpgrade
-                && spiritSlot != null) {
-            spiritSlot.setStack(spiritUpgrade.spiritSource.copy());
+        if (data instanceof SpiritMachineUpgradeData spiritUpgrade) {
+            if (spiritSlot != null) {
+                spiritSlot.setStack(spiritUpgrade.spiritSource.copy());
+            }
+            processRequiredTicks = Arrays.copyOf(
+                    spiritUpgrade.requiredTicks, tier.processes);
         }
     }
 

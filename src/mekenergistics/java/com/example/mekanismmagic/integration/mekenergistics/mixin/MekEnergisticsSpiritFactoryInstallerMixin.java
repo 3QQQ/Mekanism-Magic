@@ -1,6 +1,10 @@
 package com.example.mekanismmagic.integration.mekenergistics.mixin;
 
+import com.beipuo.mekenergistics.api.upgrade.IMePatternAutomationHost;
+import com.beipuo.mekenergistics.api.upgrade.MePatternAutomation;
 import com.beipuo.mekenergistics.item.MeTierInstallerItem;
+import com.beipuo.mekenergistics.upgrade.MeUpgradeRecipeMachineAdapter;
+import com.beipuo.mekenergistics.upgrade.MeUpgradeType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.InteractionResult;
@@ -14,9 +18,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Installs the ME provider capability in-place for spirit factories. A
- * Mekanism Magic factory has no external Mek Energistics block variant, so
- * replacing it through the generic installer would select me_crusher.
+ * Installs the ME pattern provider in-place for every registered Mekanism
+ * Magic automation machine. These machines deliberately have no external
+ * Mek Energistics block variant, so the generic replacement resolver must
+ * never substitute an unrelated Mekanism machine.
  */
 @Mixin(value = MeTierInstallerItem.class, remap = false)
 public abstract class MekEnergisticsSpiritFactoryInstallerMixin {
@@ -26,9 +31,14 @@ public abstract class MekEnergisticsSpiritFactoryInstallerMixin {
             CallbackInfoReturnable<InteractionResult> cir) {
         var state = level.getBlockState(pos);
         var id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
-        if (id == null
-                || !"mekanism_magic".equals(id.getNamespace())
-                || !id.getPath().endsWith("spirit_factory")) {
+        if (id == null || !"mekanism_magic".equals(id.getNamespace())) {
+            return;
+        }
+        // Every Mekanism Magic block is owned by this branch. Registered
+        // automation machines are upgraded in place; unregistered/new blocks
+        // fail safely instead of entering ME's generic replacement resolver.
+        if (!MePatternAutomation.registeredBlockIds().contains(id)) {
+            cir.setReturnValue(InteractionResult.FAIL);
             return;
         }
         if (level.isClientSide) {
@@ -36,42 +46,24 @@ public abstract class MekEnergisticsSpiritFactoryInstallerMixin {
             return;
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        try {
-            Class<?> adapterClass = Class.forName(
-                    "com.beipuo.mekenergistics.upgrade.MeUpgradeRecipeMachineAdapter");
-            if (!adapterClass.isInstance(blockEntity)) {
-                cir.setReturnValue(InteractionResult.FAIL);
-                return;
-            }
-            Object container = adapterClass.getMethod("getMeUpgradeContainer")
-                    .invoke(blockEntity);
-            Class<?> upgradeTypeClass = Class.forName(
-                    "com.beipuo.mekenergistics.upgrade.MeUpgradeType");
-            @SuppressWarnings({"rawtypes", "unchecked"})
-            Object patternProvider = Enum.valueOf(
-                    (Class<? extends Enum>) upgradeTypeClass,
-                    "PATTERN_PROVIDER");
-            Object result = container.getClass()
-                    .getMethod("install", upgradeTypeClass)
-                    .invoke(container, patternProvider);
-            boolean successful = (Boolean) result.getClass()
-                    .getMethod("successful")
-                    .invoke(result);
-            if (!successful) {
-                cir.setReturnValue(InteractionResult.FAIL);
-                return;
-            }
-            if (!player.getAbilities().instabuild) {
-                installer.shrink(1);
-            }
-            blockEntity.setChanged();
-            adapterClass.getMethod("onMeUpgradeStateChanged")
-                    .invoke(blockEntity);
-            cir.setReturnValue(InteractionResult.SUCCESS);
-        } catch (ReflectiveOperationException | LinkageError
-                 | RuntimeException failure) {
+        if (!(blockEntity instanceof MeUpgradeRecipeMachineAdapter adapter)
+                || !(blockEntity instanceof IMePatternAutomationHost host)
+                || !host.meSupportsPatternAutomation()
+                || !adapter.isMeUpgradeTarget()) {
             cir.setReturnValue(InteractionResult.FAIL);
             return;
         }
+        var result = adapter.getMeUpgradeContainer()
+                .install(MeUpgradeType.PATTERN_PROVIDER);
+        if (!result.successful()) {
+            cir.setReturnValue(InteractionResult.FAIL);
+            return;
+        }
+        if (!player.getAbilities().instabuild) {
+            installer.shrink(1);
+        }
+        blockEntity.setChanged();
+        adapter.onMeUpgradeStateChanged();
+        cir.setReturnValue(InteractionResult.SUCCESS);
     }
 }

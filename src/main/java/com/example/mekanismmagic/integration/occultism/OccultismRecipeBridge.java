@@ -41,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -141,6 +142,8 @@ public final class OccultismRecipeBridge {
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<RecipeManager, MinerCatalog> MINER_CATALOGS =
             Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<String, Method> MINER_PROPERTY_METHODS =
+            new HashMap<>();
 
     private OccultismRecipeBridge() {
     }
@@ -190,7 +193,13 @@ public final class OccultismRecipeBridge {
     }
 
     private record MinerCatalog(long recipeFingerprint,
-                                List<MinerCandidate> candidates) {
+                                List<MinerCandidate> candidates,
+                                List<MinerSelection> selections) {
+    }
+
+    private record MinerSelection(ItemStack miner,
+                                  List<MinerCandidate> candidates,
+                                  long totalWeight) {
     }
 
     public record RitualJeiData(ResourceLocation recipeId,
@@ -231,10 +240,7 @@ public final class OccultismRecipeBridge {
             return fallback;
         }
         try {
-            Class<?> mineshaft = Class.forName(
-                    "com.klikli_dev.occultism.common.blockentity."
-                            + "DimensionalMineshaftBlockEntity");
-            Method getter = mineshaft.getMethod(method, ItemStack.class);
+            Method getter = minerPropertyMethod(method);
             Object value = getter.invoke(null, miner);
             return value instanceof Number number
                     ? Math.max(1, number.intValue()) : fallback;
@@ -243,50 +249,116 @@ public final class OccultismRecipeBridge {
         }
     }
 
+    private static Method minerPropertyMethod(String name)
+            throws ReflectiveOperationException {
+        synchronized (MINER_PROPERTY_METHODS) {
+            Method cached = MINER_PROPERTY_METHODS.get(name);
+            if (cached != null) {
+                return cached;
+            }
+            Class<?> mineshaft = Class.forName(
+                    "com.klikli_dev.occultism.common.blockentity."
+                            + "DimensionalMineshaftBlockEntity");
+            Method resolved = mineshaft.getMethod(name, ItemStack.class);
+            MINER_PROPERTY_METHODS.put(name, resolved);
+            return resolved;
+        }
+    }
+
     public static Optional<MinerOutput> findMinerOutput(Level level, ItemStack miner) {
+        List<MinerOutput> outputs = rollMinerOutputs(level, miner, 1);
+        return outputs.isEmpty()
+                ? Optional.empty() : Optional.of(outputs.getFirst());
+    }
+
+    /**
+     * Rolls several dimensional-miner outputs from one prepared candidate
+     * table. A high-speed miner must not rebuild and refilter the complete
+     * Occultism recipe catalog separately for every roll.
+     */
+    public static List<MinerOutput> rollMinerOutputs(
+            Level level, ItemStack miner, int rolls) {
         if (level == null || !isMinerItem(miner)) {
-            return Optional.empty();
+            return List.of();
+        }
+        int requestedRolls = Math.max(0, rolls);
+        if (requestedRolls == 0) {
+            return List.of();
         }
         RecipeType<?> type = recipeType("miner");
         if (type == null) {
-            return Optional.empty();
+            return List.of();
         }
-        List<MinerCandidate> candidates =
-                minerCandidates(level, type);
-        long totalWeight = 0;
+        MinerSelection selection = minerSelection(level, type, miner);
+        if (selection.candidates().isEmpty()
+                || selection.totalWeight() <= 0) {
+            return List.of();
+        }
+        List<MinerOutput> outputs = new ArrayList<>(requestedRolls);
+        for (int index = 0; index < requestedRolls; index++) {
+            long roll = Math.floorMod(
+                    level.random.nextLong(), selection.totalWeight());
+            MinerCandidate selected = selection.candidates().getLast();
+            for (MinerCandidate candidate : selection.candidates()) {
+                roll -= candidate.weight();
+                if (roll < 0) {
+                    selected = candidate;
+                    break;
+                }
+            }
+            outputs.add(new MinerOutput(selected.recipeId(),
+                    selected.output().copy(), selected.weight()));
+        }
+        return List.copyOf(outputs);
+    }
+
+    private static MinerSelection minerSelection(
+            Level level, RecipeType<?> type, ItemStack miner) {
+        List<MinerCandidate> candidates = minerCandidates(level, type);
+        MinerCatalog catalog = MINER_CATALOGS.get(
+                level.getRecipeManager());
+        if (catalog != null) {
+            synchronized (catalog.selections()) {
+                for (MinerSelection selection : catalog.selections()) {
+                    if (ItemStack.isSameItemSameComponents(
+                            selection.miner(), miner)) {
+                        return selection;
+                    }
+                }
+            }
+        }
+        long totalWeight = 0L;
         List<MinerCandidate> matching = new ArrayList<>();
         for (MinerCandidate candidate : candidates) {
-            if (!candidate.ingredient().test(miner)) {
-                continue;
-            }
-            matching.add(candidate);
-            totalWeight += candidate.weight();
-        }
-        if (matching.isEmpty() || totalWeight <= 0) {
-            return Optional.empty();
-        }
-        long roll = Math.floorMod(level.random.nextLong(), totalWeight);
-        for (MinerCandidate candidate : matching) {
-            roll -= candidate.weight();
-            if (roll < 0) {
-                return Optional.of(new MinerOutput(candidate.recipeId(),
-                        candidate.output().copy(), candidate.weight()));
+            if (candidate.ingredient().test(miner)) {
+                matching.add(candidate);
+                totalWeight += candidate.weight();
             }
         }
-        MinerCandidate candidate = matching.getLast();
-        return Optional.of(new MinerOutput(candidate.recipeId(),
-                candidate.output().copy(), candidate.weight()));
+        MinerSelection created = new MinerSelection(
+                miner.copyWithCount(1), List.copyOf(matching), totalWeight);
+        if (catalog != null) {
+            synchronized (catalog.selections()) {
+                // Miner variants are normally a tiny fixed set. Keep a hard
+                // ceiling for unusual component-heavy integration packs.
+                if (catalog.selections().size() >= 32) {
+                    catalog.selections().removeFirst();
+                }
+                catalog.selections().add(created);
+            }
+        }
+        return created;
     }
 
     private static List<MinerCandidate> minerCandidates(Level level,
                                                          RecipeType<?> type) {
         RecipeManager recipeManager = level.getRecipeManager();
-        List<RecipeHolder<?>> holders = recipes(level, type);
-        long fingerprint = recipeFingerprint(holders);
         MinerCatalog cached = MINER_CATALOGS.get(recipeManager);
-        if (cached != null && cached.recipeFingerprint() == fingerprint) {
+        if (cached != null) {
             return cached.candidates();
         }
+        List<RecipeHolder<?>> holders = recipes(level, type);
+        long fingerprint = recipeFingerprint(holders);
         List<MinerCandidate> candidates = new ArrayList<>();
         for (RecipeHolder<?> holder : holders) {
             Object recipe = holder.value();
@@ -307,8 +379,15 @@ public final class OccultismRecipeBridge {
         }
         List<MinerCandidate> immutable = List.copyOf(candidates);
         MINER_CATALOGS.put(recipeManager,
-                new MinerCatalog(fingerprint, immutable));
+                new MinerCatalog(fingerprint, immutable,
+                        new ArrayList<>()));
         return immutable;
+    }
+
+    /** Clears catalogs after a server recipe/datapack synchronization. */
+    public static void invalidateRecipeCaches() {
+        PENTACLE_CATALOGS.clear();
+        MINER_CATALOGS.clear();
     }
 
     public static List<MinerJeiData> minerJeiRecipes(Level level) {
@@ -1030,7 +1109,7 @@ public final class OccultismRecipeBridge {
         if (data == null) {
             return Optional.empty();
         }
-        String pentacle = data.copyTag().getString("pentacle");
+        String pentacle = data.getUnsafe().getString("pentacle");
         ResourceLocation id = ResourceLocation.tryParse(pentacle);
         return id == null ? Optional.empty() : Optional.of(id);
     }
@@ -1173,7 +1252,7 @@ public final class OccultismRecipeBridge {
         if (data == null || data.isEmpty()) {
             return 0;
         }
-        String pentacle = data.copyTag().getString("pentacle");
+        String pentacle = data.getUnsafe().getString("pentacle");
         ResourceLocation id = ResourceLocation.tryParse(pentacle);
         return id == null ? 0 : PENTACLE_MODEL_DATA.getOrDefault(id.getPath(), 0);
     }
@@ -1223,7 +1302,7 @@ public final class OccultismRecipeBridge {
         if (data == null || data.isEmpty()) {
             return "";
         }
-        return data.copyTag().getString("ritual");
+        return data.getUnsafe().getString("ritual");
     }
 
     private static String customPentacleId(ItemStack stack) {
@@ -1231,7 +1310,7 @@ public final class OccultismRecipeBridge {
         if (data == null || data.isEmpty()) {
             return "";
         }
-        return data.copyTag().getString("pentacle");
+        return data.getUnsafe().getString("pentacle");
     }
 
     private static boolean isMachineSafeRitual(Object recipe) {

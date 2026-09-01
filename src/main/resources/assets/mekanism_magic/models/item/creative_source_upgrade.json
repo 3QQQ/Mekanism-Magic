@@ -1,3 +1,6 @@
 {
-  "parent": "mekanism_extras:item/upgrade_creative"
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "mekanism_magic:item/creative_source_upgrade"
+  }
 }

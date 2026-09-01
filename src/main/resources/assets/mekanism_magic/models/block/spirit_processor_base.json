@@ -1,0 +1,2662 @@
+{
+  "credit": "Mekanism Magic v3 precision spirit binding cell",
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_dark": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_shell": "mekanism_magic:block/ars_series/lab_shell",
+    "lab_spine": "mekanism_magic:block/ars_series/lab_spine",
+    "precision_metal": "mekanism_magic:block/ars_series/precision_metal",
+    "gold": "mekanism_magic:block/occult_machine/gold",
+    "binding": "mekanism_magic:block/occult_machine/binding",
+    "soul": "mekanism_magic:block/occult_machine/soul",
+    "spirit": "mekanism_magic:block/occult_machine/spirit",
+    "void": "mekanism_magic:block/occult_machine/void"
+  },
+  "elements": [
+    {
+      "name": "processor_foot",
+      "from": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "to": [
+        15.5,
+        1.25,
+        15.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "processor_lower_chassis",
+      "from": [
+        1,
+        1.25,
+        1
+      ],
+      "to": [
+        15,
+        4.1,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "processor_front_recess",
+      "from": [
+        2.3,
+        2.05,
+        0.55
+      ],
+      "to": [
+        13.7,
+        3.75,
+        1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "processor_front_soul_line",
+      "from": [
+        3,
+        2.4,
+        0.2
+      ],
+      "to": [
+        13,
+        2.76,
+        0.35
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            7,
+            8,
+            8,
+            9
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "processor_front_binding_line",
+      "from": [
+        5,
+        3.08,
+        0.2
+      ],
+      "to": [
+        11,
+        3.44,
+        0.35
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            7,
+            6,
+            8,
+            7
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "processor_west_service_recess",
+      "from": [
+        0.55,
+        2.05,
+        4.6
+      ],
+      "to": [
+        1,
+        3.75,
+        11.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "processor_east_service_recess",
+      "from": [
+        15,
+        2.05,
+        4.6
+      ],
+      "to": [
+        15.45,
+        3.75,
+        11.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "processor_deck",
+      "from": [
+        1.5,
+        4.1,
+        1.5
+      ],
+      "to": [
+        14.5,
+        5.15,
+        14.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "processor_deck_inset",
+      "from": [
+        3.3,
+        5.15,
+        2.2
+      ],
+      "to": [
+        12.7,
+        5.45,
+        10.25
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "work_cradle",
+      "from": [
+        4.2,
+        5.45,
+        2.8
+      ],
+      "to": [
+        11.8,
+        5.75,
+        10
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "work_cradle_west_rail",
+      "from": [
+        3.8,
+        5.45,
+        2.6
+      ],
+      "to": [
+        4.15,
+        5.88,
+        9.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "work_cradle_east_rail",
+      "from": [
+        11.85,
+        5.45,
+        2.6
+      ],
+      "to": [
+        12.2,
+        5.88,
+        9.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "work_cradle_input",
+      "from": [
+        5.5,
+        5.75,
+        2.35
+      ],
+      "to": [
+        10.5,
+        6.08,
+        2.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "work_cradle_output",
+      "from": [
+        5.5,
+        5.75,
+        9.8
+      ],
+      "to": [
+        10.5,
+        6.08,
+        10.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "work_binding_plate",
+      "from": [
+        5.2,
+        5.75,
+        5.2
+      ],
+      "to": [
+        10.8,
+        6.05,
+        8.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "work_binding_socket",
+      "from": [
+        6.6,
+        6.05,
+        6.25
+      ],
+      "to": [
+        9.4,
+        6.3,
+        7.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "west_injector_pylon",
+      "from": [
+        2.1,
+        5.15,
+        4.8
+      ],
+      "to": [
+        3.3,
+        9.35,
+        7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "east_injector_pylon",
+      "from": [
+        12.7,
+        5.15,
+        4.8
+      ],
+      "to": [
+        13.9,
+        9.35,
+        7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "west_pylon_soul_key",
+      "from": [
+        3.3,
+        8.1,
+        5.35
+      ],
+      "to": [
+        3.6,
+        9,
+        6.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "east_pylon_soul_key",
+      "from": [
+        12.4,
+        8.1,
+        5.35
+      ],
+      "to": [
+        12.7,
+        9,
+        6.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "west_precision_injector",
+      "from": [
+        3.55,
+        7.3,
+        5.2
+      ],
+      "to": [
+        5.35,
+        7.8,
+        6.45
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      },
+      "rotation": {
+        "angle": -22.5,
+        "axis": "z",
+        "origin": [
+          3.55,
+          7.55,
+          5.825
+        ],
+        "rescale": false
+      }
+    },
+    {
+      "name": "east_precision_injector",
+      "from": [
+        10.65,
+        7.3,
+        5.2
+      ],
+      "to": [
+        12.45,
+        7.8,
+        6.45
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#precision_metal"
+        }
+      },
+      "rotation": {
+        "angle": 22.5,
+        "axis": "z",
+        "origin": [
+          12.45,
+          7.55,
+          5.825
+        ],
+        "rescale": false
+      }
+    },
+    {
+      "name": "west_binding_nozzle",
+      "from": [
+        5,
+        6.42,
+        5.55
+      ],
+      "to": [
+        5.6,
+        7.05,
+        6.15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "east_binding_nozzle",
+      "from": [
+        10.4,
+        6.42,
+        5.55
+      ],
+      "to": [
+        11,
+        7.05,
+        6.15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_foundation",
+      "from": [
+        4.76,
+        5.15,
+        10.3
+      ],
+      "to": [
+        11.24,
+        6.27,
+        14
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_socket",
+      "from": [
+        5.84,
+        6.27,
+        11
+      ],
+      "to": [
+        10.16,
+        6.8,
+        13.4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_west_restraint",
+      "from": [
+        4.28,
+        6.27,
+        10.7
+      ],
+      "to": [
+        5.24,
+        12.58,
+        13.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_east_restraint",
+      "from": [
+        10.76,
+        6.27,
+        10.7
+      ],
+      "to": [
+        11.72,
+        12.58,
+        13.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_west_inner_trim",
+      "from": [
+        5.24,
+        7.33,
+        11.1
+      ],
+      "to": [
+        5.6,
+        11.99,
+        13.4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_east_inner_trim",
+      "from": [
+        10.4,
+        7.33,
+        11.1
+      ],
+      "to": [
+        10.76,
+        11.99,
+        13.4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            7,
+            7,
+            9,
+            9
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "spirit_vault_crown",
+      "from": [
+        5.24,
+        12.58,
+        10.8
+      ],
+      "to": [
+        10.76,
+        13.29,
+        13.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            9,
+            9,
+            11,
+            11
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "west_restraint_collar_lower",
+      "from": [
+        3.86,
+        7.86,
+        10.45
+      ],
+      "to": [
+        5.24,
+        8.45,
+        10.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "east_restraint_collar_lower",
+      "from": [
+        10.76,
+        7.86,
+        10.45
+      ],
+      "to": [
+        12.14,
+        8.45,
+        10.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "west_restraint_collar_upper",
+      "from": [
+        3.86,
+        10.64,
+        10.45
+      ],
+      "to": [
+        5.24,
+        11.23,
+        10.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "east_restraint_collar_upper",
+      "from": [
+        10.76,
+        10.64,
+        10.45
+      ],
+      "to": [
+        12.14,
+        11.23,
+        10.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "bound_spirit_prism",
+      "from": [
+        7.04,
+        6.92,
+        11.55
+      ],
+      "to": [
+        8.96,
+        9.93,
+        13.05
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#spirit"
+        }
+      }
+    },
+    {
+      "name": "bound_spirit_focus",
+      "from": [
+        7.4,
+        9.93,
+        11.75
+      ],
+      "to": [
+        8.6,
+        11.17,
+        12.85
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "spirit_binding_bus",
+      "from": [
+        5.6,
+        10.58,
+        10.25
+      ],
+      "to": [
+        10.4,
+        10.99,
+        10.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    }
+  ]
+}

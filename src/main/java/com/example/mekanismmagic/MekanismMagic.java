@@ -1,19 +1,29 @@
 package com.example.mekanismmagic;
 
+import com.example.mekanismmagic.client.MagicClientConfigScreen;
 import com.example.mekanismmagic.item.MiniRitualItem;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
+import com.example.mekanismmagic.item.CreativeMagicUpgradeItem;
+import com.example.mekanismmagic.config.MagicClientConfig;
+import com.example.mekanismmagic.event.MachineDropPreserver;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import com.example.mekanismmagic.recipe.SpecificPentacleIngredient;
 import com.example.mekanismmagic.integration.IntegrationBootstrap;
+import com.example.mekanismmagic.integration.ModCompatibility;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.crafting.IngredientType;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -27,6 +37,8 @@ public final class MekanismMagic {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
+    public static final DeferredRegister.Items PLUGIN_ITEMS =
+            DeferredRegister.createItems(MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
@@ -44,6 +56,11 @@ public final class MekanismMagic {
             ITEMS.register("ultimate_mini_ritual",
                     () -> new UltimateMiniRitualItem(
                             new Item.Properties().stacksTo(1)));
+    public static final DeferredHolder<Item, CreativeMagicUpgradeItem>
+            CREATIVE_MAGIC_UPGRADE = PLUGIN_ITEMS.register(
+            "creative_source_upgrade",
+            () -> new CreativeMagicUpgradeItem(
+                    new Item.Properties().stacksTo(1)));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<
             UltimateMiniRitualRecipe>> ULTIMATE_MINI_RITUAL_RECIPE =
             RECIPE_SERIALIZERS.register("ultimate_mini_ritual",
@@ -75,6 +92,14 @@ public final class MekanismMagic {
                         acceptOptional(output, "enchanting_apparatus_processor");
                         acceptOptional(output, "drygmy_simulator");
                         acceptOptional(output, "magic_source_pipe");
+                        acceptOptional(output, "advanced_magic_source_pipe");
+                        acceptOptional(output, "elite_magic_source_pipe");
+                        acceptOptional(output, "ultimate_magic_source_pipe");
+                        acceptOptional(output, "absolute_magic_source_pipe");
+                        acceptOptional(output, "supreme_magic_source_pipe");
+                        acceptOptional(output, "cosmic_magic_source_pipe");
+                        acceptOptional(output, "infinite_magic_source_pipe");
+                        acceptOptional(output, "source_link_tool");
                         acceptOptional(output, "creative_source_upgrade");
                         acceptOptional(output, "spirit_processor");
                         acceptOptional(output, "dimension_miner");
@@ -92,9 +117,51 @@ public final class MekanismMagic {
                         acceptOptional(output, "ritual_spawn_egg");
                     }).build());
 
-    public MekanismMagic(IEventBus modBus) {
+    public MekanismMagic(IEventBus modBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.CLIENT,
+                MagicClientConfig.SPEC);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            MagicClientConfigScreen.register(modContainer);
+        }
         IntegrationBootstrap.initialize();
         IntegrationBootstrap.registerContent(modBus);
+        NeoForge.EVENT_BUS.addListener(MachineDropPreserver::onBlockDrops);
+        registerAe2DirectOutput(modBus);
+        registerMekEnergistics();
+    }
+
+    private static void registerAe2DirectOutput(IEventBus modBus) {
+        if (!ModCompatibility.loaded("ae2")) {
+            return;
+        }
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2."
+                            + "Ae2DirectOutputCompat")
+                    .getMethod("register", IEventBus.class)
+                    .invoke(null, modBus);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            LOGGER.warn("Unable to register native AE direct output",
+                    failure);
+        }
+    }
+
+    /**
+     * ME automation covers both Ars Nouveau and Occultism machines, so its
+     * registration must not depend on either content module being present.
+     */
+    private static void registerMekEnergistics() {
+        if (!ModCompatibility.mekenergisticsAutomationSupported()) {
+            return;
+        }
+        try {
+            Class.forName("com.example.mekanismmagic.integration.mekenergistics."
+                            + "MekEnergisticsCompat")
+                    .getMethod("registerBlocks")
+                    .invoke(null);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            LOGGER.warn("Unable to register Mek Energistics automation blocks",
+                    failure);
+        }
     }
 
     private static void acceptOptional(CreativeModeTab.Output output, String path) {

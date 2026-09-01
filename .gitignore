@@ -42,3 +42,19 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Local development and generated review artifacts ###
+/logs/
+/output/
+/tmp/
+/userHome/
+**/__pycache__/
+*.py[cod]
+
+# Keep editable Blockbench sources under assets/blockbench, but exclude
+# generated previews, concept renders, and local pre-revision backups.
+/assets/*.png
+/assets/*.gif
+/assets/concepts/
+/assets/blockbench/*.before_motif_revision.bbmodel
+/docs/curseforge-logo.png

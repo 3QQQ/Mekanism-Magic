@@ -37,11 +37,14 @@ public final class CatalystIdentifierAssemblerBlockEntity
             int column = index % 3;
             inputs.add(registerLogicalSlot(helper, INPUT_START + index,
                     InputInventorySlot.at(listener,
-                            69 + column * 18, 31 + row * 18)));
+                            ArsThreeByThreeMachineLayout.slotX(column),
+                            ArsThreeByThreeMachineLayout.slotY(row))));
         }
         inputSlot = (InputInventorySlot) inputs.getFirst();
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
-                OutputInventorySlot.at(listener, 176, 58));
+                OutputInventorySlot.at(listener,
+                        ArsThreeByThreeMachineLayout.STANDARD_OUTPUT_X,
+                        ArsThreeByThreeMachineLayout.OUTPUT_Y));
         setupNativeItemIO(inputs, List.of(outputSlot), List.of());
     }
 
@@ -59,12 +62,12 @@ public final class CatalystIdentifierAssemblerBlockEntity
 
     @Override
     protected int energySlotX() {
-        return 30;
+        return ArsThreeByThreeMachineLayout.ENERGY_SLOT_X;
     }
 
     @Override
     protected int energySlotY() {
-        return 35;
+        return ArsThreeByThreeMachineLayout.ENERGY_SLOT_Y;
     }
 
     int seedDevelopmentTest(ResourceLocation recipeId) {
@@ -80,17 +83,17 @@ public final class CatalystIdentifierAssemblerBlockEntity
         }
         List<net.minecraft.world.item.crafting.Ingredient> ingredients =
                 holder.value().getPedestalItems();
-        if (ingredients.size() != 3) {
+        if (ingredients.isEmpty() || ingredients.size() > INPUT_COUNT) {
             return 0;
         }
         for (int index = 0; index < INPUT_COUNT; index++) {
             ItemStack sample = ItemStack.EMPTY;
-            if (index < 3) {
-                ItemStack[] choices = ingredients.get(index).getItems();
-                if (choices.length == 0) {
+            if (index < ingredients.size()) {
+                sample = ArsNouveauRecipeBridge.representativeChoice(
+                        ingredients.get(index));
+                if (sample.isEmpty()) {
                     return 0;
                 }
-                sample = choices[0].copyWithCount(1);
             }
             logicalSlots().get(INPUT_START + index).setStack(sample);
         }

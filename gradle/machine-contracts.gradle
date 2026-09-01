@@ -1,0 +1,472 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import org.gradle.api.GradleException
+
+/*
+ * Resource and registration contract for every machine-like block.
+ *
+ * Keep the catalog explicit: adding a Java registration without adding its
+ * resource profile (or leaving a stale catalog entry behind) is a build error.
+ * Validation runs against processResources' merged output, so optional source
+ * sets are checked exactly as they will be packaged.
+ */
+
+def machineContractCatalog = layout.projectDirectory.file(
+        'config/machine-contracts.json')
+def machineContractResources = layout.buildDirectory.dir('resources/main')
+def machineContractJava = fileTree('src/main/java') {
+    include '**/*.java'
+}
+def machineContractArsEnabled = providers.gradleProperty(
+        'mekanism_magic.ars_machine_content')
+        .map { it.toBoolean() }
+        .orElse(true)
+
+tasks.register('validateMachineContracts') {
+    group = 'verification'
+    description = 'Validates machine registrations, packaged resources, loot and model geometry.'
+    dependsOn tasks.named('processResources')
+
+    inputs.file(machineContractCatalog)
+    inputs.files(machineContractJava)
+    inputs.dir(machineContractResources)
+    inputs.property('arsMachineContentEnabled', machineContractArsEnabled)
+
+    doLast {
+        File catalogFile = machineContractCatalog.asFile
+        File resourceRoot = machineContractResources.get().asFile
+        boolean arsEnabled = machineContractArsEnabled.get()
+        List<String> errors = []
+
+        Closure<Object> readJson = { File file, String purpose ->
+            if (!file.isFile()) {
+                errors << "Missing ${purpose}: ${project.relativePath(file)}"
+                return null
+            }
+            try {
+                return new JsonSlurper().parse(file)
+            } catch (Exception exception) {
+                errors << "Invalid JSON in ${purpose} (${project.relativePath(file)}): ${exception.message}"
+                return null
+            }
+        }
+
+        Object catalogJson = readJson(catalogFile, 'machine contract catalog')
+        if (!(catalogJson instanceof Map) ||
+                catalogJson.schemaVersion != 1 ||
+                !(catalogJson.entries instanceof List)) {
+            errors << 'Machine contract catalog must contain schemaVersion=1 and an entries array.'
+        }
+
+        List<Map> entries = catalogJson instanceof Map &&
+                catalogJson.entries instanceof List
+                ? catalogJson.entries.findAll { it instanceof Map } as List<Map>
+                : []
+        if (entries.size() != (catalogJson instanceof Map &&
+                catalogJson.entries instanceof List
+                ? catalogJson.entries.size() : 0)) {
+            errors << 'Every machine contract entry must be a JSON object.'
+        }
+
+        Map<String, Map> entriesById = [:]
+        entries.eachWithIndex { Map entry, int index ->
+            String id = entry.id instanceof String ? entry.id : ''
+            if (!(id ==~ /[a-z0-9_]+/)) {
+                errors << "Catalog entry ${index} has invalid id '${id}'."
+                return
+            }
+            if (!(entry.profile in ['machine', 'pipe'])) {
+                errors << "Catalog entry '${id}' has invalid profile '${entry.profile}'."
+            }
+            if (!(entry.requiresArs instanceof Boolean)) {
+                errors << "Catalog entry '${id}' must declare boolean requiresArs."
+            }
+            if (entriesById.put(id, entry) != null) {
+                errors << "Duplicate machine contract id '${id}'."
+            }
+        }
+
+        // Scan only literal block registration calls used by this project.
+        // Helper definitions take a variable and therefore cannot match these
+        // patterns. The one generic register(...) helper is restricted to its
+        // owning Mekanism Extras class to avoid collecting unrelated registries.
+        Set<String> registeredIds = new TreeSet<>()
+        Map<String, String> blockConstantById = [:]
+        Map<String, String> tileConstantByBlock = [:]
+        Set<String> renderedTileConstants = new TreeSet<>()
+        machineContractJava.files.sort { it.path }.each { File javaFile ->
+            String source = javaFile.getText('UTF-8')
+            String ownerClass = javaFile.name.replaceFirst(/\.java$/, '')
+            [
+                    ~/(?s)\bBLOCKS\s*\.\s*register\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\bregisterImbuementFactoryBlock\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\bregisterMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/
+            ].each { pattern ->
+                def matcher = source =~ pattern
+                matcher.each { match -> registeredIds << match[1] }
+            }
+
+            // Preserve the block constant as well as the literal id. It lets
+            // the validator follow the registration into a block-entity type
+            // instead of merely proving that a JSON model exists.
+            [
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*BLOCKS\s*\.\s*register\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerImbuementFactoryBlock\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/
+            ].each { pattern ->
+                def matcher = source =~ pattern
+                matcher.each { match ->
+                    String qualifiedConstant =
+                            "${ownerClass}.${match[1]}".toString()
+                    String previous = blockConstantById.put(match[2],
+                            qualifiedConstant)
+                    if (previous != null && previous != qualifiedConstant) {
+                        errors << "Block id '${match[2]}' is assigned to both " +
+                                "${previous} and ${qualifiedConstant}."
+                    }
+                }
+            }
+            if (javaFile.name == 'MekanismExtrasImbuementFactories.java') {
+                def matcher = source =~
+                        ~/(?s)(?<!\.)\bregister\s*\(\s*"([a-z0-9_]+)"/
+                matcher.each { match -> registeredIds << match[1] }
+                def constantMatcher = source =~
+                        ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*register\s*\(\s*"([a-z0-9_]+)"/
+                constantMatcher.each { match ->
+                    blockConstantById.put(match[2],
+                            "${ownerClass}.${match[1]}".toString())
+                }
+            }
+
+            def tileMatcher = source =~
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_TILE)\s*=\s*(?:TILES\s*\.\s*mekBuilder|factoryTile|registerMagicSourcePipeTile|tile)\s*\(\s*([A-Z][A-Z0-9_]*_BLOCK)\b/
+            tileMatcher.each { match ->
+                String qualifiedBlock =
+                        "${ownerClass}.${match[2]}".toString()
+                String qualifiedTile =
+                        "${ownerClass}.${match[1]}".toString()
+                String previous = tileConstantByBlock.put(qualifiedBlock,
+                        qualifiedTile)
+                if (previous != null && previous != qualifiedTile) {
+                    errors << "Block constant ${qualifiedBlock} is used by both " +
+                            "${previous} and ${qualifiedTile} block-entity registrations."
+                }
+            }
+
+            def rendererMatcher = source =~
+                    ~/(?s)\bregisterBlockEntityRenderer\s*\(\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)\s*\.\s*([A-Z][A-Z0-9_]*_TILE)\s*\.\s*get\s*\(/
+            rendererMatcher.each { match ->
+                renderedTileConstants <<
+                        "${match[1]}.${match[2]}".toString()
+            }
+        }
+
+        Set<String> catalogIds = new TreeSet<>(entriesById.keySet())
+        Set<String> uncatalogued = new TreeSet<>(registeredIds)
+        uncatalogued.removeAll(catalogIds)
+        Set<String> stale = new TreeSet<>(catalogIds)
+        stale.removeAll(registeredIds)
+        if (!uncatalogued.isEmpty()) {
+            errors << "Registered blocks missing from machine catalog: ${uncatalogued.join(', ')}"
+        }
+        if (!stale.isEmpty()) {
+            errors << "Machine catalog entries without a Java block registration: ${stale.join(', ')}"
+        }
+
+        entriesById.each { String id, Map entry ->
+            String blockConstant = blockConstantById[id]
+            if (blockConstant == null) {
+                errors << "Machine '${id}' is registered without a traceable " +
+                        '..._BLOCK constant; its block-entity contract cannot be checked.'
+                return
+            }
+            String tileConstant = tileConstantByBlock[blockConstant]
+            if (tileConstant == null) {
+                errors << "Machine '${id}' (${blockConstant}) is not referenced by " +
+                        'TILES.mekBuilder, factoryTile, registerMagicSourcePipeTile or tile; ' +
+                        'the placed block would have no block entity.'
+                return
+            }
+            if (!renderedTileConstants.contains(tileConstant)) {
+                errors << "Machine '${id}' block entity ${tileConstant} is never passed " +
+                        'to registerBlockEntityRenderer; its client model/animation would not load.'
+            }
+        }
+
+        Closure<Void> collectFieldValues
+        collectFieldValues = { Object node, String field, Collection target ->
+            if (node instanceof Map) {
+                node.each { key, value ->
+                    if (key == field) {
+                        target << value
+                    }
+                    collectFieldValues(value, field, target)
+                }
+            } else if (node instanceof Collection) {
+                node.each { collectFieldValues(it, field, target) }
+            }
+            return null
+        }
+
+        Closure<Void> collectMaps
+        collectMaps = { Object node, Collection<Map> target ->
+            if (node instanceof Map) {
+                target << (Map) node
+                node.values().each { collectMaps(it, target) }
+            } else if (node instanceof Collection) {
+                node.each { collectMaps(it, target) }
+            }
+            return null
+        }
+
+        Closure<Set<String>> tagIds = { Object tagJson ->
+            if (!(tagJson instanceof Map) || !(tagJson.values instanceof List)) {
+                return [] as Set<String>
+            }
+            return tagJson.values.collect { value ->
+                value instanceof Map ? value.id : value
+            }.findAll { it instanceof String }.toSet()
+        }
+
+        File enLangFile = new File(resourceRoot,
+                'assets/mekanism_magic/lang/en_us.json')
+        File zhLangFile = new File(resourceRoot,
+                'assets/mekanism_magic/lang/zh_cn.json')
+        Object enLang = readJson(enLangFile, 'English language file')
+        Object zhLang = readJson(zhLangFile, 'Chinese language file')
+        Object pickaxeTagJson = readJson(new File(resourceRoot,
+                'data/minecraft/tags/block/mineable/pickaxe.json'),
+                'pickaxe mining tag')
+        Object stoneTagJson = readJson(new File(resourceRoot,
+                'data/minecraft/tags/block/needs_stone_tool.json'),
+                'stone-tool mining tag')
+        Set<String> pickaxeIds = tagIds(pickaxeTagJson)
+        Set<String> stoneIds = tagIds(stoneTagJson)
+
+        Set<String> queuedModels = new LinkedHashSet<>()
+        entries.each { Map entry ->
+            String id = entry.id
+            boolean validateResources = !(entry.requiresArs == true && !arsEnabled)
+            if (!validateResources) {
+                return
+            }
+
+            String registryId = "mekanism_magic:${id}".toString()
+            String langKey = "block.mekanism_magic.${id}".toString()
+            if (!(enLang instanceof Map) || !enLang.containsKey(langKey)) {
+                errors << "Missing en_us translation '${langKey}'."
+            }
+            if (!(zhLang instanceof Map) || !zhLang.containsKey(langKey)) {
+                errors << "Missing zh_cn translation '${langKey}'."
+            }
+            if (!pickaxeIds.contains(registryId)) {
+                errors << "${registryId} is missing from minecraft:mineable/pickaxe."
+            }
+            if (!stoneIds.contains(registryId)) {
+                errors << "${registryId} is missing from minecraft:needs_stone_tool."
+            }
+
+            File blockstateFile = new File(resourceRoot,
+                    "assets/mekanism_magic/blockstates/${id}.json")
+            Object blockstate = readJson(blockstateFile,
+                    "blockstate for ${registryId}".toString())
+            if (blockstate instanceof Map && blockstate.variants instanceof Map) {
+                Set<String> actualVariants = blockstate.variants.keySet() as Set<String>
+                Set<String> expectedVariants
+                if (entry.profile == 'machine') {
+                    expectedVariants = ['north', 'south', 'east', 'west']
+                            .collectMany { facing ->
+                                [false, true].collect { active ->
+                                    "facing=${facing},active=${active}".toString()
+                                }
+                            }.toSet()
+                } else {
+                    expectedVariants = [''] as Set<String>
+                }
+                if (actualVariants != expectedVariants) {
+                    Set missing = new TreeSet(expectedVariants)
+                    missing.removeAll(actualVariants)
+                    Set extra = new TreeSet(actualVariants)
+                    extra.removeAll(expectedVariants)
+                    errors << "${registryId} has the wrong blockstate variants " +
+                            "(missing=${missing}, extra=${extra})."
+                }
+                Collection modelValues = []
+                collectFieldValues(blockstate.variants, 'model', modelValues)
+                modelValues.findAll { it instanceof String }.each {
+                    queuedModels << it
+                }
+                if (modelValues.isEmpty()) {
+                    errors << "${registryId} blockstate does not reference a model."
+                }
+            } else if (blockstate != null) {
+                errors << "${registryId} blockstate must contain a variants object."
+            }
+
+            File itemModelFile = new File(resourceRoot,
+                    "assets/mekanism_magic/models/item/${id}.json")
+            Object itemModel = readJson(itemModelFile,
+                    "item model for ${registryId}".toString())
+            queuedModels << "mekanism_magic:item/${id}".toString()
+            if (itemModel instanceof Map) {
+                Collection itemParents = []
+                collectFieldValues(itemModel, 'parent', itemParents)
+                itemParents.findAll { it instanceof String }.each {
+                    queuedModels << it
+                }
+                Collection nestedModels = []
+                collectFieldValues(itemModel, 'model', nestedModels)
+                nestedModels.findAll { it instanceof String }.each {
+                    queuedModels << it
+                }
+            }
+
+            File lootFile = new File(resourceRoot,
+                    "data/mekanism_magic/loot_table/blocks/${id}.json")
+            Object loot = readJson(lootFile,
+                    "loot table for ${registryId}".toString())
+            if (loot != null) {
+                Collection lootNames = []
+                collectFieldValues(loot, 'name', lootNames)
+                if (!lootNames.contains(registryId)) {
+                    errors << "${registryId} loot table does not drop itself."
+                }
+                if (entry.profile == 'machine') {
+                    Collection<Map> lootMaps = []
+                    collectMaps(loot, lootMaps)
+                    List<Map> copyComponents = lootMaps.findAll {
+                        it.function == 'minecraft:copy_components'
+                    }
+                    Set<String> includedComponents = copyComponents
+                            .collectMany { it.include instanceof List
+                                    ? it.include : [] }.toSet()
+                    Set<String> requiredComponents = [
+                            'mekanism:items', 'mekanism:energy',
+                            'mekanism:upgrades', 'mekanism:side_config'
+                    ] as Set<String>
+                    Set<String> missingComponents =
+                            new TreeSet<>(requiredComponents)
+                    missingComponents.removeAll(includedComponents)
+                    if (!missingComponents.isEmpty()) {
+                        errors << "${registryId} loot table does not preserve " +
+                                "components: ${missingComponents.join(', ')}"
+                    }
+                    if (!lootMaps.any {
+                        it.function == 'minecraft:copy_name'
+                    }) {
+                        errors << "${registryId} loot table does not preserve its custom name."
+                    }
+                }
+            }
+        }
+
+        // Resolve every local model referenced by a catalog blockstate/item,
+        // then recursively check local parents and textures. External vanilla,
+        // Mekanism and optional-mod references are owned by those dependencies.
+        Set<String> visitedModels = new LinkedHashSet<>()
+        while (!queuedModels.isEmpty()) {
+            String reference = queuedModels.iterator().next()
+            queuedModels.remove(reference)
+            if (!(reference instanceof String) || reference.startsWith('#')) {
+                continue
+            }
+            List<String> parts = reference.contains(':')
+                    ? reference.split(':', 2) as List<String>
+                    : ['minecraft', reference]
+            if (parts[0] != 'mekanism_magic') {
+                continue
+            }
+            String modelPath = parts[1].replaceFirst(/\.json$/, '')
+            String canonical = "mekanism_magic:${modelPath}".toString()
+            if (!visitedModels.add(canonical)) {
+                continue
+            }
+            File modelFile = new File(resourceRoot,
+                    "assets/mekanism_magic/models/${modelPath}.json")
+            Object model = readJson(modelFile,
+                    "local model ${canonical}".toString())
+            if (!(model instanceof Map)) {
+                continue
+            }
+
+            if (model.parent instanceof String) {
+                queuedModels << model.parent
+            }
+            Collection nestedModels = []
+            collectFieldValues(model.overrides, 'model', nestedModels)
+            nestedModels.findAll { it instanceof String }.each {
+                queuedModels << it
+            }
+
+            Set<String> textureReferences = new LinkedHashSet<>()
+            if (model.textures instanceof Map) {
+                textureReferences.addAll(model.textures.values().findAll {
+                    it instanceof String
+                } as Collection<String>)
+            }
+            // Most faces point at #aliases, but direct face texture references
+            // are legal too and must not escape validation.
+            Collection directFaceTextures = []
+            collectFieldValues(model.elements, 'texture', directFaceTextures)
+            textureReferences.addAll(directFaceTextures.findAll {
+                it instanceof String
+            } as Collection<String>)
+            textureReferences.findAll { !it.startsWith('#') }.each {
+                String textureReference ->
+                List<String> textureParts = textureReference.contains(':')
+                        ? textureReference.split(':', 2) as List<String>
+                        : ['minecraft', textureReference]
+                if (textureParts[0] == 'mekanism_magic') {
+                    String texturePath = textureParts[1]
+                            .replaceFirst(/\.png$/, '')
+                    File textureFile = new File(resourceRoot,
+                            "assets/mekanism_magic/textures/${texturePath}.png")
+                    if (!textureFile.isFile()) {
+                        errors << "${canonical} references missing local " +
+                                "texture ${textureReference}."
+                    }
+                }
+            }
+
+            if (model.elements instanceof List) {
+                Set<String> cuboids = new LinkedHashSet<>()
+                model.elements.eachWithIndex { element, int index ->
+                    if (!(element instanceof Map) ||
+                            !(element.from instanceof List) ||
+                            !(element.to instanceof List) ||
+                            element.from.size() != 3 || element.to.size() != 3) {
+                        errors << "${canonical} element ${index} must have three-number from/to coordinates."
+                        return
+                    }
+                    List coordinates = element.from + element.to
+                    if (!coordinates.every { value ->
+                        value instanceof Number &&
+                                value.doubleValue() >= 0D &&
+                                value.doubleValue() <= 16D
+                    }) {
+                        errors << "${canonical} element ${index} has coordinates outside [0,16]."
+                    }
+                    String cuboidKey = JsonOutput.toJson([
+                            from: element.from,
+                            to: element.to,
+                            rotation: element.rotation ?: null
+                    ])
+                    if (!cuboids.add(cuboidKey)) {
+                        errors << "${canonical} contains duplicate cuboid ${index} " +
+                                '(same from/to/rotation; likely z-fighting).'
+                    }
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            String report = errors.collect { "  - ${it}" }.join(System.lineSeparator())
+            throw new GradleException("Machine contract validation failed with " +
+                    "${errors.size()} problem(s):${System.lineSeparator()}${report}")
+        }
+
+        logger.lifecycle("Validated ${entriesById.size()} machine contracts " +
+                "(${registeredIds.size()} Java registrations, " +
+                "Ars resources ${arsEnabled ? 'enabled' : 'skipped'}).")
+    }
+}

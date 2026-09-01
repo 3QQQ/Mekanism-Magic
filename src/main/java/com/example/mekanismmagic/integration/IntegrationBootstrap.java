@@ -50,6 +50,7 @@ public final class IntegrationBootstrap {
         if (modules.isEmpty()) {
             return;
         }
+        com.example.mekanismmagic.MekanismMagic.PLUGIN_ITEMS.register(modBus);
         com.example.mekanismmagic.MekanismMagic.CREATIVE_TABS.register(modBus);
         modules.forEach(module -> module.register(modBus));
     }

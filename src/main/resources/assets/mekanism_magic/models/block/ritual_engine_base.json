@@ -1,0 +1,3217 @@
+{
+  "credit": "Mekanism Magic Ars-Style Ritual Projection Engine",
+  "textures": {
+    "particle": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_dark": "mekanism_magic:block/ars_series/lab_dark",
+    "lab_shell": "mekanism_magic:block/ars_series/lab_spine",
+    "lab_spine": "mekanism_magic:block/ars_series/lab_spine",
+    "precision_metal": "mekanism_magic:block/occult_machine/rail_gray",
+    "gold": "mekanism_magic:block/occult_machine/gold",
+    "binding": "mekanism_magic:block/occult_machine/binding",
+    "soul": "mekanism_magic:block/occult_machine/soul",
+    "spirit": "mekanism_magic:block/occult_machine/spirit",
+    "chalk": "mekanism_magic:block/occult_machine/chalk",
+    "ritual_surface": "#chalk"
+  },
+  "elements": [
+    {
+      "name": "ritual_base_shadow",
+      "from": [
+        1,
+        0.5,
+        1
+      ],
+      "to": [
+        15,
+        1.5,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "ritual_front_recess",
+      "from": [
+        3,
+        2.2,
+        0.75
+      ],
+      "to": [
+        13,
+        3.8,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "ritual_base_body",
+      "from": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "to": [
+        14.5,
+        4.25,
+        14.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": "#lab_dark"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": "#lab_dark"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": "#lab_dark"
+        }
+      }
+    },
+    {
+      "name": "northwest_projector_pad",
+      "from": [
+        2,
+        4.25,
+        2
+      ],
+      "to": [
+        6,
+        5,
+        6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "northeast_projector_pad",
+      "from": [
+        10,
+        4.25,
+        2
+      ],
+      "to": [
+        14,
+        5,
+        6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "southwest_projector_pad",
+      "from": [
+        2,
+        4.25,
+        10
+      ],
+      "to": [
+        6,
+        5,
+        14
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "southeast_projector_pad",
+      "from": [
+        10,
+        4.25,
+        10
+      ],
+      "to": [
+        14,
+        5,
+        14
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "ritual_center_bed",
+      "from": [
+        6,
+        4.25,
+        6
+      ],
+      "to": [
+        10,
+        5,
+        10
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_front_binding_line_upper",
+      "from": [
+        5.5,
+        3.15,
+        0.5
+      ],
+      "to": [
+        10.5,
+        3.55,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_front_soul_line_lower",
+      "from": [
+        4,
+        2.5,
+        0.5
+      ],
+      "to": [
+        12,
+        2.9,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "ritual_west_side_line_lower",
+      "from": [
+        1.25,
+        2.3,
+        5
+      ],
+      "to": [
+        1.5,
+        2.8,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "ritual_west_side_line_upper",
+      "from": [
+        1.25,
+        3,
+        6.25
+      ],
+      "to": [
+        1.5,
+        3.5,
+        9.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_east_side_line_lower",
+      "from": [
+        14.5,
+        2.3,
+        5
+      ],
+      "to": [
+        14.75,
+        2.8,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "ritual_east_side_line_upper",
+      "from": [
+        14.5,
+        3,
+        6.25
+      ],
+      "to": [
+        14.75,
+        3.5,
+        9.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "precision_ritual_dais",
+      "from": [
+        4,
+        5,
+        4
+      ],
+      "to": [
+        12,
+        5.75,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": "#lab_spine"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": "#lab_spine"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": "#lab_spine"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": "#lab_spine"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#lab_spine"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#lab_spine"
+        }
+      }
+    },
+    {
+      "name": "ritual_ring_north",
+      "from": [
+        4.75,
+        5.75,
+        4.75
+      ],
+      "to": [
+        11.25,
+        6.15,
+        5.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "ritual_ring_south",
+      "from": [
+        4.75,
+        5.75,
+        10.5
+      ],
+      "to": [
+        11.25,
+        6.15,
+        11.25
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "ritual_ring_west",
+      "from": [
+        4.75,
+        5.75,
+        5.5
+      ],
+      "to": [
+        5.5,
+        6.15,
+        10.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "ritual_ring_east",
+      "from": [
+        10.5,
+        5.75,
+        5.5
+      ],
+      "to": [
+        11.25,
+        6.15,
+        10.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "projected_ritual_surface",
+      "from": [
+        5.5,
+        5.75,
+        5.5
+      ],
+      "to": [
+        10.5,
+        6.05,
+        10.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": "#ritual_surface"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": "#ritual_surface"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": "#ritual_surface"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": "#ritual_surface"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#ritual_surface"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#ritual_surface"
+        }
+      }
+    },
+    {
+      "name": "northwest_projector_base",
+      "from": [
+        2.5,
+        5,
+        2.5
+      ],
+      "to": [
+        4,
+        6,
+        4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "northeast_projector_base",
+      "from": [
+        12,
+        5,
+        2.5
+      ],
+      "to": [
+        13.5,
+        6,
+        4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "southwest_projector_base",
+      "from": [
+        2.5,
+        5,
+        12
+      ],
+      "to": [
+        4,
+        6,
+        13.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "southeast_projector_base",
+      "from": [
+        12,
+        5,
+        12
+      ],
+      "to": [
+        13.5,
+        6,
+        13.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": "#lab_shell"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": "#lab_shell"
+        }
+      }
+    },
+    {
+      "name": "northwest_projector_mast",
+      "from": [
+        3.1,
+        6,
+        3.1
+      ],
+      "to": [
+        3.9,
+        10,
+        3.9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "northeast_projector_mast",
+      "from": [
+        12.1,
+        6,
+        3.1
+      ],
+      "to": [
+        12.9,
+        10,
+        3.9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "southwest_projector_mast",
+      "from": [
+        3.1,
+        6,
+        12.1
+      ],
+      "to": [
+        3.9,
+        10,
+        12.9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "southeast_projector_mast",
+      "from": [
+        12.1,
+        6,
+        12.1
+      ],
+      "to": [
+        12.9,
+        10,
+        12.9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": "#precision_metal"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": "#precision_metal"
+        }
+      }
+    },
+    {
+      "name": "northwest_projector_cap",
+      "from": [
+        2.8,
+        10,
+        2.8
+      ],
+      "to": [
+        4,
+        10.75,
+        4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "northeast_projector_cap",
+      "from": [
+        12,
+        10,
+        2.8
+      ],
+      "to": [
+        13.2,
+        10.75,
+        4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "southwest_projector_cap",
+      "from": [
+        2.8,
+        10,
+        12
+      ],
+      "to": [
+        4,
+        10.75,
+        13.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "southeast_projector_cap",
+      "from": [
+        12,
+        10,
+        12
+      ],
+      "to": [
+        13.2,
+        10.75,
+        13.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "northwest_spirit_projector",
+      "from": [
+        3.25,
+        10.75,
+        3.25
+      ],
+      "to": [
+        3.75,
+        11.25,
+        3.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        }
+      }
+    },
+    {
+      "name": "northeast_spirit_projector",
+      "from": [
+        12.25,
+        10.75,
+        3.25
+      ],
+      "to": [
+        12.75,
+        11.25,
+        3.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        }
+      }
+    },
+    {
+      "name": "southwest_spirit_projector",
+      "from": [
+        3.25,
+        10.75,
+        12.25
+      ],
+      "to": [
+        3.75,
+        11.25,
+        12.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        }
+      }
+    },
+    {
+      "name": "southeast_spirit_projector",
+      "from": [
+        12.25,
+        10.75,
+        12.25
+      ],
+      "to": [
+        12.75,
+        11.25,
+        12.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": "#spirit"
+        }
+      }
+    },
+    {
+      "name": "ritual_focus_base",
+      "from": [
+        7.25,
+        6.05,
+        7.25
+      ],
+      "to": [
+        8.75,
+        6.55,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": "#soul"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": "#soul"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": "#soul"
+        }
+      }
+    },
+    {
+      "name": "ritual_conductor_north",
+      "from": [
+        7.4,
+        6.15,
+        3.4
+      ],
+      "to": [
+        8.6,
+        6.4,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_conductor_south",
+      "from": [
+        7.4,
+        6.15,
+        11
+      ],
+      "to": [
+        8.6,
+        6.4,
+        12.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_conductor_west",
+      "from": [
+        3.4,
+        6.15,
+        7.4
+      ],
+      "to": [
+        5,
+        6.4,
+        8.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "ritual_conductor_east",
+      "from": [
+        11,
+        6.15,
+        7.4
+      ],
+      "to": [
+        12.6,
+        6.4,
+        8.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#binding"
+        }
+      }
+    },
+    {
+      "name": "northwest_projector_binding_collar",
+      "from": [
+        2.9,
+        7.8,
+        2.7
+      ],
+      "to": [
+        4.1,
+        8.25,
+        3.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "northeast_projector_binding_collar",
+      "from": [
+        11.9,
+        7.8,
+        2.7
+      ],
+      "to": [
+        13.1,
+        8.25,
+        3.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "southwest_projector_binding_collar",
+      "from": [
+        2.9,
+        7.8,
+        12.9
+      ],
+      "to": [
+        4.1,
+        8.25,
+        13.3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    },
+    {
+      "name": "southeast_projector_binding_collar",
+      "from": [
+        11.9,
+        7.8,
+        12.9
+      ],
+      "to": [
+        13.1,
+        8.25,
+        13.3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#gold"
+        }
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "ars_ritual_platform",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "name": "ritual_platen",
+      "origin": [
+        8,
+        6,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "name": "projector_towers",
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ]
+    },
+    {
+      "name": "ritual_focus",
+      "origin": [
+        8,
+        7,
+        8
+      ],
+      "scope": 0,
+      "color": 0,
+      "shade": false,
+      "children": [
+        36
+      ]
+    }
+  ],
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "render_type": "minecraft:cutout"
+}

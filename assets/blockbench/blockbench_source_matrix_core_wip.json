@@ -1,0 +1,321 @@
+{
+  "credit": "Mekanism Magic - Blockbench WIP - Source Matrix Core",
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism_magic:block/source_generator/casing",
+    "casing": "mekanism_magic:block/source_generator/casing",
+    "panel": "mekanism_magic:block/source_generator/front_panel",
+    "trim": "mekanism_magic:block/source_generator/trim",
+    "glass": "mekanism_magic:block/source_generator/sourcestone",
+    "energy": "mekanism_magic:block/source_generator/core",
+    "signal": "mekanism_magic:block/source_generator/conduit",
+    "vent": "mekanism_magic:block/source_generator/right_panel",
+    "service": "mekanism_magic:block/source_generator/back_panel"
+  },
+  "elements": [
+    {
+      "name": "chassis_lower_slab",
+      "from": [1, 0.5, 1],
+      "to": [15, 2, 15.5],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#trim"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#casing"},
+        "east": {"texture": "#casing"}
+      }
+    },
+    {
+      "name": "sealed_reactor_body",
+      "from": [1.5, 2, 1.5],
+      "to": [14.5, 15, 15.5],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#panel"},
+        "north": {"texture": "#panel"},
+        "south": {"texture": "#service"},
+        "west": {"texture": "#casing"},
+        "east": {"texture": "#casing"}
+      }
+    },
+    {
+      "name": "top_flush_service_lid",
+      "from": [2, 15, 2],
+      "to": [14, 15.75, 15],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#panel"},
+        "north": {"texture": "#trim"},
+        "south": {"texture": "#trim"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "front_left_armor",
+      "from": [1, 2, 0.5],
+      "to": [4.25, 14.75, 2],
+      "faces": {
+        "down": {"texture": "#trim"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#panel"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#casing"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "front_right_armor",
+      "from": [11.75, 2, 0.5],
+      "to": [15, 14.75, 2],
+      "faces": {
+        "down": {"texture": "#trim"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#panel"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#casing"}
+      }
+    },
+    {
+      "name": "front_upper_bridge",
+      "from": [4.25, 12.75, 0.5],
+      "to": [11.75, 14.75, 2],
+      "faces": {
+        "down": {"texture": "#trim"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#panel"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "front_lower_service_bay",
+      "from": [4.25, 2, 0.25],
+      "to": [11.75, 4, 2],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#service"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "observation_chamber",
+      "from": [4.5, 4, 0.2],
+      "to": [11.5, 12.75, 1.35],
+      "faces": {
+        "down": {"texture": "#trim"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#glass"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "field_emitter_lower",
+      "from": [5.25, 4.6, 0],
+      "to": [10.75, 5.25, 0.6],
+      "faces": {
+        "down": {"texture": "#signal"},
+        "up": {"texture": "#signal"},
+        "north": {"texture": "#signal"},
+        "south": {"texture": "#signal"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "field_emitter_middle",
+      "from": [5.25, 7.95, 0],
+      "to": [10.75, 8.6, 0.6],
+      "faces": {
+        "down": {"texture": "#signal"},
+        "up": {"texture": "#signal"},
+        "north": {"texture": "#signal"},
+        "south": {"texture": "#signal"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "field_emitter_upper",
+      "from": [5.25, 11.3, 0],
+      "to": [10.75, 11.95, 0.6],
+      "faces": {
+        "down": {"texture": "#signal"},
+        "up": {"texture": "#signal"},
+        "north": {"texture": "#signal"},
+        "south": {"texture": "#signal"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "source_cell_lower",
+      "from": [6.25, 5.45, 0],
+      "to": [9.75, 7.55, 0.7],
+      "faces": {
+        "down": {"texture": "#energy"},
+        "up": {"texture": "#energy"},
+        "north": {"texture": "#energy"},
+        "south": {"texture": "#energy"},
+        "west": {"texture": "#energy"},
+        "east": {"texture": "#energy"}
+      }
+    },
+    {
+      "name": "source_cell_center",
+      "from": [5.75, 8.8, 0],
+      "to": [10.25, 10.9, 0.75],
+      "faces": {
+        "down": {"texture": "#energy"},
+        "up": {"texture": "#energy"},
+        "north": {"texture": "#energy"},
+        "south": {"texture": "#energy"},
+        "west": {"texture": "#energy"},
+        "east": {"texture": "#energy"}
+      }
+    },
+    {
+      "name": "source_cell_upper",
+      "from": [6.5, 11.95, 0],
+      "to": [9.5, 12.5, 0.7],
+      "faces": {
+        "down": {"texture": "#energy"},
+        "up": {"texture": "#energy"},
+        "north": {"texture": "#energy"},
+        "south": {"texture": "#energy"},
+        "west": {"texture": "#energy"},
+        "east": {"texture": "#energy"}
+      }
+    },
+    {
+      "name": "front_status_bar",
+      "from": [6, 2.5, 0],
+      "to": [10, 2.9, 0.35],
+      "faces": {
+        "down": {"texture": "#signal"},
+        "up": {"texture": "#signal"},
+        "north": {"texture": "#signal"},
+        "south": {"texture": "#signal"},
+        "west": {"texture": "#signal"},
+        "east": {"texture": "#signal"}
+      }
+    },
+    {
+      "name": "west_heat_sink_base",
+      "from": [0.5, 3, 4],
+      "to": [1.5, 13.5, 13.5],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#casing"},
+        "north": {"texture": "#trim"},
+        "south": {"texture": "#trim"},
+        "west": {"texture": "#vent"},
+        "east": {"texture": "#casing"}
+      }
+    },
+    {
+      "name": "east_heat_sink_base",
+      "from": [14.5, 3, 4],
+      "to": [15.5, 13.5, 13.5],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#casing"},
+        "north": {"texture": "#trim"},
+        "south": {"texture": "#trim"},
+        "west": {"texture": "#casing"},
+        "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "west_sink_fin_lower",
+      "from": [0.1, 4, 4.75],
+      "to": [0.5, 5, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "west_sink_fin_middle",
+      "from": [0.1, 7.75, 4.75],
+      "to": [0.5, 8.75, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "west_sink_fin_upper",
+      "from": [0.1, 11.5, 4.75],
+      "to": [0.5, 12.5, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "east_sink_fin_lower",
+      "from": [15.5, 4, 4.75],
+      "to": [15.9, 5, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "east_sink_fin_middle",
+      "from": [15.5, 7.75, 4.75],
+      "to": [15.9, 8.75, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "east_sink_fin_upper",
+      "from": [15.5, 11.5, 4.75],
+      "to": [15.9, 12.5, 12.75],
+      "faces": {
+        "down": {"texture": "#vent"}, "up": {"texture": "#vent"}, "north": {"texture": "#vent"}, "south": {"texture": "#vent"}, "west": {"texture": "#vent"}, "east": {"texture": "#vent"}
+      }
+    },
+    {
+      "name": "rear_io_spine",
+      "from": [6.25, 3.5, 15.25],
+      "to": [9.75, 12.5, 15.9],
+      "faces": {
+        "down": {"texture": "#trim"},
+        "up": {"texture": "#trim"},
+        "north": {"texture": "#casing"},
+        "south": {"texture": "#service"},
+        "west": {"texture": "#trim"},
+        "east": {"texture": "#trim"}
+      }
+    },
+    {
+      "name": "rear_signal_port",
+      "from": [7, 6.5, 15.75],
+      "to": [9, 9.5, 16],
+      "faces": {
+        "down": {"texture": "#signal"},
+        "up": {"texture": "#signal"},
+        "north": {"texture": "#signal"},
+        "south": {"texture": "#signal"},
+        "west": {"texture": "#signal"},
+        "east": {"texture": "#signal"}
+      }
+    }
+  ],
+  "display": {
+    "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
+    "ground": {"translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]},
+    "fixed": {"scale": [0.5, 0.5, 0.5]},
+    "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+    "firstperson_righthand": {"rotation": [0, 45, 0], "scale": [0.4, 0.4, 0.4]}
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    { "id": "spirit_processor", "profile": "machine", "requiresArs": false },
+    { "id": "dimension_miner", "profile": "machine", "requiresArs": false },
+    { "id": "basic_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "advanced_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "elite_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "ultimate_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "absolute_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "supreme_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "cosmic_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "infinite_spirit_factory", "profile": "machine", "requiresArs": false },
+    { "id": "ritual_engine", "profile": "machine", "requiresArs": false },
+    { "id": "mini_ritual_assembler", "profile": "machine", "requiresArs": false },
+
+    { "id": "source_generator", "profile": "machine", "requiresArs": true },
+    { "id": "source_converter", "profile": "machine", "requiresArs": true },
+    { "id": "catalyst_identifier_assembler", "profile": "machine", "requiresArs": true },
+    { "id": "imbuement_processor", "profile": "machine", "requiresArs": true },
+    { "id": "basic_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "advanced_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "elite_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "ultimate_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "absolute_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "supreme_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "cosmic_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "infinite_imbuement_factory", "profile": "machine", "requiresArs": true },
+    { "id": "enchanting_apparatus_processor", "profile": "machine", "requiresArs": true },
+    { "id": "drygmy_simulator", "profile": "machine", "requiresArs": true },
+
+    { "id": "magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "advanced_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "elite_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "ultimate_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "absolute_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "supreme_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "cosmic_magic_source_pipe", "profile": "pipe", "requiresArs": true },
+    { "id": "infinite_magic_source_pipe", "profile": "pipe", "requiresArs": true }
+  ]
+}

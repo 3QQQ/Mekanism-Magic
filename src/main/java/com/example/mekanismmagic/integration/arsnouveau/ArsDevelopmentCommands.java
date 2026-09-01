@@ -141,6 +141,12 @@ final class ArsDevelopmentCommands {
         source.sendSuccess(() -> Component.literal(
                 "Drygmy outputs=" + output
                         + ", source=" + simulator.getSource()
+                        + "/" + simulator.getMaxSource()
+                        + ", transfer=" + simulator.getTransferRate()
+                        + ", sourceCost="
+                        + simulator.developmentSourceCost()
+                        + ", creativeSource="
+                        + simulator.developmentHasCreativeSourceUpgrade()
                         + ", progress=" + simulator.getProgress()
                         + "/" + simulator.getProgressRequired()), false);
         return output;
@@ -152,11 +158,11 @@ final class ArsDevelopmentCommands {
                 instanceof SourceAmplifierBlockEntity amplifier)
                 || !amplifier.seedDevelopmentTest()) {
             source.sendFailure(Component.literal(
-                    "No Source Amplifier or vanilla sourcelink in range"));
+                    "No FE Source Amplifier or vanilla sourcelink in range"));
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-                "Source Amplifier test prepared"), false);
+                "FE Source Amplifier test prepared"), false);
         return 1;
     }
 
@@ -267,7 +273,7 @@ final class ArsDevelopmentCommands {
         }
         if (assembler.seedDevelopmentTest(recipeId) <= 0) {
             source.sendFailure(Component.literal(
-                    "Recipe not found or has no three catalyst ingredients"));
+                    "Recipe not found or does not use 1-9 catalyst ingredients"));
             return 0;
         }
         source.sendSuccess(() -> Component.literal(

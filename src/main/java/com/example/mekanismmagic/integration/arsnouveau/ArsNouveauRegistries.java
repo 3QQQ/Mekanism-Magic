@@ -2,7 +2,9 @@ package com.example.mekanismmagic.integration.arsnouveau;
 
 import com.example.mekanismmagic.MagicLang;
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.block.NativeMachineBlock;
+import com.example.mekanismmagic.upgrade.MagicUpgrades;
 import com.example.mekanismmagic.container.ArsSourceMachineContainer;
 import com.example.mekanismmagic.container.ImbuementFactoryContainer;
 import com.example.mekanismmagic.container.CatalystIdentifierAssemblerContainer;
@@ -29,7 +31,6 @@ import mekanism.common.registration.impl.TileEntityTypeDeferredRegister;
 import mekanism.common.registration.impl.TileEntityTypeRegistryObject;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import mekanism.common.item.ItemUpgrade;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.IEventBus;
@@ -39,24 +40,24 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.function.Supplier;
-import mekanism.common.tier.FactoryTier;
-import mekanism.common.block.attribute.AttributeTier;
 
 /**
  * Registries loaded only when Ars Nouveau is present.
  */
 public final class ArsNouveauRegistries {
-    private static final Upgrade CREATIVE_SOURCE_UPGRADE =
+    private static final Upgrade MEKANISM_EXTRAS_CREATIVE_UPGRADE =
             optionalCreativeSourceUpgrade();
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MekanismMagic.MOD_ID);
-    public static final DeferredHolder<Item, Item>
-            CREATIVE_SOURCE_UPGRADE_ITEM =
-            registerCreativeSourceUpgradeItem();
     public static final DeferredHolder<Item, CatalystIdentifierItem>
             CATALYST_IDENTIFIER_ITEM =
             ITEMS.register("catalyst_identifier",
                     () -> new CatalystIdentifierItem(
+                            new Item.Properties().stacksTo(1)));
+    public static final DeferredHolder<Item, SourceLinkToolItem>
+            SOURCE_LINK_TOOL_ITEM =
+            ITEMS.register("source_link_tool",
+                    () -> new SourceLinkToolItem(
                             new Item.Properties().stacksTo(1)));
     public static final BlockDeferredRegister BLOCKS =
             new BlockDeferredRegister(MekanismMagic.MOD_ID);
@@ -67,17 +68,98 @@ public final class ArsNouveauRegistries {
 
     public static final BlockTypeTile<MagicSourcePipeBlockEntity>
             MAGIC_SOURCE_PIPE_TYPE =
-            BlockTileBuilder.createBlock(
-                            ArsNouveauRegistries::magicSourcePipeTile,
-                            MagicLang.MAGIC_SOURCE_PIPE)
-                    .with(new AttributeTier<>(PipeTier.BASIC))
-                    .build();
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::magicSourcePipeTile,
+                    MagicLang.MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.BASIC);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            ADVANCED_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::advancedMagicSourcePipeTile,
+                    MagicLang.ADVANCED_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.ADVANCED);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            ELITE_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::eliteMagicSourcePipeTile,
+                    MagicLang.ELITE_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.ELITE);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            ULTIMATE_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::ultimateMagicSourcePipeTile,
+                    MagicLang.ULTIMATE_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.ULTIMATE);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            ABSOLUTE_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::absoluteMagicSourcePipeTile,
+                    MagicLang.ABSOLUTE_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.ABSOLUTE);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            SUPREME_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::supremeMagicSourcePipeTile,
+                    MagicLang.SUPREME_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.SUPREME);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            COSMIC_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::cosmicMagicSourcePipeTile,
+                    MagicLang.COSMIC_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.COSMIC);
+    public static final BlockTypeTile<MagicSourcePipeBlockEntity>
+            INFINITE_MAGIC_SOURCE_PIPE_TYPE =
+            createMagicSourcePipeType(
+                    ArsNouveauRegistries::infiniteMagicSourcePipeTile,
+                    MagicLang.INFINITE_MAGIC_SOURCE_PIPE,
+                    MagicSourcePipeTier.INFINITE);
 
-    public static final BlockRegistryObject<MagicSourcePipeBlock, BlockItem>
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
             MAGIC_SOURCE_PIPE_BLOCK =
-            BLOCKS.register("magic_source_pipe",
-                    () -> new MagicSourcePipeBlock(
-                            MAGIC_SOURCE_PIPE_TYPE));
+            registerMagicSourcePipeBlock("magic_source_pipe",
+                    MAGIC_SOURCE_PIPE_TYPE, MagicSourcePipeTier.BASIC);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            ADVANCED_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("advanced_magic_source_pipe",
+                    ADVANCED_MAGIC_SOURCE_PIPE_TYPE,
+                    MagicSourcePipeTier.ADVANCED);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            ELITE_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("elite_magic_source_pipe",
+                    ELITE_MAGIC_SOURCE_PIPE_TYPE, MagicSourcePipeTier.ELITE);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            ULTIMATE_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("ultimate_magic_source_pipe",
+                    ULTIMATE_MAGIC_SOURCE_PIPE_TYPE,
+                    MagicSourcePipeTier.ULTIMATE);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            ABSOLUTE_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("absolute_magic_source_pipe",
+                    ABSOLUTE_MAGIC_SOURCE_PIPE_TYPE,
+                    MagicSourcePipeTier.ABSOLUTE);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            SUPREME_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("supreme_magic_source_pipe",
+                    SUPREME_MAGIC_SOURCE_PIPE_TYPE,
+                    MagicSourcePipeTier.SUPREME);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            COSMIC_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("cosmic_magic_source_pipe",
+                    COSMIC_MAGIC_SOURCE_PIPE_TYPE, MagicSourcePipeTier.COSMIC);
+    public static final BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+            INFINITE_MAGIC_SOURCE_PIPE_BLOCK =
+            registerMagicSourcePipeBlock("infinite_magic_source_pipe",
+                    INFINITE_MAGIC_SOURCE_PIPE_TYPE,
+                    MagicSourcePipeTier.INFINITE);
 
     public static final ContainerTypeRegistryObject<
             ArsSourceMachineContainer<SourceAmplifierBlockEntity>>
@@ -136,7 +218,7 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 500L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .withSupportedUpgrades(sourceAmplifierSupportedUpgrades())
                     .build();
     public static final Machine<FeSourceConverterBlockEntity>
             SOURCE_CONVERTER_TYPE =
@@ -144,10 +226,15 @@ public final class ArsNouveauRegistries {
                             ArsNouveauRegistries::sourceConverterTile,
                             MagicLang.SOURCE_CONVERTER)
                     .withGui(() -> SOURCE_CONVERTER_CONTAINER)
-                    .withEnergyConfig(() -> 500L, () -> 4_000_000L)
+                    .withEnergyConfig(
+                            () -> (long) ArsNouveauMachineConfig
+                                    .SOURCE_CONVERTER_FE_PER_TICK,
+                            () -> ArsNouveauMachineConfig
+                                    .SOURCE_CONVERTER_ENERGY_CAPACITY)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .withSupportedUpgrades(
+                            sourceConverterSupportedUpgrades())
                     .build();
     public static final Machine<CatalystIdentifierAssemblerBlockEntity>
             CATALYST_IDENTIFIER_ASSEMBLER_TYPE =
@@ -158,7 +245,7 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 300L, () -> 2_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .withSupportedUpgrades(arsUtilitySupportedUpgrades())
                     .build();
     public static final Machine<ImbuementProcessorBlockEntity>
             IMBUEMENT_PROCESSOR_TYPE =
@@ -170,6 +257,9 @@ public final class ArsNouveauRegistries {
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
                     .withSupportedUpgrades(arsSupportedUpgrades())
+                    .with(new AttributeUpgradeable(
+                            ArsNouveauRegistries::
+                                    basicImbuementFactoryBlock))
                     .build();
     public static final Machine.FactoryMachine<ImbuementFactoryBlockEntity>
             BASIC_IMBUEMENT_FACTORY_TYPE = createImbuementFactory(
@@ -212,7 +302,7 @@ public final class ArsNouveauRegistries {
                     .withEnergyConfig(() -> 800L, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM,
                             TransmissionType.ENERGY)
-                    .withSupportedUpgrades(arsSupportedUpgrades())
+                    .withSupportedUpgrades(drygmySupportedUpgrades())
                     .build();
 
     public static final BlockRegistryObject<
@@ -345,26 +435,74 @@ public final class ArsNouveauRegistries {
                     .build();
     public static final TileEntityTypeRegistryObject<
             MagicSourcePipeBlockEntity> MAGIC_SOURCE_PIPE_TILE =
-            TILES.builder(MAGIC_SOURCE_PIPE_BLOCK,
-                            (pos, state) ->
-                                    new MagicSourcePipeBlockEntity(
-                                            MAGIC_SOURCE_PIPE_BLOCK.get()
-                                                    .builtInRegistryHolder(),
-                                            pos, state))
-                    .serverTicker((level, pos, state, tile) ->
-                            mekanism.common.tile.transmitter
-                                    .TileEntityTransmitter.tickServer(
-                                            level, pos, state, tile))
-                    .withSimple(Capabilities.ALLOY_INTERACTION)
-                    .with(Capabilities.CONFIGURABLE,
-                            mekanism.common.tile.transmitter
-                                    .TileEntityTransmitter
-                                    .CONFIGURABLE_PROVIDER)
-                    .with(CapabilityRegistry.SOURCE_CAPABILITY,
-                            (tile, side) -> tile.getSourceStorage(side))
-                    .build();
+            registerMagicSourcePipeTile(MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> ADVANCED_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(ADVANCED_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> ELITE_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(ELITE_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> ULTIMATE_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(ULTIMATE_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> ABSOLUTE_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(ABSOLUTE_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> SUPREME_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(SUPREME_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> COSMIC_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(COSMIC_MAGIC_SOURCE_PIPE_BLOCK);
+    public static final TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> INFINITE_MAGIC_SOURCE_PIPE_TILE =
+            registerMagicSourcePipeTile(INFINITE_MAGIC_SOURCE_PIPE_BLOCK);
 
     private ArsNouveauRegistries() {
+    }
+
+    private static BlockTypeTile<MagicSourcePipeBlockEntity>
+    createMagicSourcePipeType(
+            Supplier<TileEntityTypeRegistryObject<
+                    MagicSourcePipeBlockEntity>> tile,
+            MagicLang lang, MagicSourcePipeTier tier) {
+        return BlockTileBuilder.createBlock(tile, lang)
+                .with(new AttributeTier<>(tier.mekanismTier()),
+                        new AttributeMagicSourcePipeTier(tier))
+                .build();
+    }
+
+    private static BlockRegistryObject<MagicSourcePipeBlock,
+            MagicSourcePipeItem>
+    registerMagicSourcePipeBlock(
+            String name,
+            BlockTypeTile<MagicSourcePipeBlockEntity> type,
+            MagicSourcePipeTier tier) {
+        return BLOCKS.register(name, () -> new MagicSourcePipeBlock(type),
+                (block, properties) -> new MagicSourcePipeItem(
+                        block, tier, properties));
+    }
+
+    private static TileEntityTypeRegistryObject<MagicSourcePipeBlockEntity>
+    registerMagicSourcePipeTile(
+            BlockRegistryObject<MagicSourcePipeBlock,
+                    MagicSourcePipeItem> block) {
+        return TILES.builder(block,
+                        (pos, state) -> new MagicSourcePipeBlockEntity(
+                                block.get().builtInRegistryHolder(),
+                                pos, state))
+                .serverTicker((level, pos, state, tile) ->
+                        mekanism.common.tile.transmitter
+                                .TileEntityTransmitter.tickServer(
+                                        level, pos, state, tile))
+                .withSimple(Capabilities.ALLOY_INTERACTION)
+                .with(Capabilities.CONFIGURABLE,
+                        mekanism.common.tile.transmitter
+                                .TileEntityTransmitter
+                                .CONFIGURABLE_PROVIDER)
+                .with(CapabilityRegistry.SOURCE_CAPABILITY,
+                        (tile, side) -> tile.getSourceStorage(side))
+                .build();
     }
 
     private static TileEntityTypeRegistryObject<SourceAmplifierBlockEntity>
@@ -375,6 +513,41 @@ public final class ArsNouveauRegistries {
     private static TileEntityTypeRegistryObject<
             MagicSourcePipeBlockEntity> magicSourcePipeTile() {
         return MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> advancedMagicSourcePipeTile() {
+        return ADVANCED_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> eliteMagicSourcePipeTile() {
+        return ELITE_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> ultimateMagicSourcePipeTile() {
+        return ULTIMATE_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> absoluteMagicSourcePipeTile() {
+        return ABSOLUTE_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> supremeMagicSourcePipeTile() {
+        return SUPREME_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> cosmicMagicSourcePipeTile() {
+        return COSMIC_MAGIC_SOURCE_PIPE_TILE;
+    }
+
+    private static TileEntityTypeRegistryObject<
+            MagicSourcePipeBlockEntity> infiniteMagicSourcePipeTile() {
+        return INFINITE_MAGIC_SOURCE_PIPE_TILE;
     }
 
     private static TileEntityTypeRegistryObject<FeSourceConverterBlockEntity>
@@ -479,6 +652,11 @@ public final class ArsNouveauRegistries {
     }
 
     private static BlockRegistryObject<?, ?>
+    basicImbuementFactoryBlock() {
+        return BASIC_IMBUEMENT_FACTORY_BLOCK;
+    }
+
+    private static BlockRegistryObject<?, ?>
     advancedImbuementFactoryBlock() {
         return ADVANCED_IMBUEMENT_FACTORY_BLOCK;
     }
@@ -531,10 +709,6 @@ public final class ArsNouveauRegistries {
         modBus.addListener(ArsNouveauRegistries::registerCapabilities);
     }
 
-    public static Upgrade creativeSourceUpgrade() {
-        return CREATIVE_SOURCE_UPGRADE;
-    }
-
     public static ContainerTypeRegistryObject<?> containerFor(
             ArsSourceMachineBlockEntity tile) {
         if (tile instanceof SourceAmplifierBlockEntity) {
@@ -555,23 +729,51 @@ public final class ArsNouveauRegistries {
         throw new IllegalArgumentException("Unknown Ars Source machine");
     }
 
-    private static DeferredHolder<Item, Item>
-    registerCreativeSourceUpgradeItem() {
-        if (CREATIVE_SOURCE_UPGRADE == null) {
-            return null;
-        }
-        MekanismMagic.LOGGER.info(
-                "Registered Creative Source Upgrade item for Ars Nouveau");
-        return ITEMS.register("creative_source_upgrade",
-                () -> new ItemUpgrade(CREATIVE_SOURCE_UPGRADE,
-                        new Item.Properties().stacksTo(1)));
+    private static Upgrade[] arsSupportedUpgrades() {
+        return MEKANISM_EXTRAS_CREATIVE_UPGRADE == null
+                ? new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY,
+                        MagicUpgrades.creativeMagic()}
+                : new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY,
+                        MagicUpgrades.creativeMagic(),
+                        MEKANISM_EXTRAS_CREATIVE_UPGRADE};
     }
 
-    private static Upgrade[] arsSupportedUpgrades() {
-        return CREATIVE_SOURCE_UPGRADE == null
+    private static Upgrade[] sourceAmplifierSupportedUpgrades() {
+        // This machine has no internal Source tank, so a creative Source
+        // upgrade has no meaningful state to provide.
+        return new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY};
+    }
+
+    private static Upgrade[] arsUtilitySupportedUpgrades() {
+        // Utility machines that do not spend Source have nothing for the
+        // creative-magic upgrade to bypass. Preserve Mekanism Extras'
+        // independent creative-energy support when present.
+        return MEKANISM_EXTRAS_CREATIVE_UPGRADE == null
                 ? new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY}
                 : new Upgrade[]{Upgrade.SPEED, Upgrade.ENERGY,
-                        CREATIVE_SOURCE_UPGRADE};
+                        MEKANISM_EXTRAS_CREATIVE_UPGRADE};
+    }
+
+    private static Upgrade[] drygmySupportedUpgrades() {
+        java.util.List<Upgrade> upgrades = new java.util.ArrayList<>(
+                java.util.List.of(arsSupportedUpgrades()));
+        Upgrade stackUpgrade = NativeMekanismRegistries
+                .dimensionMinerStackUpgrade();
+        if (stackUpgrade != null && !upgrades.contains(stackUpgrade)) {
+            upgrades.add(stackUpgrade);
+        }
+        return upgrades.toArray(Upgrade[]::new);
+    }
+
+    private static Upgrade[] sourceConverterSupportedUpgrades() {
+        java.util.List<Upgrade> upgrades = new java.util.ArrayList<>(
+                java.util.List.of(arsUtilitySupportedUpgrades()));
+        Upgrade stackUpgrade = NativeMekanismRegistries
+                .dimensionMinerStackUpgrade();
+        if (stackUpgrade != null && !upgrades.contains(stackUpgrade)) {
+            upgrades.add(stackUpgrade);
+        }
+        return upgrades.toArray(Upgrade[]::new);
     }
 
     private static Upgrade optionalCreativeSourceUpgrade() {
@@ -598,12 +800,6 @@ public final class ArsNouveauRegistries {
 
     private static void registerCapabilities(
             RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(
-                CapabilityRegistry.SOURCE_CAPABILITY,
-                SOURCE_AMPLIFIER_TILE.get(),
-                (tile, side) -> side == null
-                        ? tile.getSourceStorage()
-                        : tile.getSourceStorage(side));
         event.registerBlockEntity(
                 CapabilityRegistry.SOURCE_CAPABILITY,
                 SOURCE_CONVERTER_TILE.get(),

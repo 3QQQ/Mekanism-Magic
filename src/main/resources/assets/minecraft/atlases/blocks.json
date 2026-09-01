@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/arcane_disc"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/arcane_disc_fine"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/occult_seal"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/phase_vortex"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/core_orb"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "mekanism_magic:block/animation/energy_ribbon"
+    }
+  ]
+}

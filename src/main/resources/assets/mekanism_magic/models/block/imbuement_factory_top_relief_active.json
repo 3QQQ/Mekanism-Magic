@@ -1,0 +1,9 @@
+{
+  "parent": "mekanism_magic:block/imbuement_factory_top_relief",
+  "textures": {
+    "basin": "mekanism_magic:block/imbuement_processor/basin_active",
+    "channel": "mekanism_magic:block/imbuement_processor/conduit_active",
+    "rune": "mekanism_magic:block/imbuement_processor/rune_active",
+    "core": "mekanism_magic:block/imbuement_processor/core_active"
+  }
+}

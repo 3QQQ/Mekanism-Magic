@@ -1,0 +1,9 @@
+{
+  "parent": "mekanism_magic:block/spirit_factory/binding_rig",
+  "textures": {
+    "binding": "mekanism_magic:block/occult_machine/binding",
+    "spirit": "mekanism_magic:block/occult_machine/spirit",
+    "glass": "mekanism_magic:block/occult_machine/spirit_glass",
+    "soul": "mekanism_magic:block/occult_machine/soul"
+  }
+}

@@ -35,7 +35,8 @@ public final class GuiDictionaryModuleTab
 
     @Override
     protected void colorTab(GuiGraphics graphics) {
-        MekanismRenderer.color(graphics, 0xFFB879D6);
+        MekanismRenderer.color(graphics,
+                MagicGuiTheme.accentRitual());
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.example.mekanismmagic.MekanismMagic;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
 /**
  * Registers machines and items backed by Ars Nouveau.
@@ -26,11 +27,15 @@ public final class ArsNouveauContentModule
     @Override
     public void register(IEventBus modBus) {
         ArsNouveauRegistries.register(modBus);
+        NeoForge.EVENT_BUS.addListener(
+                SourceLinkToolItem::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(ArsDevelopmentCommands::register);
         NeoForge.EVENT_BUS.addListener(
                 (ServerStartedEvent event) ->
                         ArsNouveauRecipeScanner.scanAtStartup(
                                 event.getServer(), MekanismMagic.LOGGER));
+        NeoForge.EVENT_BUS.addListener(
+                ArsNouveauContentModule::onDatapackSync);
         try {
             Class.forName("com.example.mekanismmagic.integration.ae2.Ae2ArsCompat")
                     .getMethod("register", IEventBus.class)
@@ -50,6 +55,25 @@ public final class ArsNouveauContentModule
                         "Failed to register Extras imbuement factories",
                         failure);
             }
+        }
+    }
+
+    private static void onDatapackSync(OnDatapackSyncEvent event) {
+        var server = event.getPlayerList().getServer();
+        if (!ArsNouveauRecipeScanner.refresh(
+                server.getRecipeManager())) {
+            return;
+        }
+        ArsNouveauRecipeScanner.scanAtStartup(
+                server, MekanismMagic.LOGGER);
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2."
+                            + "Ae2ArsCompat")
+                    .getMethod("refreshPatterns")
+                    .invoke(null);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // AE2 is optional; the dynamic physical and JEI catalogs still
+            // refresh when no AE crafting provider is present.
         }
     }
 }

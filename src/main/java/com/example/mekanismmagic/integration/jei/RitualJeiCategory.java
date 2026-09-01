@@ -7,14 +7,13 @@ import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-public final class RitualJeiCategory extends AbstractRecipeCategory<
+public final class RitualJeiCategory extends MagicJeiCategory<
         OccultismRecipeBridge.RitualJeiData> {
     public RitualJeiCategory(IGuiHelper guiHelper) {
-        super(MekanismMagicJeiPlugin.RITUAL_TYPE,
+        super(guiHelper, MekanismMagicJeiPlugin.RITUAL_TYPE,
                 Component.translatable("jei.mekanism_magic.ritual"),
                 guiHelper.createDrawableItemLike(NativeMekanismRegistries.RITUAL_BLOCK.asItem()),
                 176, 110);
@@ -25,8 +24,8 @@ public final class RitualJeiCategory extends AbstractRecipeCategory<
                           OccultismRecipeBridge.RitualJeiData recipe,
                           IFocusGroup focuses) {
         JeiSlotMarker.mark(
-                        builder.addSlot(RecipeIngredientRole.CATALYST, 4, 46)
-                                .setStandardSlotBackground(),
+                        input(builder.addSlot(
+                                RecipeIngredientRole.CATALYST, 4, 46)),
                         JeiSlotMarker.Kind.RITUAL_SELECTOR,
                         "ritual_selector")
                 .addItemStack(recipe.selector());
@@ -40,9 +39,8 @@ public final class RitualJeiCategory extends AbstractRecipeCategory<
             var ingredient = recipe.ingredients().get(index);
             if (!ingredient.isEmpty() && ingredient.getItems().length > 0) {
                 JeiSlotMarker.mark(
-                                builder.addInputSlot(4 + column * 18,
-                                                4 + row * 18)
-                                        .setStandardSlotBackground(),
+                                input(builder.addInputSlot(
+                                        4 + column * 18, 4 + row * 18)),
                                 JeiSlotMarker.Kind.INPUT, "input_" + index)
                         .addIngredients(ingredient);
             }
@@ -51,22 +49,20 @@ public final class RitualJeiCategory extends AbstractRecipeCategory<
                 && !recipe.activation().isEmpty()
                 && recipe.activation().getItems().length > 0) {
             JeiSlotMarker.mark(
-                            builder.addInputSlot(22, 46)
-                                    .setStandardSlotBackground(),
+                            input(builder.addInputSlot(22, 46)),
                             JeiSlotMarker.Kind.ACTIVATION, "activation")
                     .addIngredients(recipe.activation());
         }
         for (int index = 0; index < Math.min(4, recipe.sacrifices().size()); index++) {
             JeiSlotMarker.mark(
-                            builder.addInputSlot(58 + index * 18, 46)
-                                    .setStandardSlotBackground(),
+                            input(builder.addInputSlot(
+                                    58 + index * 18, 46)),
                             JeiSlotMarker.Kind.SACRIFICE,
                             "sacrifice_" + index)
                     .addItemStack(recipe.sacrifices().get(index));
         }
         JeiSlotMarker.mark(
-                        builder.addOutputSlot(148, 22)
-                                .setOutputSlotBackground(),
+                        output(builder.addOutputSlot(148, 22)),
                         JeiSlotMarker.Kind.OUTPUT, "output")
                 .addItemStack(recipe.output());
     }

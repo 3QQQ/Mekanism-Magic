@@ -17,6 +17,7 @@ import java.util.Properties;
 public final class ModCompatibility {
     public static final String OCCULTISM = "occultism";
     public static final String ARS_NOUVEAU = "ars_nouveau";
+    public static final String ARS_ENERGISTIQUE = "arseng";
     public static final String MEKANISM_EXTRAS = "mekanism_extras";
     public static final String MEKMM = "mekmm";
     public static final String MEK_ENERGISTICS = "mekenergistics";
@@ -38,11 +39,9 @@ public final class ModCompatibility {
     }
 
     /**
-     * Ars Nouveau machine content is opt-in while its full recipe and
-     * multiplayer compatibility matrix is being completed. Development runs
-     * enable it with -Pmekanism_magic.ars_machine_content=true; release builds
-     * leave it disabled by default. The independent mob-jar adapter remains
-     * available whenever Ars Nouveau is installed.
+     * Ars Nouveau machine content is packaged by default so its registry IDs
+     * remain stable across restarts. An explicit system-property override is
+     * retained for isolated compatibility diagnostics only.
      */
     public static boolean arsNouveauMachineContentEnabled() {
         String override = System.getProperty(ARS_MACHINE_CONTENT_PROPERTY);
@@ -113,13 +112,13 @@ public final class ModCompatibility {
                 .getResourceAsStream(
                         "META-INF/mekanism_magic_features.properties")) {
             if (stream == null) {
-                return false;
+                return true;
             }
             properties.load(stream);
             return Boolean.parseBoolean(properties.getProperty(
-                    "ars_nouveau_machine_content", "false"));
+                    "ars_nouveau_machine_content", "true"));
         } catch (IOException ignored) {
-            return false;
+            return true;
         }
     }
 }

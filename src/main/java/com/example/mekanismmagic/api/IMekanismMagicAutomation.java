@@ -14,7 +14,7 @@ import java.util.List;
  * of live Mekanism inventory-slot references.</p>
  */
 public interface IMekanismMagicAutomation {
-    int API_VERSION = 1;
+    int API_VERSION = 2;
 
     default int mekanismMagicAutomationApiVersion() {
         return API_VERSION;
@@ -54,6 +54,14 @@ public interface IMekanismMagicAutomation {
 
     default boolean mekanismMagicSupportsPatternAutomation() {
         return true;
+    }
+
+    /**
+     * Whether an optional storage-network bridge may attach a native node and
+     * return this machine's output slots without an installed machine upgrade.
+     */
+    default boolean mekanismMagicSupportsDirectNetworkOutput() {
+        return false;
     }
 
     default boolean mekanismMagicIsBusy() {

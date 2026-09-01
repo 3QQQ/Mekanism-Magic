@@ -1,7 +1,9 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -22,7 +24,7 @@ public final class CatalystIdentifierItem extends Item {
                     "mekanism_magic", "catalyst/unknown");
         }
         ResourceLocation id = ResourceLocation.tryParse(
-                data.copyTag().getString("catalyst_id"));
+                data.getUnsafe().getString("catalyst_id"));
         return id == null ? ResourceLocation.fromNamespaceAndPath(
                 "mekanism_magic", "catalyst/unknown") : id;
     }
@@ -32,13 +34,45 @@ public final class CatalystIdentifierItem extends Item {
         if (data == null || data.isEmpty()) {
             return false;
         }
-        var recipes = data.copyTag().getList("recipes", 8);
+        var recipes = data.getUnsafe().getList("recipes", 8);
+        String recipeId = id.toString();
         for (int index = 0; index < recipes.size(); index++) {
-            if (id.toString().equals(recipes.getString(index))) {
+            if (recipeId.equals(recipes.getString(index))) {
                 return true;
             }
         }
         return false;
+    }
+
+    public static boolean matchesCatalystId(
+            ItemStack stack, ResourceLocation id) {
+        if (stack == null || stack.isEmpty() || id == null) {
+            return false;
+        }
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && !data.isEmpty()
+                && id.toString().equals(data.getUnsafe()
+                .getString("catalyst_id"));
+    }
+
+    @Override
+    public Component getName(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data == null || data.isEmpty()) {
+            return super.getName(stack);
+        }
+        ResourceLocation displayId = ResourceLocation.tryParse(
+                data.getUnsafe().getString("display_item"));
+        if (displayId == null) {
+            return super.getName(stack);
+        }
+        Item displayItem = BuiltInRegistries.ITEM.get(displayId);
+        if (displayItem == Items.AIR) {
+            return super.getName(stack);
+        }
+        return Component.translatable(
+                "item.mekanism_magic.catalyst_identifier.bound",
+                displayItem.getDescription());
     }
 
     @Override
@@ -51,7 +85,7 @@ public final class CatalystIdentifierItem extends Item {
                     "item.mekanism_magic.catalyst_identifier.unbound"));
             return;
         }
-        var tag = data.copyTag();
+        var tag = data.getUnsafe();
         tooltip.add(Component.translatable(
                 "item.mekanism_magic.catalyst_identifier.id",
                 tag.getString("catalyst_id")));

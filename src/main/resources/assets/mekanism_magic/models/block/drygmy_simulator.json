@@ -1,13 +1,3 @@
 {
-  "parent": "mekanism:block/enrichment_chamber",
-  "textures": {
-    "particle": "mekanism_magic:block/drygmy_simulator/front",
-    "sides": "mekanism_magic:block/drygmy_simulator/side",
-    "front": "mekanism_magic:block/drygmy_simulator/front",
-    "west": "mekanism_magic:block/drygmy_simulator/side",
-    "east": "mekanism_magic:block/drygmy_simulator/side",
-    "south": "mekanism_magic:block/drygmy_simulator/back",
-    "up": "mekanism_magic:block/drygmy_simulator/top",
-    "down": "mekanism_magic:block/drygmy_simulator/bottom"
-  }
+  "parent": "mekanism_magic:block/drygmy_simulator_base"
 }

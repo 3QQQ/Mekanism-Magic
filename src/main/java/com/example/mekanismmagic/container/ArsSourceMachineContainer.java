@@ -47,6 +47,14 @@ public final class ArsSourceMachineContainer<
             tile.cycleSourceMode(buttonId - 200);
             return true;
         }
+        if (buttonId >= 210 && buttonId < 216) {
+            tile.cycleSourceMode(buttonId - 210, -1);
+            return true;
+        }
+        if (buttonId == 230 || buttonId == 231) {
+            tile.shiftAllSourceModes(buttonId == 230 ? 1 : -1);
+            return true;
+        }
         if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
                 .ImbuementProcessorBlockEntity imbuement) {
             if (buttonId == 220) {
@@ -63,6 +71,16 @@ public final class ArsSourceMachineContainer<
                     .NativeMagicMachineBlockEntity
                     .CATALYST_LIBRARY_SLOT_COUNT) {
                 imbuement.selectCatalystIdentifier(buttonId - 300);
+                return true;
+            }
+            if (buttonId == 399) {
+                imbuement.clearCatalystIdentifierSelection();
+                return true;
+            }
+            if (buttonId >= 400
+                    && buttonId < 400
+                    + imbuement.catalystIdentifierRecipeCount()) {
+                imbuement.selectCatalystIdentifierRecipe(buttonId - 400);
                 return true;
             }
         }

@@ -53,6 +53,46 @@
       "required": false
     },
     {
+      "id": "mekanism_magic:source_converter",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:catalyst_identifier_assembler",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:advanced_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:elite_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:ultimate_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:absolute_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:supreme_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:cosmic_magic_source_pipe",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:infinite_magic_source_pipe",
+      "required": false
+    },
+    {
       "id": "mekanism_magic:imbuement_processor",
       "required": false
     },

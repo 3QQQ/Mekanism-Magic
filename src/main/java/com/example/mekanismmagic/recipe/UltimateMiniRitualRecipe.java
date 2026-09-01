@@ -113,7 +113,7 @@ public final class UltimateMiniRitualRecipe extends CustomRecipe {
         net.minecraft.world.item.component.CustomData data =
                 stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         return data != null && !data.isEmpty()
-                && required.equals(data.copyTag().getString("pentacle"));
+                && required.equals(data.getUnsafe().getString("pentacle"));
     }
 
     private static boolean isItem(ItemStack stack, String id) {

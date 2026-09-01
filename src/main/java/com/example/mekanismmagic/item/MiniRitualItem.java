@@ -68,16 +68,16 @@ public final class MiniRitualItem extends Item {
                                 List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        var tag = data == null ? null : data.getUnsafe();
         if (data != null && !data.isEmpty()
-                && (data.copyTag().contains("ritual")
-                || data.copyTag().contains("pentacle"))) {
-            if (data.copyTag().contains("ritual")) {
-                tooltip.add(Component.literal(data.copyTag().getString("ritual")));
+                && (tag.contains("ritual") || tag.contains("pentacle"))) {
+            if (tag.contains("ritual")) {
+                tooltip.add(Component.literal(tag.getString("ritual")));
             } else {
                 tooltip.add(Component.translatable(
                         "item.mekanism_magic.mini_ritual.pentacle_only"));
             }
-            if (data.copyTag().contains("pentacle")) {
+            if (tag.contains("pentacle")) {
                 tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.pentacle",
                         OccultismRecipeBridge.pentacleDisplayName(
                                 pentacleId(stack))));
@@ -94,7 +94,7 @@ public final class MiniRitualItem extends Item {
         if (data == null || data.isEmpty()) {
             return null;
         }
-        return ResourceLocation.tryParse(data.copyTag().getString("ritual"));
+        return ResourceLocation.tryParse(data.getUnsafe().getString("ritual"));
     }
 
     private static ResourceLocation pentacleId(ItemStack stack) {
@@ -102,7 +102,7 @@ public final class MiniRitualItem extends Item {
         if (data == null || data.isEmpty()) {
             return null;
         }
-        return ResourceLocation.tryParse(data.copyTag().getString("pentacle"));
+        return ResourceLocation.tryParse(data.getUnsafe().getString("pentacle"));
     }
 
     private static void showProjection(Object multiblock, Component name) {

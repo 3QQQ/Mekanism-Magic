@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["PPP", "PAP", "PPP"],
+  "key": {
+    "P": {"item": "mekanism_magic:ultimate_magic_source_pipe"},
+    "A": {"tag": "mekanism_extras:alloys/radiance"}
+  },
+  "result": {"id": "mekanism_magic:absolute_magic_source_pipe", "count": 8},
+  "neoforge:conditions": [
+    {"type": "neoforge:mod_loaded", "modid": "ars_nouveau"},
+    {"type": "neoforge:mod_loaded", "modid": "mekanism_extras"}
+  ]
+}

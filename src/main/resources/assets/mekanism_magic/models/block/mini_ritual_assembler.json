@@ -1,13 +1,3 @@
 {
-  "parent": "mekanism:block/combiner",
-  "textures": {
-    "particle": "mekanism_magic:block/mini_ritual_assembler/front",
-    "sides": "mekanism_magic:block/mini_ritual_assembler/side",
-    "front": "mekanism_magic:block/mini_ritual_assembler/front",
-    "west": "mekanism_magic:block/mini_ritual_assembler/side",
-    "east": "mekanism_magic:block/mini_ritual_assembler/side",
-    "south": "mekanism_magic:block/mini_ritual_assembler/back",
-    "up": "mekanism_magic:block/mini_ritual_assembler/top",
-    "down": "mekanism_magic:block/mini_ritual_assembler/bottom"
-  }
+  "parent": "mekanism_magic:block/mini_ritual_assembler_base"
 }

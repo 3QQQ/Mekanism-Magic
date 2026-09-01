@@ -2,11 +2,14 @@ package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
 import com.example.mekanismmagic.client.gui.GuiChalkModuleTab;
+import com.example.mekanismmagic.client.gui.MagicGuiTheme;
+import com.example.mekanismmagic.client.OccultismRecipeViewerTypes;
 import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.gui.element.slot.SlotType;
 import mekanism.client.recipe_viewer.interfaces.IRecipeViewerGhostTarget;
+import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -40,6 +43,11 @@ public final class NativeMiniRitualAssemblerScreen
     }
 
     @Override
+    protected int energyBarHeight() {
+        return 87;
+    }
+
+    @Override
     protected boolean showUpArrow() {
         return false;
     }
@@ -57,6 +65,12 @@ public final class NativeMiniRitualAssemblerScreen
     @Override
     protected mekanism.client.gui.element.progress.ProgressType progressType() {
         return mekanism.client.gui.element.progress.ProgressType.SMALL_RIGHT;
+    }
+
+    @Override
+    protected IRecipeViewerRecipeType<?>[] recipeViewerTypes() {
+        return new IRecipeViewerRecipeType<?>[]{
+                OccultismRecipeViewerTypes.MINI_RITUAL};
     }
 
     @Override
@@ -136,26 +150,21 @@ public final class NativeMiniRitualAssemblerScreen
         if (chalkModuleOpen) {
             int left = leftPos + 236;
             int top = topPos + 88;
-            graphics.fill(left, top, left + 80, top + 92, 0xFF151A21);
-            graphics.fill(left, top, left + 80, top + 2, 0xFF78838F);
-            graphics.fill(left, top, left + 2, top + 92, 0xFF78838F);
-            graphics.fill(left, top + 90, left + 80, top + 92, 0xFF090C11);
-            graphics.fill(left + 78, top, left + 80, top + 92, 0xFF090C11);
-            graphics.fill(left + 4, top + 14, left + 76, top + 88, 0xFF252B34);
+            MagicGuiTheme.renderDockedPanel(graphics, left, top, 80, 92);
         }
     }
 
     @Override
     protected void drawForegroundText(GuiGraphics graphics, int mouseX, int mouseY) {
         super.drawForegroundText(graphics, mouseX, mouseY);
-        graphics.drawCenteredString(font,
+        MagicGuiTheme.drawCenteredText(graphics, font,
                 Component.translatable(
                         "gui.mekanism_magic.mini_ritual.recipe_lock"),
-                LOCK_SLOT_X + 9, 64, 0x000000);
+                LOCK_SLOT_X + 9, 64, MagicGuiTheme.textMuted());
         if (chalkModuleOpen) {
-            graphics.drawString(font,
+            MagicGuiTheme.renderPanelCaption(graphics, font,
                     Component.translatable("gui.mekanism_magic.chalk"),
-                    240, 92, 0xD8DEE8, false);
+                    236, 88, 80);
         }
     }
 

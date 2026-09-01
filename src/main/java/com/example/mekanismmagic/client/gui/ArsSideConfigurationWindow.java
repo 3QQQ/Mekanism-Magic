@@ -6,49 +6,70 @@ import mekanism.api.RelativeSide;
 import mekanism.api.text.EnumColor;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.GuiElement;
+import mekanism.client.gui.element.GuiInnerScreen;
 import mekanism.client.gui.element.GuiInsetElement;
 import mekanism.client.gui.element.button.SideDataButton;
+import mekanism.client.gui.element.button.TooltipToggleButton;
+import mekanism.client.gui.element.tab.GuiConfigTypeTab;
 import mekanism.client.gui.element.window.GuiSideConfiguration;
+import mekanism.client.gui.tooltip.TooltipUtils;
+import mekanism.client.render.IFancyFontRenderer.TextAlignment;
 import mekanism.client.render.MekanismRenderer;
+import mekanism.common.MekanismLang;
 import mekanism.common.inventory.container.SelectedWindowData;
+import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.component.config.DataType;
-import mekanism.common.util.MekanismUtils;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Mekanism's native side configuration window with Source as an additional
- * page. The Source page uses the same six-direction positions as the native
- * side diagram; it does not occupy or overlap the native transmission tabs.
- */
+/** Mekanism's side configuration window with Source as a native-style page. */
 public final class ArsSideConfigurationWindow<
         TILE extends mekanism.common.tile.base.TileEntityMekanism
         & mekanism.common.tile.interfaces.ISideConfiguration
         & ArsSourceModeHost>
         extends GuiSideConfiguration<TILE> {
-    private final ArsSourceModeHost sourceHost;
-    private final List<SideDataButton> originalButtons = new ArrayList<>();
-    private final SourceButton[] sourceButtons = new SourceButton[6];
-    private final SourcePageTab sourcePageTab;
+    static final int WINDOW_WIDTH = 156;
+    private final TILE tile;
+    private List<GuiElement> nativePageElements;
+    private List<GuiConfigTypeTab> nativeTypeTabs;
+    private SourceButton[] sourceButtons;
+    private GuiInnerScreen sourceStatus;
+    private TooltipToggleButton sourceBatchButton;
+    private SourceConfigTypeTab sourceTab;
     private boolean sourcePage;
 
     public ArsSideConfigurationWindow(
             IGuiWrapper gui, int x, int y, TILE tile,
             SelectedWindowData data) {
         super(gui, x, y, tile, data);
-        sourceHost = tile;
+        this.tile = tile;
+        nativePageElements = new ArrayList<>();
+        nativeTypeTabs = new ArrayList<>();
+        sourceButtons = new SourceButton[6];
 
-        for (GuiElement child : children()) {
-            if (child instanceof SideDataButton button) {
-                originalButtons.add(button);
+        for (GuiElement child : List.copyOf(children())) {
+            if (child instanceof GuiConfigTypeTab tab) {
+                nativeTypeTabs.add(tab);
+            } else if (child instanceof SideDataButton
+                    || child instanceof GuiInnerScreen
+                    || child instanceof TooltipToggleButton
+                    || isNativeEjectButton(child)) {
+                nativePageElements.add(child);
             }
         }
 
-        sourcePageTab = addChild(new SourcePageTab(gui, this));
+        sourceStatus = addChild(new GuiInnerScreen(gui,
+                relativeX + 38, relativeY + 25, 80, 12,
+                () -> List.of(MekanismLang.NO_EJECT.translate()))
+                .tooltip(() -> List.of(
+                        MekanismLang.CANT_EJECT_TOOLTIP.translate())));
+
         for (RelativeSide side : RelativeSide.values()) {
             int buttonX = switch (side) {
                 case BACK, LEFT -> 44;
@@ -61,82 +82,142 @@ public final class ArsSideConfigurationWindow<
                 case BACK, BOTTOM -> 92;
             };
             sourceButtons[side.ordinal()] = addChild(new SourceButton(
-                    gui, buttonX, buttonY, side, tile));
+                    gui, relativeX + buttonX, relativeY + buttonY,
+                    side, tile));
         }
-        updatePageVisibility();
+
+        sourceBatchButton = addChild(new TooltipToggleButton(gui,
+                relativeX + 136, relativeY + 95, 14,
+                getButtonLocation("clear_sides"),
+                () -> tile.sourceModeTarget(1)
+                        == ArsSourceMachineBlockEntity.SourceMode.NONE,
+                (element, mouseX, mouseY) -> sendButton(230),
+                (element, mouseX, mouseY) -> sendButton(231),
+                TooltipUtils.create(MekanismLang.SIDE_CONFIG_CLEAR,
+                        MekanismLang.SIDE_CONFIG_CLEAR_ALL),
+                TooltipUtils.create(MekanismLang.SIDE_CONFIG_INCREMENT)));
+
+        int tabIndex = nativeTypeTabs.size();
+        boolean left = tabIndex < 4;
+        sourceTab = addChild(new SourceConfigTypeTab(gui,
+                relativeX + (left ? -26 : WINDOW_WIDTH),
+                relativeY + 2 + 28 * (tabIndex % 4), left, this));
+        updateTabs();
+    }
+
+    @Override
+    public void setCurrentType(TransmissionType type) {
+        sourcePage = false;
+        super.setCurrentType(type);
+    }
+
+    private void showSourcePage() {
+        sourcePage = true;
+        updateTabs();
+    }
+
+    @Override
+    public void updateTabs() {
+        super.updateTabs();
+        // GuiSideConfiguration calls this from its constructor before this
+        // subclass has initialized its page controls.
+        if (nativePageElements == null) {
+            return;
+        }
+        for (GuiElement element : nativePageElements) {
+            boolean ejectButton = isNativeEjectButton(element);
+            element.visible = !sourcePage || ejectButton;
+            if (sourcePage) {
+                element.active = false;
+            } else if (!(element instanceof SideDataButton)
+                    && !ejectButton) {
+                element.active = true;
+            }
+        }
+        for (GuiConfigTypeTab tab : nativeTypeTabs) {
+            if (sourcePage) {
+                tab.visible = true;
+            }
+            tab.active = true;
+        }
+        for (SourceButton button : sourceButtons) {
+            button.visible = sourcePage;
+            button.active = sourcePage;
+            button.refresh(tile.getSourceMode(button.absoluteDirection()));
+        }
+        sourceStatus.visible = sourcePage;
+        sourceStatus.active = sourcePage;
+        sourceBatchButton.visible = sourcePage;
+        sourceBatchButton.active = sourcePage;
+        sourceTab.visible = !sourcePage;
+        sourceTab.active = !sourcePage;
     }
 
     @Override
     public void tick() {
         super.tick();
-        for (SourceButton button : sourceButtons) {
-            button.refresh(sourceHost.getSourceMode(
-                    button.absoluteDirection()));
-        }
-        if (sourcePage && originalButtons.stream()
-                .anyMatch(button -> button.visible)) {
-            sourcePage = false;
-            updatePageVisibility();
+        if (sourcePage) {
+            for (SourceButton button : sourceButtons) {
+                button.refresh(tile.getSourceMode(
+                        button.absoluteDirection()));
+            }
         }
     }
 
     @Override
     public void renderForeground(
             GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderForeground(graphics, mouseX, mouseY);
-        if (sourcePage) {
-            graphics.fill(relativeX + 38, relativeY + 25,
-                    relativeX + 118, relativeY + 37, 0xFF303030);
-            graphics.drawString(font(), Component.translatable(
-                            "gui.mekanism_magic.source_column"),
-                    relativeX + 42, relativeY + 27, 0xFFFFFF);
+        if (!sourcePage) {
+            super.renderForeground(graphics, mouseX, mouseY);
+            return;
         }
+        drawTitleText(graphics, MekanismLang.CONFIG_TYPE.translate(
+                Component.translatable("gui.mekanism_magic.source")), 5);
+        drawScrollingString(graphics, MekanismLang.SLOTS.translate(),
+                0, 120, TextAlignment.CENTER,
+                subheadingTextColor(), 4, false);
     }
 
-    private void toggleSourcePage() {
-        sourcePage = !sourcePage;
-        updatePageVisibility();
+    private boolean isNativeEjectButton(GuiElement element) {
+        return element.getRelativeX() == relativeX + 136
+                && element.getRelativeY() == relativeY + 6;
     }
 
-    private void updatePageVisibility() {
-        if (sourcePage) {
-            for (SideDataButton button : originalButtons) {
-                button.visible = false;
-            }
-        } else {
-            updateTabs();
+    private boolean sendButton(int id) {
+        if (GuiElement.minecraft.gameMode == null
+                || !(gui() instanceof mekanism.client.gui.GuiMekanism<?> screen)) {
+            return false;
         }
-        for (SourceButton button : sourceButtons) {
-            button.visible = sourcePage;
-            button.active = sourcePage;
-        }
-        sourcePageTab.active = true;
+        GuiElement.minecraft.gameMode.handleInventoryButtonClick(
+                screen.getMenu().containerId, id);
+        return true;
     }
 
-    private static final class SourcePageTab extends GuiInsetElement<Void> {
+    private static final class SourceConfigTypeTab
+            extends GuiInsetElement<Void> {
+        private static final ResourceLocation ICON =
+                ResourceLocation.fromNamespaceAndPath(
+                        "ars_nouveau", "textures/item/source_gem.png");
         private final ArsSideConfigurationWindow<?> window;
 
-        private SourcePageTab(IGuiWrapper gui,
-                              ArsSideConfigurationWindow<?> window) {
-            super(MekanismUtils.getResource(
-                            MekanismUtils.ResourceType.GUI,
-                            "configuration.png"),
-                    gui, null, 156, 2, 26, 18, false);
+        private SourceConfigTypeTab(
+                IGuiWrapper gui, int x, int y, boolean left,
+                ArsSideConfigurationWindow<?> window) {
+            super(ICON, gui, null, x, y, 26, 18, left);
             this.window = window;
-            setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                    Component.translatable(
-                            "gui.mekanism_magic.source_column")));
+            setTooltip(Tooltip.create(Component.translatable(
+                    "gui.mekanism_magic.source")));
         }
 
         @Override
         protected void colorTab(GuiGraphics graphics) {
             MekanismRenderer.color(graphics,
-                    mekanism.client.SpecialColors.TAB_CONFIGURATION);
+                    MagicGuiTheme.accentSource());
         }
 
         @Override
         public void onClick(double mouseX, double mouseY, int button) {
-            window.toggleSourcePage();
+            window.showSourcePage();
         }
     }
 
@@ -164,8 +245,7 @@ public final class ArsSideConfigurationWindow<
             this.state = state;
         }
 
-        private void refresh(
-                ArsSourceMachineBlockEntity.SourceMode mode) {
+        private void refresh(ArsSourceMachineBlockEntity.SourceMode mode) {
             state.type = switch (mode) {
                 case NONE -> DataType.NONE;
                 case INPUT -> DataType.INPUT;
@@ -188,7 +268,8 @@ public final class ArsSideConfigurationWindow<
                     && gui instanceof mekanism.client.gui.GuiMekanism<?> screen) {
                 GuiElement.minecraft.gameMode.handleInventoryButtonClick(
                         screen.getMenu().containerId,
-                        200 + absoluteDirection().ordinal());
+                        (button == 0 ? 200 : 210)
+                                + absoluteDirection().ordinal());
                 return true;
             }
             return false;

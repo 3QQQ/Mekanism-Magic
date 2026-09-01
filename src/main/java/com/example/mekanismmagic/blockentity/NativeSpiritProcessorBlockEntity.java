@@ -41,9 +41,24 @@ public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBl
         return OccultismRecipeBridge.findSpiritRecipe(level, inventory, inventory.getStackInSlot(CONTAINMENT_SLOT));
     }
 
+    /** A spirit source on its own is a configured idle state, not an error. */
+    @Override
+    protected boolean hasAnyRecipeInput() {
+        return inputSlot != null && !inputSlot.getStack().isEmpty()
+                && containmentSlot != null
+                && !containmentSlot.getStack().isEmpty();
+    }
+
     @Override
     protected int baseEnergyPerTick() {
         return 400;
+    }
+
+    @Override
+    protected ItemStack recipeEntityDisplaySource(
+            MachineRecipeResult recipe) {
+        return containmentSlot == null
+                ? ItemStack.EMPTY : containmentSlot.getStack();
     }
 
     @Override

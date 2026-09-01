@@ -12,7 +12,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.me.ManagedGridNode;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRecipeBridge;
-import com.example.mekanismmagic.integration.arsnouveau.CatalystIdentifierItem;
+import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRecipeScanner;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementProcessorBlockEntity;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
@@ -72,8 +72,8 @@ public final class Ae2ImbuementProvider
         if (level == null) {
             return List.of();
         }
-        return level.getRecipeManager().getAllRecipesFor(
-                        RecipeRegistry.IMBUEMENT_TYPE.get()).stream()
+        return ArsNouveauRecipeScanner.scan(
+                        level.getRecipeManager()).stream()
                 .map(holder -> new Ae2ImbuementPattern(tile, holder))
                 .map(pattern -> (IPatternDetails) pattern)
                 .toList();
@@ -87,7 +87,8 @@ public final class Ae2ImbuementProvider
                 || tile.mekanismMagicIsBusy()) {
             return false;
         }
-        if (!tile.selectCatalystIdentifierId(
+        if (imbuement.requiresCatalystIdentifier()
+                && !tile.selectCatalystIdentifierId(
                 imbuement.catalystId().toString())) {
             return false;
         }
@@ -124,6 +125,20 @@ public final class Ae2ImbuementProvider
     @Override
     public int getPatternPriority() {
         return 0;
+    }
+
+    static void refreshAllPatterns() {
+        List<Ae2ImbuementProvider> providers;
+        synchronized (INSTANCES) {
+            providers = List.copyOf(INSTANCES.values());
+        }
+        for (Ae2ImbuementProvider provider : providers) {
+            IGridNode gridNode = provider.node.getNode();
+            if (gridNode != null && gridNode.getGrid() != null) {
+                gridNode.getGrid().getCraftingService()
+                        .refreshNodeCraftingProvider(gridNode);
+            }
+        }
     }
 
     private static final class Listener

@@ -12,8 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Replaces Mekanism's normal side tab with the same tab backed by the
- * extended window that also contains the Ars Source column.
+ * Replaces Mekanism's normal side tab with the same tab backed by a native
+ * configuration window that includes a Source page.
  */
 public final class ArsIntegratedSideConfig {
     private ArsIntegratedSideConfig() {

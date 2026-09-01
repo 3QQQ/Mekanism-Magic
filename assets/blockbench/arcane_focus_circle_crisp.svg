@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" shape-rendering="geometricPrecision">
+  <defs>
+    <g id="focusNode" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+      <path d="M256 20 L238 42 L256 64 L274 42 Z" stroke="#F4C95D" stroke-width="8"/>
+      <path d="M244 42 H268 M256 29 V55" stroke="#4DEAFF" stroke-width="6"/>
+      <circle cx="256" cy="76" r="7" fill="#9C4DFF" stroke="#F4C95D" stroke-width="4"/>
+    </g>
+    <g id="focusRune" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+      <path d="M256 94 V126 M242 110 L256 96 L270 110" stroke="#9C4DFF" stroke-width="7"/>
+      <path d="M246 126 H266" stroke="#4DEAFF" stroke-width="6"/>
+    </g>
+    <g id="focusTick" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+      <path d="M246 82 L256 70 L266 82 M250 88 H262" stroke="#F4C95D" stroke-width="5"/>
+      <path d="M256 70 V91" stroke="#4DEAFF" stroke-width="4"/>
+    </g>
+  </defs>
+
+  <g fill="none" opacity="0.96">
+    <circle cx="256" cy="256" r="232" stroke="#B77A1F" stroke-width="5"/>
+    <circle cx="256" cy="256" r="220" stroke="#F4C95D" stroke-width="9"/>
+    <circle cx="256" cy="256" r="198" stroke="#F4C95D" stroke-width="4"/>
+
+    <use href="#focusNode"/>
+    <use href="#focusNode" transform="rotate(45 256 256)"/>
+    <use href="#focusNode" transform="rotate(90 256 256)"/>
+    <use href="#focusNode" transform="rotate(135 256 256)"/>
+    <use href="#focusNode" transform="rotate(180 256 256)"/>
+    <use href="#focusNode" transform="rotate(225 256 256)"/>
+    <use href="#focusNode" transform="rotate(270 256 256)"/>
+    <use href="#focusNode" transform="rotate(315 256 256)"/>
+
+    <use href="#focusRune"/>
+    <use href="#focusRune" transform="rotate(90 256 256)"/>
+    <use href="#focusRune" transform="rotate(180 256 256)"/>
+    <use href="#focusRune" transform="rotate(270 256 256)"/>
+
+    <use href="#focusTick" transform="rotate(22.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(67.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(112.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(157.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(202.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(247.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(292.5 256 256)"/>
+    <use href="#focusTick" transform="rotate(337.5 256 256)"/>
+
+    <path d="M256 108 L404 256 L256 404 L108 256 Z" stroke="#9C4DFF" stroke-width="7"/>
+    <path d="M256 126 L386 256 L256 386 L126 256 Z" stroke="#4DEAFF" stroke-width="4"/>
+    <circle cx="256" cy="256" r="142" stroke="#9C4DFF" stroke-width="8"/>
+
+    <path d="M256 114 V164 M398 256 H348 M256 398 V348 M114 256 H164" stroke="#4DEAFF" stroke-width="7"/>
+    <path d="M156 156 L190 190 M356 156 L322 190 M356 356 L322 322 M156 356 L190 322" stroke="#F4C95D" stroke-width="7"/>
+
+    <circle cx="256" cy="256" r="92" stroke="#F4C95D" stroke-width="9"/>
+    <path d="M256 170 L342 256 L256 342 L170 256 Z" stroke="#9C4DFF" stroke-width="10"/>
+    <path d="M256 190 L322 256 L256 322 L190 256 Z" stroke="#4DEAFF" stroke-width="7"/>
+    <path d="M256 196 V316 M196 256 H316" stroke="#9C4DFF" stroke-width="6"/>
+    <path d="M214 214 L298 298 M298 214 L214 298" stroke="#4DEAFF" stroke-width="6"/>
+    <circle cx="256" cy="256" r="22" fill="#F4C95D" stroke="#FFF1A8" stroke-width="6"/>
+    <circle cx="256" cy="256" r="8" fill="#4DEAFF" stroke="none"/>
+  </g>
+</svg>

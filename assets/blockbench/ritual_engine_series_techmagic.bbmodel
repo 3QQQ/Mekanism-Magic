@@ -1,0 +1,4462 @@
+{
+  "meta": {
+    "format_version": "5.0",
+    "model_format": "java_block",
+    "box_uv": false
+  },
+  "name": "ritual_engine_series_techmagic",
+  "parent": "",
+  "java_block_version": "1.21.11",
+  "ambientocclusion": true,
+  "front_gui_light": false,
+  "visible_box": [
+    1,
+    1,
+    0
+  ],
+  "variable_placeholders": "",
+  "multi_file_ruleset": "",
+  "variable_placeholder_buttons": [],
+  "unhandled_root_fields": {},
+  "resolution": {
+    "width": 16,
+    "height": 16
+  },
+  "elements": [
+    {
+      "name": "ritual_base_shadow",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        1,
+        0.5,
+        1
+      ],
+      "to": [
+        15,
+        1.5,
+        15
+      ],
+      "autouv": 1,
+      "color": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": 5
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": 5
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": 5
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            14,
+            1
+          ],
+          "texture": 5
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": 5
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            14,
+            14
+          ],
+          "texture": 5
+        }
+      },
+      "type": "cube",
+      "uuid": "3ca12a22-3786-174a-c875-80b7373dc171"
+    },
+    {
+      "name": "ritual_front_recess",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3,
+        2.2,
+        0.75
+      ],
+      "to": [
+        13,
+        3.8,
+        1.5
+      ],
+      "autouv": 1,
+      "color": 8,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": 5
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": 5
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            10,
+            1.6
+          ],
+          "texture": 5
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.6
+          ],
+          "texture": 5
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": 5
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            10,
+            0.75
+          ],
+          "texture": 5
+        }
+      },
+      "type": "cube",
+      "uuid": "b53b700e-a5d8-dbed-df2a-70864c97748c"
+    },
+    {
+      "name": "ritual_base_body",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "to": [
+        14.5,
+        4.25,
+        14.5
+      ],
+      "autouv": 1,
+      "color": 5,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": 5
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": 5
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": 5
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            13,
+            2.75
+          ],
+          "texture": 5
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": 5
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            13,
+            13
+          ],
+          "texture": 5
+        }
+      },
+      "type": "cube",
+      "uuid": "c24a7ca6-ff54-fa3c-c5d6-e9e87ebe17a0"
+    },
+    {
+      "name": "northwest_projector_pad",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2,
+        4.25,
+        2
+      ],
+      "to": [
+        6,
+        5,
+        6
+      ],
+      "autouv": 1,
+      "color": 5,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "697b2c45-0ff5-ee87-ddb2-1539da1621ca"
+    },
+    {
+      "name": "northeast_projector_pad",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        10,
+        4.25,
+        2
+      ],
+      "to": [
+        14,
+        5,
+        6
+      ],
+      "autouv": 1,
+      "color": 4,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "0c4f05a6-7bd4-ba96-3187-19306e0b968c"
+    },
+    {
+      "name": "southwest_projector_pad",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2,
+        4.25,
+        10
+      ],
+      "to": [
+        6,
+        5,
+        14
+      ],
+      "autouv": 1,
+      "color": 4,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "900374d8-cc6d-4731-edaa-890dbb53cb29"
+    },
+    {
+      "name": "southeast_projector_pad",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        10,
+        4.25,
+        10
+      ],
+      "to": [
+        14,
+        5,
+        14
+      ],
+      "autouv": 1,
+      "color": 6,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "62b30832-7057-27d8-a52e-7f6989cbe2d4"
+    },
+    {
+      "name": "ritual_center_bed",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        6,
+        4.25,
+        6
+      ],
+      "to": [
+        10,
+        5,
+        10
+      ],
+      "autouv": 1,
+      "color": 5,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4,
+            0.75
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "38aabcee-fcbf-ee07-6d5d-06482b625c7f"
+    },
+    {
+      "name": "ritual_front_binding_line_upper",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        5.5,
+        3.15,
+        0.5
+      ],
+      "to": [
+        10.5,
+        3.55,
+        0.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.25
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "30e31dce-6d9a-101d-61ca-2d33ce4e3e69"
+    },
+    {
+      "name": "ritual_front_soul_line_lower",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        4,
+        2.5,
+        0.5
+      ],
+      "to": [
+        12,
+        2.9,
+        0.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": 2
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": 2
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.4
+          ],
+          "texture": 2
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.4
+          ],
+          "texture": 2
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": 2
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.25
+          ],
+          "texture": 2
+        }
+      },
+      "type": "cube",
+      "uuid": "8254f699-d8ef-2f95-0114-3dff1d5f03f2"
+    },
+    {
+      "name": "ritual_west_side_line_lower",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        1.25,
+        2.3,
+        5
+      ],
+      "to": [
+        1.5,
+        2.8,
+        11
+      ],
+      "autouv": 1,
+      "color": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 2
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": 2
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 2
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": 2
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": 2
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": 2
+        }
+      },
+      "type": "cube",
+      "uuid": "4caa5ae8-9798-879d-bc52-d91d219c2545"
+    },
+    {
+      "name": "ritual_west_side_line_upper",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        1.25,
+        3,
+        6.25
+      ],
+      "to": [
+        1.5,
+        3.5,
+        9.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "a964f2ca-82c1-bb15-4c0a-3d8e2dfe5dda"
+    },
+    {
+      "name": "ritual_east_side_line_lower",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        14.5,
+        2.3,
+        5
+      ],
+      "to": [
+        14.75,
+        2.8,
+        11
+      ],
+      "autouv": 1,
+      "color": 9,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 2
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": 2
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 2
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": 2
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": 2
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            6
+          ],
+          "texture": 2
+        }
+      },
+      "type": "cube",
+      "uuid": "12633f80-a513-7dd9-f229-d78a3d2845d2"
+    },
+    {
+      "name": "ritual_east_side_line_upper",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        14.5,
+        3,
+        6.25
+      ],
+      "to": [
+        14.75,
+        3.5,
+        9.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            0.5
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            3.5,
+            0.5
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.25,
+            3.5
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "9b457f82-2677-aaf9-accd-4c8b8c5fd18b"
+    },
+    {
+      "name": "precision_ritual_dais",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        4,
+        5,
+        4
+      ],
+      "to": [
+        12,
+        5.75,
+        12
+      ],
+      "autouv": 1,
+      "color": 4,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": 8
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": 8
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": 8
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            0.75
+          ],
+          "texture": 8
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": 8
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": 8
+        }
+      },
+      "type": "cube",
+      "uuid": "4503e536-74cc-3285-ad27-7e31eef3751b"
+    },
+    {
+      "name": "ritual_ring_north",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        4.75,
+        5.75,
+        4.75
+      ],
+      "to": [
+        11.25,
+        6.15,
+        5.5
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "05d4c5aa-af53-020a-b1fb-46e681e0ef8f"
+    },
+    {
+      "name": "ritual_ring_south",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        4.75,
+        5.75,
+        10.5
+      ],
+      "to": [
+        11.25,
+        6.15,
+        11.25
+      ],
+      "autouv": 1,
+      "color": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            6.5,
+            0.75
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "fd24f9b4-26b3-31aa-0370-bfce8d9b7577"
+    },
+    {
+      "name": "ritual_ring_west",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        4.75,
+        5.75,
+        5.5
+      ],
+      "to": [
+        5.5,
+        6.15,
+        10.5
+      ],
+      "autouv": 1,
+      "color": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "3e5b150d-d284-24b6-c8bb-33c8ef72221c"
+    },
+    {
+      "name": "ritual_ring_east",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        10.5,
+        5.75,
+        5.5
+      ],
+      "to": [
+        11.25,
+        6.15,
+        10.5
+      ],
+      "autouv": 1,
+      "color": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.4
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.4
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "304a8922-1078-3563-6a50-09754bde2b9e"
+    },
+    {
+      "name": "projected_ritual_surface",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        5.5,
+        5.75,
+        5.5
+      ],
+      "to": [
+        10.5,
+        6.05,
+        10.5
+      ],
+      "autouv": 1,
+      "color": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": 4
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": 4
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": 4
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            0.3
+          ],
+          "texture": 4
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": 4
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": 4
+        }
+      },
+      "type": "cube",
+      "uuid": "392dea70-c1cc-2d9e-a3d7-c81a987ce910"
+    },
+    {
+      "name": "ritual_focus_base",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        7.25,
+        6.05,
+        7.25
+      ],
+      "to": [
+        8.75,
+        6.55,
+        8.75
+      ],
+      "autouv": 1,
+      "color": 9,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": 2
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": 2
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": 2
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            0.5
+          ],
+          "texture": 2
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": 2
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.5,
+            1.5
+          ],
+          "texture": 2
+        }
+      },
+      "type": "cube",
+      "uuid": "ba63a953-8c66-58e7-ab96-fe87704bb75d"
+    },
+    {
+      "name": "northwest_projector_base",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.5,
+        5,
+        2.5
+      ],
+      "to": [
+        4,
+        6,
+        4
+      ],
+      "autouv": 1,
+      "color": 6,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "7b9c3976-ab5f-a1b0-1381-094c366db7d5"
+    },
+    {
+      "name": "northeast_projector_base",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12,
+        5,
+        2.5
+      ],
+      "to": [
+        13.5,
+        6,
+        4
+      ],
+      "autouv": 1,
+      "color": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "3102c92b-a151-aa79-4276-0592121a9fa1"
+    },
+    {
+      "name": "southwest_projector_base",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.5,
+        5,
+        12
+      ],
+      "to": [
+        4,
+        6,
+        13.5
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "788abcc6-140a-c695-296c-3f6b2fc29bac"
+    },
+    {
+      "name": "southeast_projector_base",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12,
+        5,
+        12
+      ],
+      "to": [
+        13.5,
+        6,
+        13.5
+      ],
+      "autouv": 1,
+      "color": 6,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "texture": 6
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ],
+          "texture": 6
+        }
+      },
+      "type": "cube",
+      "uuid": "9e47a1bc-ce26-0a6a-1c87-82e2df02225f"
+    },
+    {
+      "name": "northwest_projector_mast",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3.1,
+        6,
+        3.1
+      ],
+      "to": [
+        3.9,
+        10,
+        3.9
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        }
+      },
+      "type": "cube",
+      "uuid": "200a875e-1d1d-9a7a-36b6-fd4a2166bc06"
+    },
+    {
+      "name": "northeast_projector_mast",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12.1,
+        6,
+        3.1
+      ],
+      "to": [
+        12.9,
+        10,
+        3.9
+      ],
+      "autouv": 1,
+      "color": 4,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        }
+      },
+      "type": "cube",
+      "uuid": "b6c6cc6d-6dd9-aa0f-f255-5fb85343fda0"
+    },
+    {
+      "name": "southwest_projector_mast",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3.1,
+        6,
+        12.1
+      ],
+      "to": [
+        3.9,
+        10,
+        12.9
+      ],
+      "autouv": 1,
+      "color": 8,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        }
+      },
+      "type": "cube",
+      "uuid": "5abacc16-9399-7a48-cd1c-d0058a781c38"
+    },
+    {
+      "name": "southeast_projector_mast",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12.1,
+        6,
+        12.1
+      ],
+      "to": [
+        12.9,
+        10,
+        12.9
+      ],
+      "autouv": 1,
+      "color": 5,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            4
+          ],
+          "texture": 8
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            0.8
+          ],
+          "texture": 8
+        }
+      },
+      "type": "cube",
+      "uuid": "e93225b9-5031-7eda-80e9-c97309d96eec"
+    },
+    {
+      "name": "northwest_projector_cap",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.8,
+        10,
+        2.8
+      ],
+      "to": [
+        4,
+        10.75,
+        4
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "2a7e1cee-3d63-3155-5283-c3d8734ece9d"
+    },
+    {
+      "name": "northeast_projector_cap",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12,
+        10,
+        2.8
+      ],
+      "to": [
+        13.2,
+        10.75,
+        4
+      ],
+      "autouv": 1,
+      "color": 9,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "43387632-af84-49b9-ef7d-cc987f9f28b0"
+    },
+    {
+      "name": "southwest_projector_cap",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.8,
+        10,
+        12
+      ],
+      "to": [
+        4,
+        10.75,
+        13.2
+      ],
+      "autouv": 1,
+      "color": 6,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "aefb854e-cdfe-ad60-8584-94b4233c3f10"
+    },
+    {
+      "name": "southeast_projector_cap",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12,
+        10,
+        12
+      ],
+      "to": [
+        13.2,
+        10.75,
+        13.2
+      ],
+      "autouv": 1,
+      "color": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            0.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1.4,
+            1.4
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "5942618a-31f2-86ff-d805-23a9b0366f42"
+    },
+    {
+      "name": "northwest_spirit_projector",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3.25,
+        10.75,
+        3.25
+      ],
+      "to": [
+        3.75,
+        11.25,
+        3.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        }
+      },
+      "type": "cube",
+      "uuid": "120d9d36-2b31-730c-0fa7-374478a6e0f1"
+    },
+    {
+      "name": "northeast_spirit_projector",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12.25,
+        10.75,
+        3.25
+      ],
+      "to": [
+        12.75,
+        11.25,
+        3.75
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        }
+      },
+      "type": "cube",
+      "uuid": "59063179-d17d-5fb3-9ca9-f69e0a0b6cb0"
+    },
+    {
+      "name": "southwest_spirit_projector",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3.25,
+        10.75,
+        12.25
+      ],
+      "to": [
+        3.75,
+        11.25,
+        12.75
+      ],
+      "autouv": 1,
+      "color": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        }
+      },
+      "type": "cube",
+      "uuid": "3393c00b-028c-87c7-6026-2a7e940f61b9"
+    },
+    {
+      "name": "southeast_spirit_projector",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        12.25,
+        10.75,
+        12.25
+      ],
+      "to": [
+        12.75,
+        11.25,
+        12.75
+      ],
+      "autouv": 1,
+      "color": 9,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "texture": 3
+        }
+      },
+      "type": "cube",
+      "uuid": "40f64039-fad3-5dcb-97dc-cf860a00d812"
+    },
+    {
+      "name": "ritual_conductor_south",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        7.4,
+        6.15,
+        11
+      ],
+      "to": [
+        8.6,
+        6.4,
+        12.6
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "87291acd-cf70-59b9-bd3e-5339487e5320"
+    },
+    {
+      "name": "ritual_conductor_west",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        3.4,
+        6.15,
+        7.4
+      ],
+      "to": [
+        5,
+        6.4,
+        8.6
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "4ef65f7f-4c3b-5ebe-8075-e09b2b4c31a0"
+    },
+    {
+      "name": "ritual_conductor_north",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        7.4,
+        6.15,
+        3.4
+      ],
+      "to": [
+        8.6,
+        6.4,
+        5
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "e47657bb-a3c4-5f62-b98a-45babf377a58"
+    },
+    {
+      "name": "southwest_projector_binding_collar",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.9,
+        7.8,
+        12.9
+      ],
+      "to": [
+        4.1,
+        8.25,
+        13.3
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "bf6550b3-14e5-51a1-8dc0-c5b8732bf5e8"
+    },
+    {
+      "name": "northwest_projector_binding_collar",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        2.9,
+        7.8,
+        2.7
+      ],
+      "to": [
+        4.1,
+        8.25,
+        3.1
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "564d9107-6836-5820-bf63-0314c17dfedb"
+    },
+    {
+      "name": "northeast_projector_binding_collar",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        11.9,
+        7.8,
+        2.7
+      ],
+      "to": [
+        13.1,
+        8.25,
+        3.1
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "2914a078-c3d0-5a8e-a411-1a3a4151562d"
+    },
+    {
+      "name": "ritual_conductor_east",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        11,
+        6.15,
+        7.4
+      ],
+      "to": [
+        12.6,
+        6.4,
+        8.6
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 1
+        }
+      },
+      "type": "cube",
+      "uuid": "f203167c-2a78-5a11-b840-a680ca39b202"
+    },
+    {
+      "name": "southeast_projector_binding_collar",
+      "box_uv": false,
+      "render_order": "default",
+      "rescale": false,
+      "locked": false,
+      "shade": true,
+      "light_emission": 0,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        11.9,
+        7.8,
+        12.9
+      ],
+      "to": [
+        13.1,
+        8.25,
+        13.3
+      ],
+      "autouv": 1,
+      "color": 0,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "5b1b6924-b4d0-5ee5-8214-f065b1a200f5"
+    }
+  ],
+  "groups": [
+    {
+      "name": "ars_ritual_platform",
+      "uuid": "92fb51f8-7918-cb64-9756-a32468e92df9",
+      "export": true,
+      "locked": false,
+      "scope": 0,
+      "selected": false,
+      "_static": {
+        "properties": {},
+        "temp_data": {}
+      },
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": 0,
+      "children": [],
+      "reset": false,
+      "shade": false,
+      "mirror_uv": false,
+      "visibility": true,
+      "autouv": 0,
+      "isOpen": false,
+      "primary_selected": false
+    },
+    {
+      "name": "ritual_platen",
+      "uuid": "50be30b0-5bad-7d00-8645-307c4807ca67",
+      "export": true,
+      "locked": false,
+      "scope": 0,
+      "selected": false,
+      "_static": {
+        "properties": {},
+        "temp_data": {}
+      },
+      "origin": [
+        8,
+        6,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": 0,
+      "children": [],
+      "reset": false,
+      "shade": false,
+      "mirror_uv": false,
+      "visibility": true,
+      "autouv": 0,
+      "isOpen": false,
+      "primary_selected": false
+    },
+    {
+      "name": "projector_towers",
+      "uuid": "a3e3087e-a9e1-efcd-c7c9-7cdbeed2fe2b",
+      "export": true,
+      "locked": false,
+      "scope": 0,
+      "selected": false,
+      "_static": {
+        "properties": {},
+        "temp_data": {}
+      },
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": 0,
+      "children": [],
+      "reset": false,
+      "shade": false,
+      "mirror_uv": false,
+      "visibility": true,
+      "autouv": 0,
+      "isOpen": false,
+      "primary_selected": false
+    },
+    {
+      "name": "ritual_focus",
+      "uuid": "aeedd648-dfab-d372-bf94-654c559c7a58",
+      "export": true,
+      "locked": false,
+      "scope": 0,
+      "selected": false,
+      "_static": {
+        "properties": {},
+        "temp_data": {}
+      },
+      "origin": [
+        8,
+        7,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": 0,
+      "children": [],
+      "reset": false,
+      "shade": false,
+      "mirror_uv": false,
+      "visibility": true,
+      "autouv": 0,
+      "isOpen": false,
+      "primary_selected": false
+    },
+    {
+      "name": "visible_refinement",
+      "uuid": "20a96899-36da-534d-a52e-6f4a57b2df24",
+      "export": true,
+      "locked": false,
+      "scope": 0,
+      "selected": false,
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": 0,
+      "children": [],
+      "reset": false,
+      "shade": false,
+      "mirror_uv": false,
+      "visibility": true,
+      "autouv": 0,
+      "isOpen": false,
+      "primary_selected": false
+    }
+  ],
+  "outliner": [
+    {
+      "uuid": "92fb51f8-7918-cb64-9756-a32468e92df9",
+      "isOpen": false,
+      "children": [
+        "3ca12a22-3786-174a-c875-80b7373dc171",
+        "b53b700e-a5d8-dbed-df2a-70864c97748c",
+        "c24a7ca6-ff54-fa3c-c5d6-e9e87ebe17a0",
+        "697b2c45-0ff5-ee87-ddb2-1539da1621ca",
+        "0c4f05a6-7bd4-ba96-3187-19306e0b968c",
+        "900374d8-cc6d-4731-edaa-890dbb53cb29",
+        "62b30832-7057-27d8-a52e-7f6989cbe2d4",
+        "38aabcee-fcbf-ee07-6d5d-06482b625c7f",
+        "30e31dce-6d9a-101d-61ca-2d33ce4e3e69",
+        "8254f699-d8ef-2f95-0114-3dff1d5f03f2",
+        "4caa5ae8-9798-879d-bc52-d91d219c2545",
+        "a964f2ca-82c1-bb15-4c0a-3d8e2dfe5dda",
+        "12633f80-a513-7dd9-f229-d78a3d2845d2",
+        "9b457f82-2677-aaf9-accd-4c8b8c5fd18b"
+      ]
+    },
+    {
+      "uuid": "50be30b0-5bad-7d00-8645-307c4807ca67",
+      "isOpen": false,
+      "children": [
+        "4503e536-74cc-3285-ad27-7e31eef3751b",
+        "05d4c5aa-af53-020a-b1fb-46e681e0ef8f",
+        "fd24f9b4-26b3-31aa-0370-bfce8d9b7577",
+        "3e5b150d-d284-24b6-c8bb-33c8ef72221c",
+        "304a8922-1078-3563-6a50-09754bde2b9e",
+        "392dea70-c1cc-2d9e-a3d7-c81a987ce910"
+      ]
+    },
+    {
+      "uuid": "a3e3087e-a9e1-efcd-c7c9-7cdbeed2fe2b",
+      "isOpen": false,
+      "children": [
+        "7b9c3976-ab5f-a1b0-1381-094c366db7d5",
+        "3102c92b-a151-aa79-4276-0592121a9fa1",
+        "788abcc6-140a-c695-296c-3f6b2fc29bac",
+        "9e47a1bc-ce26-0a6a-1c87-82e2df02225f",
+        "200a875e-1d1d-9a7a-36b6-fd4a2166bc06",
+        "b6c6cc6d-6dd9-aa0f-f255-5fb85343fda0",
+        "5abacc16-9399-7a48-cd1c-d0058a781c38",
+        "e93225b9-5031-7eda-80e9-c97309d96eec",
+        "2a7e1cee-3d63-3155-5283-c3d8734ece9d",
+        "43387632-af84-49b9-ef7d-cc987f9f28b0",
+        "aefb854e-cdfe-ad60-8584-94b4233c3f10",
+        "5942618a-31f2-86ff-d805-23a9b0366f42",
+        "120d9d36-2b31-730c-0fa7-374478a6e0f1",
+        "59063179-d17d-5fb3-9ca9-f69e0a0b6cb0",
+        "3393c00b-028c-87c7-6026-2a7e940f61b9",
+        "40f64039-fad3-5dcb-97dc-cf860a00d812"
+      ]
+    },
+    {
+      "uuid": "aeedd648-dfab-d372-bf94-654c559c7a58",
+      "isOpen": false,
+      "children": [
+        "ba63a953-8c66-58e7-ab96-fe87704bb75d"
+      ]
+    },
+    {
+      "uuid": "20a96899-36da-534d-a52e-6f4a57b2df24",
+      "isOpen": false,
+      "children": [
+        "87291acd-cf70-59b9-bd3e-5339487e5320",
+        "4ef65f7f-4c3b-5ebe-8075-e09b2b4c31a0",
+        "e47657bb-a3c4-5f62-b98a-45babf377a58",
+        "bf6550b3-14e5-51a1-8dc0-c5b8732bf5e8",
+        "564d9107-6836-5820-bf63-0314c17dfedb",
+        "2914a078-c3d0-5a8e-a411-1a3a4151562d",
+        "f203167c-2a78-5a11-b840-a680ca39b202",
+        "5b1b6924-b4d0-5ee5-8214-f065b1a200f5"
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "name": "gold.png",
+      "path":"",
+      "folder": "block/occult_machine",
+      "namespace": "mekanism_magic",
+      "id": "0",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": true,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "a611b360-8172-71bc-5f0f-f355252f9633",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAzklEQVR4AaySMQrCQBBFh0CwVBsb8QR2HiKlJ7EXT+AF7D2Fh0hllROIlYWNjWwR8wIzDBHXZUngMbOzf/9slimu56rNZbWYtoV03+HUSA7dUekNSI67NSEJrzUDblBtZpICWu1kBiGEvnapHxIDkWrJzaAsS9ZCjIGIfSKYAQvPcj4Rj9/z+U8DL4rl4xnowxBh2JUaUNdIbjfQhyHC/fkWDzXgkEZyM2CRw5fBv0EaNjEDxjM2QH4PrRqZAePJv6WA1gy2+1qa2ysLTD4AAAD//0kcNAEAAAAGSURBVAMAJNzRMdRcazcAAAAASUVORK5CYII="
+    },
+    {
+      "name": "binding.png",
+      "path":"",
+      "folder": "block/occult_machine",
+      "namespace": "mekanism_magic",
+      "id": "1",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "97ff7da0-d0d6-b193-9c13-b8e547811ae1",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAvElEQVR4AdyQIQoCYRCFh60abJ7AtGXTHsBoEItHUPAAnkKwCl7BIgajB9i0xeQJbAbNut/AwLDMj6BF/OHxv/dm5sFMtp7lz2+QSfNW+7tEKEeH0LfeZlQ0APIpfjTgUp8FFGVff3hqxeQKgyKXuroKf2oYXwN225N4UEB3bgv1TeN54GvAdD4UDwroR2+jvmk8D3wNgLTB3naDds3rMIC9gd0A7oc8DwN8wzv+LwHLSVciVMdx6Fsv93kBAAD///0pCVYAAAAGSURBVAMAjQOH8RVvd9cAAAAASUVORK5CYII="
+    },
+    {
+      "name": "soul.png",
+      "path":"",
+      "folder": "block/occult_machine",
+      "namespace": "mekanism_magic",
+      "id": "2",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "25960fb0-2b50-67c6-bc7c-6ad9c6d2bcc7",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA3klEQVR4AaSNPw4BURDGJ1s4gUSBYju0SvQOICoHcAFRSTZRiQs4gEocQI9Si24bLqFhv0lmM+/fJrte8r1vZt58vxc16u3vP4ooO6dtl6ooixIDUCS7O5URMlAOQHNNa6QVNzdGL2/YFRkAGcJnwzWMxLnxXEEAdp/TFqwQ4gXgVwmLY8Y06/ICZOc46nNZBHEA+EkCk/ONAZ3Di31/WbHrywFgSQJ6MVQ7ACxqiMAww5stLwBLCEgYfUhBAAKAaEdtywAM4g/ZSt9LZ6YhOSCZ96iMBMKA8eJBVQTIDwAA//8kyvHOAAAABklEQVQDAAE/p5FHpydaAAAAAElFTkSuQmCC"
+    },
+    {
+      "name": "spirit.png",
+      "path":"",
+      "folder": "block/occult_machine",
+      "namespace": "mekanism_magic",
+      "id": "3",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "0a52a7e0-daba-c4d3-fc52-2d2b02e79ef4",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAh0lEQVR4AeyRMQqAMAxFQy/hAZwFJ8XFxeu5ewNv4eIiOHkNT6GN8KWVRCp1bGlISX7fL40p8vqICUORKwgw9KNqEwRQb9uGCIAjclllVipvD4ALT+m27lcJfWQuegAucLw5ct8NEQBHV6idRYAmluoJQPTfHyzzRDz/0IyJ3C9o2o6+BAAnAAAA//+5hKxwAAAABklEQVQDAEIwQoH75IB5AAAAAElFTkSuQmCC"
+    },
+    {
+      "name": "chalk.png",
+      "path":"",
+      "folder": "block/occult_machine",
+      "namespace": "mekanism_magic",
+      "id": "4",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "de0e9dd7-1db7-4fa7-bfa5-34c8f12fb8f4",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABMElEQVR4AZySPUvDUBSGXwpBXNz8wmZQf4CCLhUXN8HJQdwyOIno7KSbo4tboX/ASaGTi0IdreAiCGIrKoIgOIpkqHkunEtIUggJeXJOznnve5PLqT0/PQyqsru3P6gpuV7676pCslTOgGR+NiSUIq31BnxB//VDZUBrO3mDOI5dLYoiQX1mUllGzy8EpmWBNwiCgHdP9+5RWayZ1noDa952rgXB35gaK4sOy6cOD/S7vWlSF3MGrpo8ltfm1L3pOciTUuE91KBQXVD0BnYwRGD3hdVQQE4N8LBI7g3sYIj16QltbC2JCJbTY5FFcm/AC7SbPbVO7vX1/ZPjs3OkkbcmMk/OwDpFA2W9dPQGjCeDs74TCsizjDeOBWjNxBswnvxbGdB6g9Ozli7bV5XA5B8AAP//Zk4zMgAAAAZJREFUAwB6Wg4ATUitfgAAAABJRU5ErkJggg=="
+    },
+    {
+      "name": "lab_dark.png",
+      "path":"",
+      "folder": "block/ars_series",
+      "namespace": "mekanism_magic",
+      "id": "5",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "6a143032-2cbe-215b-7999-7341b5cb1431",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABl0lEQVR4AWyTWVbCQBBFiyxEReXgDCqJwyf8Im4V8BcWAO6py/t6CBLt069r6q5XVTmpBuN3H4ze/FJ4ePWL+xfQ+PmdUHv/duL9m2c/E66f/PTqEYz9dDj2k+HIKzO3erawZvbR4mAnfz37tGaqeLIb7Jo3xqrcOTl2m5UlrG3f6kt8siUVXxJb41uaewBusQJV0SOJWc+kcyTND7Z8hld8VhZG5cFjJgQyZfUQLCihWAiIjSA7JBBHYYdUgZO5MEse26LrMSnJAmxPeiUiExOKmBDkgOk/ZgWBR3AHmWdgsYZyWrtganUUWHmTFE6YjAqYAT2pZ/UeQUXGTUdGEHcqCsXOMVy/ZoAzJo3ddpj/1Ecp+PTlqIBnMTOVIPU+sqK7kgJJz7akmD372xmQht1hhoh7+FE41bOJWSwZlXpzsnd7PrLJojuJmemjOHNBaAbG6jDDwhv8ZauCnqnn5Mk2VVSFqZ7OrdYPAyTr1p7bZLqIsTrHJtgOg1Ap137LDyNs9KNIX1nyrWy3/bLvrewM7hRb1fwAAAD//xHc1c8AAAAGSURBVAMAmm2KkBXz0VgAAAAASUVORK5CYII="
+    },
+    {
+      "name": "lab_shell.png",
+      "path":"",
+      "folder": "block/ars_series",
+      "namespace": "mekanism_magic",
+      "id": "6",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "826c8df6-76ad-e1f1-62b5-9583e06fea24",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABoElEQVR4AaRS7U7CQBAceSE/AUFUQKLGj/DMavxIEFFAgsQQX6S7zmyvVfGPiU2uczu3O7N7bcX/+VTAZ7z4wPPbEqP5Ek+zdwy5BtMFBpMFHsZz3HPdjWa4Hb3iZjjF9eMEV4MXVgIhYG4wc7gR3ZER2Rgy8kLPDM595BC1d+ZJIQRiz5eT0cEaN0KGcAnDQYC4WDww5hNSB3QUUTqn2FadC54o4VJAGynLWUJYA5Tgq87i5fytwxihdI75HL+cCz45G5G3It98BDmrAzFypj+MgbhY3EdnyZmAuBTyZQdKKJwz3pjTRSv42DsyYsS8GyHr8w5cs6noDzNDd8D8nwJUdM5pEiFq70w0Ojo5oUmcsQrVifivDnTIwVQUiydKJE1DF5Qz61xEYvMRjC4u5+RgRDnISUK6G2HEzI1zdkifXMAZxOJswnAgpwS2AP0XEih4NsuPoDcKAU7IglBODmSgWIVyVkeK1bqxWzAPfOIzHlbX0a5toFvfxFFjC73mNo6bOzhpVXG6X8PZQR3n7V1cdBq47DTR7+6h32uxHPgEAAD///6dC2IAAAAGSURBVAMACJ0u/6AYjoMAAAAASUVORK5CYII="
+    },
+    {
+      "name": "lab_spine.png",
+      "path":"",
+      "folder": "block/ars_series",
+      "namespace": "mekanism_magic",
+      "id": "7",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "dd3b1fe2-f6c4-6a62-2848-67ff0e3ef897",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABw0lEQVR4AYySyU4cQRBEg/4zG8vIq8DybhYhm7Fl+WyQGA4Ml4E/YP61M3iR0ywSF6SpisyMqMjKmh62D/75/f5fv8va++O3P377zfeZX3878quvv7z15ae3Ph/65adDv/h44M0P+97c2fPznV0/2971YFnakGSwf10hXSMEJLuLLSEi9C1nG8zmKrmsQhQ0ORV5ykdyR5ccLLSe4jbIJTi+7oCAHsTsiRE2T9z9u5wtktLQ3dIB1wJHhK5RJk/nAk3d1DvG0Kxwhus3MNZGEMSXjB1ROhMpbwSt1iAKkigcN7BMh6fOXGhNZ6t4M2sQ1phq9n/R66jxQo3HwawF3AW1c3Ch2ckix1gYPJ655HTBuNKJUcy6nTmdR+oVDThkDobR9fJUq+WZVpdzra7OyLPmd7hazpu7joa43wfjfoMxbnRMJ4OFsyHdcW5k9NUzV7QTX/CDEcLKJLlJoGMexs0RIHhYz62TRz9U3OJKpWMO5WDfKhyvnXeqaJLDdzzh+g0efNv4rG+TYOpMIU1ZdR+G4wqMYNXkbA7VbSc6Z8b+RyYewMBKrUiCGGDMQQxlrsUmbSBidFMHhKLLQWHcNTgI3QAAAP//RVYhfgAAAAZJREFUAwDJ+jWMQ0sxWQAAAABJRU5ErkJggg=="
+    },
+    {
+      "name": "precision_metal.png",
+      "path":"",
+      "folder": "block/ars_series",
+      "namespace": "mekanism_magic",
+      "id": "8",
+      "group": "",
+      "scope": 0,
+      "width": 16,
+      "height": 16,
+      "uv_width": 16,
+      "uv_height": 16,
+      "particle": false,
+      "use_as_default": false,
+      "layers_enabled": false,
+      "sync_to_project": "",
+      "file_format": "png",
+      "render_mode": "default",
+      "render_sides": "auto",
+      "wrap_mode": "limited",
+      "pbr_channel": "color",
+      "fps": 7,
+      "frame_time": 1,
+      "frame_order_type": "loop",
+      "frame_order": "",
+      "frame_interpolate": false,
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "69c920be-60e6-8316-ce00-21a138d9aa12",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABw0lEQVR4AUyT3WoUURCEm3kt1+vkMnlSUcxGSQjuBB9BFEFBFBGRkCAiSk6VX/XMqBdF9d+p6p5kpzvbt+AGfANfwRfwWfane/vjb/vDL/v9T/vdD/vtd/vNnf361n51Y0+uqvnqZc2X1zVfzHV49qLm86s6nF3WvL+ow/45OK/5bA8/hZ/U9f4x8aPCpyYhMKRqDJUSw4Y7DpMPMwMrnBrIm94gSpZbMY+Sy64g9YWxopaeEdE6P41sgHLUxhhllAWSi3xo1KC/1VJfcur3Wk5YFFXGIW6BcdiYxrJNO6tj0XcZAVc7GFcFGcIxNwsWeVzT2zjxNj/xBgOXUFM2QFk8ykA2WqAS9cR/ObPMTYCmeou+OXfHGeU4Njpfbhb1nlu/zYRwLY6GXU6h1YlR7wfJqWeDQGybucQT4pVbc3N/XR7FNQ83Tt9xXnuZSy+8nIBDBircUGl1bMZR1IVA5uJs+pnvDaIkHFo1zFrKjfydU///5p7pvvjvHdUbREk4GId+QCwcjLMTh5MnhitziUF/xKgqziAceI3Ty4Ybp55YbJhvMyFSu+OTenB0Cp/+42Ni6rujk67v6D/sWuqAnF9B/QEAAP//npFaJAAAAAZJREFUAwDM6rvsgAG2hgAAAABJRU5ErkJggg=="
+    }
+  ]
+}

@@ -5,12 +5,15 @@ import com.beipuo.mekenergistics.upgrade.MeUpgradeMachineProfile;
 import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * Mekanism Extras' factory adapter can add the external upgrade interface to
- * a subclass without inheriting the interface default profile method. Keep a
- * concrete profile on the high-tier spirit factory so AE2 node readiness
- * cannot fail with AbstractMethodError.
+ * Factory adapters contribute their own generic Mekanism recipe profile.
+ * Keep a concrete external-host profile on every custom factory so ME uses
+ * Mekanism Magic's declared input, persistent and output slots instead of
+ * guessing from SMELTING/CRUSHING, and so high-tier subclasses cannot fail
+ * with AbstractMethodError.
  */
 @Mixin(targets = {
+        "com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity",
+        "com.example.mekanismmagic.integration.arsnouveau.ImbuementFactoryBlockEntity",
         "com.example.mekanismmagic.integration.mekextras.ExtraSpiritFactoryBlockEntity",
         "com.example.mekanismmagic.integration.mekextras.ExtraImbuementFactoryBlockEntity"
 },

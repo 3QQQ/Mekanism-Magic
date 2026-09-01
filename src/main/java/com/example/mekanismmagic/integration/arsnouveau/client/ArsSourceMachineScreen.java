@@ -19,20 +19,42 @@ public abstract class ArsSourceMachineScreen<
         super(container, inventory, title, imageHeight);
     }
 
+    /**
+     * Match Mekanism's normal electric-machine work area first. The Source
+     * bar is added separately below so it never replaces the native energy
+     * bar, progress texture, or energy information tab.
+     */
+    @Override
+    protected void addWorkGuiElements() {
+        addMekanismWorkGuiElements(true);
+    }
+
     @Override
     protected void addMachineGuiElements() {
-        addRenderableWidget(new GuiSourceBar(this, getTileEntity(),
-                sourceBarX(), 16, sourceBarHeight()));
-        ArsIntegratedSideConfig.install(this, getTileEntity(), children(),
-                this::addRenderableWidget);
+        if (showSourceBar()) {
+            addRenderableWidget(new GuiSourceBar(this, getTileEntity(),
+                    sourceBarX(), 16, sourceBarHeight()));
+        }
+        if (showSourceSideConfig()) {
+            ArsIntegratedSideConfig.install(this, getTileEntity(), children(),
+                    this::addRenderableWidget);
+        }
         addArsMachineGuiElements();
+    }
+
+    protected boolean showSourceBar() {
+        return true;
+    }
+
+    protected boolean showSourceSideConfig() {
+        return true;
     }
 
     protected void addArsMachineGuiElements() {
     }
 
     protected int sourceBarX() {
-        return imageWidth - 31;
+        return imageWidth - 20;
     }
 
     protected int sourceBarHeight() {

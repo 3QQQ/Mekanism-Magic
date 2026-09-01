@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <g id="outerRune" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+      <path d="M64 5 L59 12 L64 19 L69 12 Z" stroke="#F7D26A" stroke-width="2"/>
+      <path d="M60 12 H68 M64 8 V16" stroke="#5CEBFF" stroke-width="1.4"/>
+    </g>
+    <g id="radialGlyph" fill="none" stroke-linecap="square">
+      <path d="M64 22 V31 M60 27 L64 23 L68 27" stroke="#B457FF" stroke-width="1.8"/>
+      <circle cx="64" cy="33" r="1.8" fill="#5CEBFF" stroke="none"/>
+    </g>
+  </defs>
+
+  <g fill="none" opacity="0.82">
+    <circle cx="64" cy="64" r="58" stroke="#B97824" stroke-width="1.5"/>
+    <circle cx="64" cy="64" r="54" stroke="#F7D26A" stroke-width="2.4"/>
+    <circle cx="64" cy="64" r="48" stroke="#F7D26A" stroke-width="1.2" stroke-dasharray="4 3"/>
+    <circle cx="64" cy="64" r="39" stroke="#B457FF" stroke-width="2"/>
+    <circle cx="64" cy="64" r="34" stroke="#5CEBFF" stroke-width="1" stroke-dasharray="2 4"/>
+
+    <g opacity="0.98">
+      <use href="#outerRune"/>
+      <use href="#outerRune" transform="rotate(45 64 64)"/>
+      <use href="#outerRune" transform="rotate(90 64 64)"/>
+      <use href="#outerRune" transform="rotate(135 64 64)"/>
+      <use href="#outerRune" transform="rotate(180 64 64)"/>
+      <use href="#outerRune" transform="rotate(225 64 64)"/>
+      <use href="#outerRune" transform="rotate(270 64 64)"/>
+      <use href="#outerRune" transform="rotate(315 64 64)"/>
+    </g>
+
+    <g opacity="0.95">
+      <use href="#radialGlyph"/>
+      <use href="#radialGlyph" transform="rotate(45 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(90 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(135 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(180 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(225 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(270 64 64)"/>
+      <use href="#radialGlyph" transform="rotate(315 64 64)"/>
+    </g>
+
+    <path d="M64 30 L98 64 L64 98 L30 64 Z" stroke="#B457FF" stroke-width="1.6"/>
+    <path d="M64 39 L89 64 L64 89 L39 64 Z" stroke="#F7D26A" stroke-width="1.4"/>
+    <path d="M64 30 V98 M30 64 H98 M40 40 L88 88 M88 40 L40 88" stroke="#5CEBFF" stroke-width="0.9" opacity="0.8"/>
+
+    <circle cx="64" cy="64" r="20" stroke="#F7D26A" stroke-width="2"/>
+    <circle cx="64" cy="64" r="15" stroke="#B457FF" stroke-width="1.5"/>
+    <path d="M64 45 L74 55 L82 64 L74 73 L64 83 L54 73 L46 64 L54 55 Z" stroke="#B457FF" stroke-width="2"/>
+    <path d="M64 50 V78 M50 64 H78 M55 55 L73 73 M73 55 L55 73" stroke="#5CEBFF" stroke-width="1.7"/>
+    <circle cx="64" cy="64" r="4" fill="#F7D26A" stroke="#FFF3B0" stroke-width="1"/>
+  </g>
+</svg>

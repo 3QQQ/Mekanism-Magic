@@ -1,5 +1,8 @@
 # Mekanism Magic 代码边界
 
+新增机器必须遵循 [新增机器契约](ADDING_MACHINES.md)。公共槽位权限、生命周期、
+拆机持久化和资源完整性已经集中处理，不应从现有机器复制一套实现。
+
 本项目按“通用 Mekanism 机器框架”和“可选模组适配”分层。新增兼容内容应优先放入
 `integration/`，不要直接把第三方模组判断、反射调用或配方解析塞进机器实体。
 
@@ -117,7 +120,6 @@ JEI 分类和配方展示集中在此处。JEI 显示数据应通过适配层获
 
 ### Ars 开发资源
 
-尚未进入正式发布的 Ars Nouveau 机器数据放在 `src/arsDev/resources/`。
-只有使用 `-Pmekanism_magic.ars_machine_content=true` 时才加入资源集，并在
-`META-INF/mekanism_magic_features.properties` 中写入启用状态。默认发布构建不会
-包含这些配方和掉落，也不会注册对应机器。
+Ars Nouveau 机器数据放在 `src/arsDev/resources/`，默认加入普通构建，并在
+`META-INF/mekanism_magic_features.properties` 中写入启用状态。保持机器内容默认
+启用可确保方块、物品和方块实体注册 ID 在重启后不发生缺失映射。

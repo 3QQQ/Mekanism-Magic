@@ -1,14 +1,20 @@
 package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.upgrade.MagicUpgrades;
+import com.jerry.mekextras.api.ExtraUpgrade;
 import com.jerry.mekextras.common.block.attribute.ExtraAttributeUpgradeable;
-import com.jerry.mekextras.common.block.prefab.BlockExtraFactoryMachine;
 import com.jerry.mekextras.common.content.blocktype.ExtraFactory;
 import com.jerry.mekextras.common.tier.ExtraFactoryTier;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import mekanism.common.content.blocktype.FactoryType;
+import mekanism.common.block.attribute.AttributeGui;
+import mekanism.common.block.attribute.AttributeUpgradeSupport;
+import mekanism.api.Upgrade;
 import mekanism.common.registration.impl.BlockDeferredRegister;
 import mekanism.common.registration.impl.BlockRegistryObject;
+import mekanism.common.registration.impl.ContainerTypeDeferredRegister;
+import mekanism.common.registration.impl.ContainerTypeRegistryObject;
 import mekanism.common.registration.impl.TileEntityTypeDeferredRegister;
 import mekanism.common.registration.impl.TileEntityTypeRegistryObject;
 import net.minecraft.world.item.BlockItem;
@@ -22,6 +28,14 @@ public final class MekanismExtrasImbuementFactories {
             new BlockDeferredRegister(MekanismMagic.MOD_ID);
     private static final TileEntityTypeDeferredRegister TILES =
             new TileEntityTypeDeferredRegister(MekanismMagic.MOD_ID);
+    private static final ContainerTypeDeferredRegister CONTAINERS =
+            new ContainerTypeDeferredRegister(MekanismMagic.MOD_ID);
+
+    public static final ContainerTypeRegistryObject<
+            ExtraImbuementFactoryContainer> IMBUEMENT_FACTORY_CONTAINER =
+            CONTAINERS.register("extra_imbuement_factory",
+                    ExtraImbuementFactoryBlockEntity.class,
+                    ExtraImbuementFactoryContainer::new);
 
     public static final ExtraFactory<ExtraImbuementFactoryBlockEntity>
             ABSOLUTE_TYPE = createType(
@@ -44,23 +58,19 @@ public final class MekanismExtrasImbuementFactories {
                     ExtraFactoryTier.INFINITE, null);
 
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<
-                    ExtraImbuementFactoryBlockEntity>, BlockItem>
+            ArsExtraFactoryBlock, BlockItem>
             ABSOLUTE_BLOCK = register("absolute_imbuement_factory",
                     ABSOLUTE_TYPE);
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<
-                    ExtraImbuementFactoryBlockEntity>, BlockItem>
+            ArsExtraFactoryBlock, BlockItem>
             SUPREME_BLOCK = register("supreme_imbuement_factory",
                     SUPREME_TYPE);
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<
-                    ExtraImbuementFactoryBlockEntity>, BlockItem>
+            ArsExtraFactoryBlock, BlockItem>
             COSMIC_BLOCK = register("cosmic_imbuement_factory",
                     COSMIC_TYPE);
     public static final BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<
-                    ExtraImbuementFactoryBlockEntity>, BlockItem>
+            ArsExtraFactoryBlock, BlockItem>
             INFINITE_BLOCK = register("infinite_imbuement_factory",
                     INFINITE_TYPE);
 
@@ -83,18 +93,23 @@ public final class MekanismExtrasImbuementFactories {
     public static void register(IEventBus bus) {
         BLOCKS.register(bus);
         TILES.register(bus);
+        CONTAINERS.register(bus);
         bus.addListener(MekanismExtrasImbuementFactories::registerCapabilities);
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(CapabilityRegistry.SOURCE_CAPABILITY,
-                ABSOLUTE_TILE.get(), (tile, side) -> tile.getSourceStorage());
+                ABSOLUTE_TILE.get(), (tile, side) -> side == null
+                        ? tile.getSourceStorage() : tile.getSourceStorage(side));
         event.registerBlockEntity(CapabilityRegistry.SOURCE_CAPABILITY,
-                SUPREME_TILE.get(), (tile, side) -> tile.getSourceStorage());
+                SUPREME_TILE.get(), (tile, side) -> side == null
+                        ? tile.getSourceStorage() : tile.getSourceStorage(side));
         event.registerBlockEntity(CapabilityRegistry.SOURCE_CAPABILITY,
-                COSMIC_TILE.get(), (tile, side) -> tile.getSourceStorage());
+                COSMIC_TILE.get(), (tile, side) -> side == null
+                        ? tile.getSourceStorage() : tile.getSourceStorage(side));
         event.registerBlockEntity(CapabilityRegistry.SOURCE_CAPABILITY,
-                INFINITE_TILE.get(), (tile, side) -> tile.getSourceStorage());
+                INFINITE_TILE.get(), (tile, side) -> side == null
+                        ? tile.getSourceStorage() : tile.getSourceStorage(side));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -104,6 +119,12 @@ public final class MekanismExtrasImbuementFactories {
         ExtraFactory.ExtraFactoryBuilder builder =
                 ExtraFactory.ExtraFactoryBuilder.createFactory(
                         tile, FactoryType.SMELTING, tier);
+        builder.replace(new AttributeGui(
+                () -> IMBUEMENT_FACTORY_CONTAINER, null));
+        builder.replace(AttributeUpgradeSupport.create(
+                Upgrade.SPEED, Upgrade.ENERGY, Upgrade.MUFFLING,
+                ExtraUpgrade.STACK, ExtraUpgrade.CREATIVE,
+                MagicUpgrades.creativeMagic()));
         if (next != null) {
             builder.replace(new ExtraAttributeUpgradeable(next));
         }
@@ -112,12 +133,11 @@ public final class MekanismExtrasImbuementFactories {
     }
 
     private static BlockRegistryObject<
-            BlockExtraFactoryMachine.BlockExtraFactory<
-                    ExtraImbuementFactoryBlockEntity>, BlockItem> register(
+            ArsExtraFactoryBlock, BlockItem> register(
             String name,
             ExtraFactory<ExtraImbuementFactoryBlockEntity> type) {
         return BLOCKS.register(name,
-                () -> new BlockExtraFactoryMachine.BlockExtraFactory<>(type));
+                () -> new ArsExtraFactoryBlock(type));
     }
 
     private static TileEntityTypeRegistryObject<
