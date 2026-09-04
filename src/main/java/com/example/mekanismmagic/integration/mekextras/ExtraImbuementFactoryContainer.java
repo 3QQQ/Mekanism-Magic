@@ -1,6 +1,5 @@
 package com.example.mekanismmagic.integration.mekextras;
 
-import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementFactoryLayout;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -48,10 +47,15 @@ public final class ExtraImbuementFactoryContainer
             tile.cycleCatalystPage(1);
             return true;
         }
-        if (buttonId >= 300
-                && buttonId < 300
-                + NativeMagicMachineBlockEntity.CATALYST_LIBRARY_SLOT_COUNT) {
-            tile.selectCatalystIdentifier(buttonId - 300);
+        int catalystPageSlot = buttonId - 300;
+        int catalystIndex = tile.catalystPage()
+                * com.example.mekanismmagic.integration.arsnouveau
+                .CatalystLibraryStorage.PAGE_SIZE + catalystPageSlot;
+        if (catalystPageSlot >= 0
+                && catalystPageSlot < com.example.mekanismmagic.integration
+                .arsnouveau.CatalystLibraryStorage.PAGE_SIZE
+                && catalystIndex < tile.catalystVisibleSlotCount()) {
+            tile.selectCatalystIdentifier(catalystIndex);
             return true;
         }
         if (buttonId == 399) {

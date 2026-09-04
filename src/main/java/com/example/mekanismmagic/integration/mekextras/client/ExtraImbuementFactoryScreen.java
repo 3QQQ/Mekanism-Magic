@@ -51,6 +51,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
     private GuiSlot catalystLockSlot;
     private boolean libraryOpen;
     private int displayedCatalystPage = -1;
+    private int displayedCatalystVisibleSlotCount = -1;
 
     public ExtraImbuementFactoryScreen(
             ExtraImbuementFactoryContainer container,
@@ -224,11 +225,14 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                     - CatalystLibraryLayout.SLOT_TOP);
             if (x >= 0 && x < 72 && y >= 0 && y < 72
                     && x % 18 < 17 && y % 18 < 17) {
+                int pageSlot = (y / 18) * CatalystLibraryLayout.COLUMNS
+                        + x / 18;
                 int index = tile().catalystPage()
-                        * CatalystLibraryLayout.PAGE_SIZE
-                        + (y / 18) * CatalystLibraryLayout.COLUMNS + x / 18;
-                clickMachineButton(300 + index);
-                return true;
+                        * CatalystLibraryLayout.PAGE_SIZE + pageSlot;
+                if (index < tile().catalystVisibleSlotCount()) {
+                    clickMachineButton(300 + pageSlot);
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -243,10 +247,13 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
     private void updateLibraryVisibility() {
         int currentPage = tile().catalystPage();
         displayedCatalystPage = currentPage;
+        displayedCatalystVisibleSlotCount =
+                tile().catalystVisibleSlotCount();
         for (int index = 0; index < librarySlots.size(); index++) {
             GuiSlot slot = librarySlots.get(index);
             slot.visible = libraryOpen
-                    && index / CatalystLibraryLayout.PAGE_SIZE == currentPage;
+                    && currentPage * CatalystLibraryLayout.PAGE_SIZE + index
+                    < displayedCatalystVisibleSlotCount;
             slot.active = false;
         }
         for (MekanismButton button : libraryButtons) {
@@ -258,7 +265,9 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
     @Override
     public void containerTick() {
         super.containerTick();
-        if (libraryOpen && displayedCatalystPage != tile().catalystPage()) {
+        if (libraryOpen && (displayedCatalystPage != tile().catalystPage()
+                || displayedCatalystVisibleSlotCount
+                != tile().catalystVisibleSlotCount())) {
             updateLibraryVisibility();
         }
     }

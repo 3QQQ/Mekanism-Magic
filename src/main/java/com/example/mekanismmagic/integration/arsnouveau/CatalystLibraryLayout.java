@@ -29,4 +29,5 @@ public final class CatalystLibraryLayout {
     public static int slotY(int pageSlot) {
         return SLOT_TOP + pageSlot / COLUMNS * SLOT_SPACING;
     }
+
 }

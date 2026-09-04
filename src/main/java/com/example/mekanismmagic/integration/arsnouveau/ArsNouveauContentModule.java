@@ -83,13 +83,21 @@ public final class ArsNouveauContentModule
     }
 
     private static void onDatapackSync(OnDatapackSyncEvent event) {
-        var server = event.getPlayerList().getServer();
-        if (!ArsNouveauRecipeScanner.refresh(
-                server.getRecipeManager())) {
+        // A player-specific sync is not a recipe reload. Rebuilding here
+        // would reset in-flight machines whenever somebody joins a server.
+        if (event.getPlayer() != null) {
             return;
         }
-        ArsNouveauRecipeScanner.scanAtStartup(
-                server, MekanismMagic.LOGGER);
+        var server = event.getPlayerList().getServer();
+        boolean contentChanged = ArsNouveauRecipeScanner.refresh(
+                server.getRecipeManager());
+        if (contentChanged) {
+            ArsNouveauRecipeScanner.scanAtStartup(
+                    server, MekanismMagic.LOGGER);
+        }
+        // The catalog version advances for every real reload, even when only
+        // an enchanting-apparatus recipe changed. Refresh both native AE and
+        // physical MekE views so neither keeps a decoded stale definition.
         try {
             Class.forName("com.example.mekanismmagic.integration.ae2."
                             + "Ae2ArsCompat")

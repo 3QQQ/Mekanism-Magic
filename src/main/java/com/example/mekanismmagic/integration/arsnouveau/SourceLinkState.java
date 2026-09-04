@@ -1,9 +1,12 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
 import com.hollingsworth.arsnouveau.api.source.ISourceTile;
+import com.hollingsworth.arsnouveau.api.source.ISourceCap;
 import com.hollingsworth.arsnouveau.common.block.tile.CreativeSourceJarTile;
 import com.hollingsworth.arsnouveau.common.block.tile.SourceJarTile;
+import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
@@ -108,30 +111,78 @@ public final class SourceLinkState {
             if (remaining <= 0) {
                 break;
             }
-            if (!level.isLoaded(sourcePos)
-                    || !(level.getBlockEntity(sourcePos)
-                    instanceof SourceJarTile source)) {
+            if (!level.isLoaded(sourcePos)) {
                 continue;
             }
-            if (source instanceof CreativeSourceJarTile) {
+            var blockEntity = level.getBlockEntity(sourcePos);
+            if (blockEntity instanceof CreativeSourceJarTile) {
                 remaining -= addAndMeasure(target, remaining);
                 continue;
             }
-            int before = Math.max(0, source.getSource());
-            int requested = Math.min(remaining, before);
-            if (requested <= 0) {
+            int removed;
+            SourceJarTile original = blockEntity instanceof SourceJarTile jar
+                    ? jar : null;
+            ISourceCap capability = original == null
+                    ? sourceCapability(level, sourcePos) : null;
+            if (original != null) {
+                int before = Math.max(0, original.getSource());
+                int requested = Math.min(remaining, before);
+                if (requested <= 0) {
+                    continue;
+                }
+                original.removeSource(requested);
+                removed = Math.max(0,
+                        before - Math.max(0, original.getSource()));
+            } else if (capability != null) {
+                int extractable = capability.extractSource(remaining, true);
+                removed = extractable <= 0 ? 0
+                        : capability.extractSource(extractable, false);
+            } else {
                 continue;
             }
-            source.removeSource(requested);
-            int removed = Math.max(0,
-                    before - Math.max(0, source.getSource()));
             int accepted = addAndMeasure(target, removed);
             if (accepted < removed) {
-                source.addSource(removed - accepted);
+                int rejected = removed - accepted;
+                if (original != null) {
+                    original.addSource(rejected);
+                } else {
+                    int restored = capability.receiveSource(rejected, false);
+                    if (restored != rejected) {
+                        com.example.mekanismmagic.MekanismMagic.LOGGER.error(
+                                "Unable to restore {} Source to linked "
+                                        + "endpoint {} (restored {})",
+                                rejected, sourcePos, restored);
+                    }
+                }
             }
             remaining -= accepted;
         }
         return Math.max(0, target.getSource() - initial);
+    }
+
+    /** True for original jars and capability-backed jars such as ArsEng ME jars. */
+    public static boolean isSourceEndpoint(Level level, BlockPos position) {
+        return level != null && position != null
+                && (level.getBlockEntity(position) instanceof SourceJarTile
+                || sourceCapability(level, position) != null);
+    }
+
+    private static ISourceCap sourceCapability(
+            Level level, BlockPos position) {
+        ISourceCap unsided = level.getCapability(
+                CapabilityRegistry.SOURCE_CAPABILITY, position, null);
+        if (unsided != null) {
+            return unsided;
+        }
+        for (Direction direction : Direction.values()) {
+            ISourceCap sided = level.getCapability(
+                    CapabilityRegistry.SOURCE_CAPABILITY,
+                    position, direction);
+            if (sided != null) {
+                return sided;
+            }
+        }
+        return null;
     }
 
     private static int addAndMeasure(ISourceTile target, int amount) {

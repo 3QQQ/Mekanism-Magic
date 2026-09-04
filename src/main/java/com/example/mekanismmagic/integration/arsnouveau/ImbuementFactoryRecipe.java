@@ -5,9 +5,11 @@ import mekanism.api.recipes.basic.BasicItemStackToItemStackRecipe;
 import mekanism.api.recipes.ingredients.ItemStackIngredient;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.Level;
+import com.hollingsworth.arsnouveau.common.crafting.recipes.ImbuementRecipe;
 import net.neoforged.neoforge.common.crafting.SizedIngredient;
 
 import java.util.List;
@@ -28,13 +30,18 @@ public final class ImbuementFactoryRecipe
     private final boolean requiresIdentifier;
     private final int duration;
     private final int sourceCost;
+    private final long catalogVersion;
+    private final String semanticSignature;
 
-    public ImbuementFactoryRecipe(ItemStack input, ItemStack identifier,
+    public ImbuementFactoryRecipe(
+                                  RecipeHolder<ImbuementRecipe> sourceRecipe,
+                                  ItemStack identifier,
                                   com.example.mekanismmagic.integration.common.recipe
                                           .MachineRecipeResult result,
-                                  boolean requiresIdentifier) {
+                                  boolean requiresIdentifier,
+                                  long catalogVersion) {
         super(ItemStackIngredient.of(new SizedIngredient(
-                        Ingredient.of(input.getItem()), 1)),
+                        sourceRecipe.value().getInput(), 1)),
                 result.output(), TYPE);
         this.id = result.id();
         this.catalystId = CatalystIdentifierItem.catalystId(identifier);
@@ -42,6 +49,9 @@ public final class ImbuementFactoryRecipe
         this.duration = result.duration();
         this.sourceCost = result.resourceCost(
                 ArsNouveauMachineConfig.SOURCE_RESOURCE);
+        this.catalogVersion = catalogVersion;
+        this.semanticSignature = ArsNouveauRecipeScanner
+                .recipeSemanticSignature(sourceRecipe.value());
     }
 
     public ResourceLocation imbuementId() {
@@ -71,6 +81,14 @@ public final class ImbuementFactoryRecipe
                 && !catalystId.equals(UNKNOWN_CATALYST_ID)
                 && CatalystIdentifierItem.matchesCatalystId(
                 stack, catalystId);
+    }
+
+    public boolean matchesCurrentRecipe(Level level) {
+        return level != null
+                && catalogVersion == ArsNouveauRecipeScanner.version(
+                level.getRecipeManager())
+                && semanticSignature.equals(ArsNouveauRecipeScanner
+                .semanticSignature(level.getRecipeManager(), id));
     }
 
     @Override

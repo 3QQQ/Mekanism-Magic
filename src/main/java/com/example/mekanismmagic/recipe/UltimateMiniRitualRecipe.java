@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.recipe;
 
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.integration.occultism.MiniPentacleDeployment;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -107,7 +108,8 @@ public final class UltimateMiniRitualRecipe extends CustomRecipe {
 
     private static boolean isPentacle(ItemStack stack, String required) {
         if (stack.isEmpty()
-                || stack.getItem() != MekanismMagic.MINI_RITUAL.get()) {
+                || stack.getItem() != MekanismMagic.MINI_RITUAL.get()
+                || MiniPentacleDeployment.isDeployed(stack)) {
             return false;
         }
         net.minecraft.world.item.component.CustomData data =

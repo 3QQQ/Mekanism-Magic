@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.container;
 
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceMachineBlockEntity;
+import com.example.mekanismmagic.integration.arsnouveau.CatalystLibraryStorage;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -65,12 +66,15 @@ public final class ArsSourceMachineContainer<
                 imbuement.cycleCatalystPage(1);
                 return true;
             }
-            if (buttonId >= 300
-                    && buttonId < 300
-                    + com.example.mekanismmagic.blockentity
-                    .NativeMagicMachineBlockEntity
-                    .CATALYST_LIBRARY_SLOT_COUNT) {
-                imbuement.selectCatalystIdentifier(buttonId - 300);
+            int windowSlot = buttonId - 300;
+            if (windowSlot >= 0
+                    && windowSlot < CatalystLibraryStorage.PAGE_SIZE) {
+                int catalystIndex = CatalystLibraryStorage.absoluteIndex(
+                        imbuement.catalystPage(), windowSlot);
+                if (catalystIndex
+                        < imbuement.catalystVisibleSlotCount()) {
+                    imbuement.selectCatalystIdentifier(catalystIndex);
+                }
                 return true;
             }
             if (buttonId == 399) {

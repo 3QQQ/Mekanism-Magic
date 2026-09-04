@@ -14,6 +14,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.example.mekanismmagic.integration.common.network.PatternAutomationRefreshHooks;
 
 /**
  * Mekanism implementation of all Ars Nouveau IEnchantingRecipe types.
@@ -24,6 +25,7 @@ public final class EnchantingApparatusProcessorBlockEntity
     public static final int PEDESTAL_SLOT_START = 1;
     public static final int PEDESTAL_SLOT_COUNT = 8;
     private List<IInventorySlot> pedestalSlots;
+    private long observedRecipeCatalogVersion = Long.MIN_VALUE;
 
     public EnchantingApparatusProcessorBlockEntity(
             BlockPos pos, BlockState state) {
@@ -72,6 +74,29 @@ public final class EnchantingApparatusProcessorBlockEntity
         return ArsNouveauRecipeBridge.findApparatusRecipe(
                 level, inventory, REAGENT_SLOT,
                 PEDESTAL_SLOT_COUNT + 1);
+    }
+
+    @Override
+    protected long recipeLookupRevision() {
+        return level == null ? 0L : ArsNouveauRecipeScanner.version(
+                level.getRecipeManager());
+    }
+
+    @Override
+    protected boolean onUpdateServer() {
+        long revision = recipeLookupRevision();
+        boolean changed = observedRecipeCatalogVersion != revision;
+        if (changed) {
+            boolean initial = observedRecipeCatalogVersion == Long.MIN_VALUE;
+            observedRecipeCatalogVersion = revision;
+            if (!initial) {
+                progress = 0;
+                progressRequired = 1;
+                activeRecipe = "";
+            }
+            PatternAutomationRefreshHooks.request(this);
+        }
+        return super.onUpdateServer() || changed;
     }
 
     @Override

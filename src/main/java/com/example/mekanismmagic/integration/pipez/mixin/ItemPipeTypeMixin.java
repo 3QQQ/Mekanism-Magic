@@ -7,8 +7,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Replaces only Pipez' ordered source view. Pipez' filters, distribution,
- * configured rate and destination insertion logic remain authoritative.
+ * Wraps only Pipez' ordered source view. Pipez still owns filters,
+ * distribution, configured rate and destination insertion; the wrapper only
+ * lets the subsequent simulated/committed extraction reach a machine's long
+ * output buffer.
  */
 @Mixin(targets =
         "de.maxhenkel.pipez.blocks.tileentity.types.ItemPipeType",
@@ -23,7 +25,7 @@ public abstract class ItemPipeTypeMixin {
             argsOnly = true,
             ordinal = 0,
             require = 0)
-    private IItemHandler mekanismMagic$expandHighCapacitySource(
+    private IItemHandler mekanismMagic$wrapLongBufferedSource(
             IItemHandler source) {
         return PipezItemHandlerCompat.wrapOrderedSource(source);
     }

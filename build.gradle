@@ -77,6 +77,9 @@ def mekanismExtrasJar = file(
 def mekenergisticsJar = file('libs/mekenergistics-3.0.6.jar')
 def mekmmJar = file("libs/mekmm-1.21.1-${mekmm_runtime_version}.jar")
 def ae2Jar = file('run/mods/appliedenergistics2-19.2.17.jar')
+def arsEnergistiqueJar = file(project.findProperty(
+        'mekanism_magic.arseng_jar')
+        ?: "libs/arseng-${ars_energistique_version}.jar")
 def compileAe2Property = project.findProperty(
         'mekanism_magic.compile_ae2')
 def compileAe2 = compileAe2Property == null
@@ -85,13 +88,29 @@ def compileAe2 = compileAe2Property == null
 def compileMekEnergisticsProperty = project.findProperty(
         'mekanism_magic.compile_mekenergistics')
 def compileMekEnergistics = compileMekEnergisticsProperty == null
-        ? mekenergisticsJar.exists()
+        ? mekenergisticsJar.exists() && ae2Jar.exists()
         : compileMekEnergisticsProperty.toString().toBoolean()
 def compileMekanismExtrasProperty = project.findProperty(
         'mekanism_magic.compile_mekextras')
 def compileMekanismExtras = compileMekanismExtrasProperty == null
         ? mekanismExtrasJar.exists()
         : compileMekanismExtrasProperty.toString().toBoolean()
+if (compileAe2 && !ae2Jar.isFile()) {
+    throw new GradleException('AE2 integration was explicitly enabled, but '
+            + "the compile jar is missing: ${ae2Jar}")
+}
+if (compileMekEnergistics && !mekenergisticsJar.isFile()) {
+    throw new GradleException('Mek Energistics integration was explicitly '
+            + "enabled, but the compile jar is missing: ${mekenergisticsJar}")
+}
+if (compileMekEnergistics && !compileAe2) {
+    throw new GradleException('Mek Energistics integration requires the AE2 '
+            + 'compile integration and its local API jar.')
+}
+if (compileMekanismExtras && !mekanismExtrasJar.isFile()) {
+    throw new GradleException('Mekanism Extras integration was explicitly '
+            + "enabled, but the compile jar is missing: ${mekanismExtrasJar}")
+}
 if (!compileMekanismExtras) {
     sourceSets.main.java.exclude('com/example/mekanismmagic/integration/mekextras/**')
 }
@@ -122,6 +141,8 @@ def mekEnergisticsRuntimeEnabled = project.findProperty(
         'mekanism_magic.mekenergistics_runtime')?.toString()?.toBoolean() ?: false
 def ae2RuntimeEnabled = project.findProperty(
         'mekanism_magic.ae2_runtime')?.toString()?.toBoolean() ?: false
+def arsEnergistiqueRuntimeEnabled = project.findProperty(
+        'mekanism_magic.arseng_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
     compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
@@ -165,12 +186,91 @@ dependencies {
     if (ae2RuntimeEnabled) {
         localRuntime files(ae2Jar)
     }
+    if (arsEnergistiqueRuntimeEnabled) {
+        if (!arsEnergistiqueJar.isFile()) {
+            throw new GradleException('Ars Energistique runtime was enabled, '
+                    + "but the jar is missing: ${arsEnergistiqueJar}")
+        }
+        localRuntime files(arsEnergistiqueJar)
+    }
 
     // Keep the executable compatibility self-tests offline while still
     // compiling them against the same remapped game/API classpath as main.
     testCompileOnly files(sourceSets.main.compileClasspath)
     testRuntimeOnly files(sourceSets.main.runtimeClasspath)
+    testRuntimeOnly("com.hollingsworth.ars_nouveau:ars_nouveau-1.21.1:${ars_nouveau_maven_version}") {
+        transitive = false
+    }
+    testRuntimeOnly("mekanism:Mekanism:1.21.1-${mekanism_version}") {
+        transitive = false
+    }
+}
 
+// Opt-in runtime GameTests for the real AE2 + Mek Energistics boundary.
+// They live outside main and are never included in the release jar. A clean
+// CI checkout without the supplied optional integration jars simply omits
+// this local-only run configuration.
+if (compileMekEnergistics && compileAe2) {
+    sourceSets {
+        gameTest {
+            compileClasspath += sourceSets.main.output
+            compileClasspath += sourceSets.main.compileClasspath
+            // Do not leak main compileOnly integrations into the runtime:
+            // several supplied reference jars are mutually incompatible.
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath
+            runtimeClasspath += configurations.gameTestRuntimeClasspath
+        }
+    }
+
+    def spiritGameTestSupportJars = [
+            mekenergisticsJar,
+            ae2Jar,
+            file('run/mods/Applied-Mekanistics-1.6.3.jar'),
+            file("run/mods/MekanismGenerators-1.21.1-${mekanism_version}.jar"),
+            file('run/mods/curios-neoforge-9.5.1+1.21.1.jar'),
+            file('run/mods/geckolib-neoforge-1.21.1-4.9.2.jar'),
+            file('run/mods/guideme-21.1.17.jar'),
+            file('run/mods/modonomicon-1.21.1-neoforge-1.120.4.jar'),
+            file('run/mods/SmartBrainLib-neoforge-1.21.1-1.16.11.jar'),
+            file('libs/mekanism_extras-1.21.1-1.4.1.jar'),
+            file('libs/mekmm-1.21.1-1.4.0.jar')
+    ].findAll { it.exists() }
+
+    dependencies {
+        gameTestRuntimeOnly files(spiritGameTestSupportJars)
+    }
+
+    neoForge {
+        mods {
+            "${mod_id}_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.gameTest)
+            }
+        }
+        runs {
+            spiritGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.gameTest
+                loadedMods = [mods."${mod_id}_gametest"]
+                gameDirectory = file('run-gametest')
+                // The tests currently borrow a built-in vanilla template.
+                systemProperty 'neoforge.enabledGameTestNamespaces',
+                        'minecraft'
+            }
+        }
+    }
+
+    // Never expose the AE2/MekE-hard-linked GameTest output to ordinary dev
+    // runs, which intentionally support dependency-minimal launch matrices.
+    neoForge.runs.named('client') {
+        loadedMods = [neoForge.mods."${mod_id}"]
+    }
+    neoForge.runs.named('server') {
+        loadedMods = [neoForge.mods."${mod_id}"]
+    }
+    neoForge.runs.named('data') {
+        loadedMods = [neoForge.mods."${mod_id}"]
+    }
 }
 
 tasks.register('testPipezCompat', JavaExec) {
@@ -189,10 +289,90 @@ tasks.register('testSourceLinkState', JavaExec) {
     mainClass = 'com.example.mekanismmagic.integration.arsnouveau.SourceLinkStateSelfTest'
 }
 
-// The compatibility check above is an executable offline assertion suite,
-// not a JUnit/TestNG class for Gradle's standard test discovery.
+tasks.register('testMagicSourceNetworkStorage', JavaExec) {
+    group = 'verification'
+    description = 'Runs long-capacity Source network conservation tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.arsnouveau.MagicSourceNetworkStorageSelfTest'
+}
+
+tasks.register('testDrygmyLootPolicy', JavaExec) {
+    group = 'verification'
+    description = 'Runs the offline Drygmy loot filtering policy self-test.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.arsnouveau.DrygmyLootPolicySelfTest'
+}
+
+tasks.register('testBoundedSlotMatcher', JavaExec) {
+    group = 'verification'
+    description = 'Runs bounded ritual matching and AE routing stress tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.common.recipe.BoundedSlotMatcherSelfTest'
+}
+
+tasks.register('testOccultismRitualModes', JavaExec) {
+    group = 'verification'
+    description = 'Checks the complete stable Occultism ritual mode mapping.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.occultism.OccultismRitualMachineModeSelfTest'
+}
+
+tasks.register('testOccultismSpiritJobs', JavaExec) {
+    group = 'verification'
+    description = 'Checks the complete Occultism SpiritJob machine policy.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.occultism.OccultismSpiritJobPolicySelfTest'
+}
+
+tasks.register('testPersistentInputMutationGuard', JavaExec) {
+    group = 'verification'
+    description = 'Checks direct persistent-slot mutation classification.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.blockentity.PersistentInputMutationGuardSelfTest'
+}
+
+// These compatibility checks are executable offline assertion suites, not
+// JUnit/TestNG classes for Gradle's standard test discovery.
 tasks.named('test', Test).configure {
     failOnNoDiscoveredTests = false
+}
+
+tasks.register('validateOfflineSelfTestWiring') {
+    group = 'verification'
+    description = 'Fails when a source-level *SelfTest main is not wired to a JavaExec task.'
+    def selfTestSources = fileTree('src/test/java') {
+        include '**/*SelfTest.java'
+    }
+    inputs.files(selfTestSources)
+    doLast {
+        Set<String> expected = new TreeSet<>()
+        selfTestSources.files.each { File sourceFile ->
+            String source = sourceFile.getText('UTF-8')
+            def packageMatch = source =~ /(?m)^\s*package\s+([A-Za-z_$][A-Za-z0-9_$.]*)\s*;/
+            if (!packageMatch.find()
+                    || !(source =~ /public\s+static\s+void\s+main\s*\(/).find()) {
+                throw new GradleException("Offline self-test must declare a package and main method: ${project.relativePath(sourceFile)}")
+            }
+            String simpleName = sourceFile.name.substring(
+                    0, sourceFile.name.length() - 5)
+            expected << "${packageMatch.group(1)}.${simpleName}".toString()
+        }
+        Set<String> wired = tasks.withType(JavaExec).collect { task ->
+            task.mainClass.getOrNull()
+        }.findAll { it != null }.toSet()
+        Set<String> missing = new TreeSet<>(expected)
+        missing.removeAll(wired)
+        if (!missing.isEmpty()) {
+            throw new GradleException('Offline self-tests missing JavaExec/check wiring: '
+                    + missing.join(', '))
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -251,7 +431,15 @@ apply from: 'gradle/machine-contracts.gradle'
 
 tasks.named('check') {
     dependsOn tasks.named('validateMachineContracts'),
-            tasks.named('testSourceLinkState')
+            tasks.named('testPipezCompat'),
+            tasks.named('testSourceLinkState'),
+            tasks.named('testMagicSourceNetworkStorage'),
+            tasks.named('testDrygmyLootPolicy'),
+            tasks.named('testBoundedSlotMatcher'),
+            tasks.named('testPersistentInputMutationGuard'),
+            tasks.named('testOccultismRitualModes'),
+            tasks.named('testOccultismSpiritJobs'),
+            tasks.named('validateOfflineSelfTestWiring')
 }
 
 tasks.named('classes') {
@@ -299,7 +487,37 @@ tasks.register('validatePackagedIntegrations') {
         }
 
         List<String> requiredEntries = [
-                'META-INF/mekanism_magic_features.properties'
+                'META-INF/mekanism_magic_features.properties',
+                'com/example/mekanismmagic/integration/occultism/'
+                        + 'OccultismRitualMachineMode.class',
+                'com/example/mekanismmagic/integration/occultism/'
+                        + 'OccultismSpiritJobPolicy.class',
+                'com/example/mekanismmagic/integration/occultism/'
+                        + 'OccultismSpiritPatternValidator.class',
+                'com/example/mekanismmagic/integration/occultism/'
+                        + 'MiniPentacleDeployment.class',
+                'com/example/mekanismmagic/integration/common/network/'
+                        + 'PatternAutomationRefreshHooks.class',
+                'com/example/mekanismmagic/integration/pipez/'
+                        + 'PipezCompatMixinPlugin.class',
+                'com/example/mekanismmagic/integration/pipez/mixin/'
+                        + 'ItemPipeTypeMixin.class',
+                'pipez_compat.mixins.json',
+                'com/example/mekanismmagic/integration/arsnouveau/'
+                        + 'ArsSourceProductionMixinPlugin.class',
+                'com/example/mekanismmagic/integration/arsnouveau/'
+                        + 'ArsSourceNetworkAccess.class',
+                'com/example/mekanismmagic/integration/arsnouveau/mixin/'
+                        + 'SourcelinkEventProductionMixin.class',
+                'com/example/mekanismmagic/integration/arsnouveau/mixin/'
+                        + 'VolcanicProductionMixin.class',
+                'com/example/mekanismmagic/integration/arsnouveau/mixin/'
+                        + 'MycelialProductionMixin.class',
+                'com/example/mekanismmagic/integration/arsnouveau/mixin/'
+                        + 'VitalicProductionMixin.class',
+                'com/example/mekanismmagic/integration/arsnouveau/mixin/'
+                        + 'AlchemicalProductionMixin.class',
+                'ars_source_production.mixins.json'
         ]
         if (compileMekanismExtras || requireFull) {
             requiredEntries.addAll([
@@ -313,6 +531,26 @@ tasks.register('validatePackagedIntegrations') {
             requiredEntries.addAll([
                     'com/example/mekanismmagic/integration/mekenergistics/'
                             + 'MekEnergisticsCompat.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'MekEnergisticsCompatMixinPlugin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'BoundedMePatternRouter.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'OccultismRitualMeRouter.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'MekEnergisticsPendingPatternContext.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'MekEnergisticsPendingRefund.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'SpiritPatternMeRouter.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsOccultismPatternMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsPendingPatternContextMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsBoundedSmartFeederMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsTierInstallerStateMixin.class',
                     'mekenergistics_compat.mixins.json'
             ])
         }
@@ -320,6 +558,12 @@ tasks.register('validatePackagedIntegrations') {
             requiredEntries.addAll([
                     'com/example/mekanismmagic/integration/ae2/'
                             + 'Ae2ArsCompat.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2ArsSourceNetworkAccess.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2SourceInterfaceStorage.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2CompatMixinPlugin.class',
                     'ae2_compat.mixins.json'
             ])
         }

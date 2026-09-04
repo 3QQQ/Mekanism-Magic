@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Keeps one fingerprinted view of Ars Nouveau imbuement recipes per recipe
@@ -26,6 +27,8 @@ import java.util.WeakHashMap;
 public final class ArsNouveauRecipeScanner {
     private static final Map<RecipeManager, Catalog>
             CATALOGS = new WeakHashMap<>();
+    private static final AtomicLong NEXT_CATALOG_VERSION =
+            new AtomicLong();
 
     private ArsNouveauRecipeScanner() {
     }
@@ -61,7 +64,7 @@ public final class ArsNouveauRecipeScanner {
     public static synchronized long version(RecipeManager manager) {
         return CATALOGS.computeIfAbsent(
                 manager, ArsNouveauRecipeScanner::createCatalog)
-                .fingerprint();
+                .version();
     }
 
     public static synchronized boolean refresh(RecipeManager manager) {
@@ -70,6 +73,23 @@ public final class ArsNouveauRecipeScanner {
         CATALOGS.put(manager, current);
         return previous == null
                 || previous.fingerprint() != current.fingerprint();
+    }
+
+    /**
+     * Complete machine-facing semantics for a single imbuement recipe.
+     * Unlike {@link #signature(RecipeManager, ResourceLocation)}, this also
+     * includes reagent, output components and Source cost. It is therefore
+     * suitable for rejecting stale AE jobs after a data-pack reload, while
+     * the shorter signature remains stable for catalyst identifiers.
+     */
+    public static synchronized String semanticSignature(
+            RecipeManager manager, ResourceLocation id) {
+        if (manager == null || id == null) {
+            return "";
+        }
+        return CATALOGS.computeIfAbsent(
+                manager, ArsNouveauRecipeScanner::createCatalog)
+                .semanticSignatures().getOrDefault(id, "");
     }
 
     public static void scanAtStartup(MinecraftServer server, Logger logger) {
@@ -99,12 +119,18 @@ public final class ArsNouveauRecipeScanner {
                 new HashMap<>(immutable.size());
         Map<ResourceLocation, String> signatures =
                 new HashMap<>(immutable.size());
+        Map<ResourceLocation, String> semanticSignatures =
+                new HashMap<>(immutable.size());
         for (RecipeHolder<ImbuementRecipe> recipe : immutable) {
             byId.put(recipe.id(), recipe);
             signatures.put(recipe.id(), recipeSignature(recipe.value()));
+            semanticSignatures.put(recipe.id(),
+                    recipeSemanticSignature(recipe.value()));
         }
-        return new Catalog(recipeFingerprint(immutable), immutable,
-                Map.copyOf(byId), Map.copyOf(signatures));
+        return new Catalog(nextCatalogVersion(),
+                recipeFingerprint(immutable), immutable,
+                Map.copyOf(byId), Map.copyOf(signatures),
+                Map.copyOf(semanticSignatures));
     }
 
     private static long recipeFingerprint(
@@ -114,24 +140,9 @@ public final class ArsNouveauRecipeScanner {
             ImbuementRecipe recipe = holder.value();
             fingerprint = 31 * fingerprint + holder.id().hashCode();
             fingerprint = 31 * fingerprint
-                    + System.identityHashCode(recipe);
-            fingerprint = 31 * fingerprint
-                    + ingredientFingerprint(recipe.getInput());
-            fingerprint = 31 * fingerprint + recipe.getSource();
-            for (Ingredient ingredient : recipe.getPedestalItems()) {
-                fingerprint = 31 * fingerprint
-                        + ingredientFingerprint(ingredient);
-            }
+                    + recipeSemanticSignature(recipe).hashCode();
         }
         return fingerprint;
-    }
-
-    private static int ingredientFingerprint(Ingredient ingredient) {
-        List<String> choices = java.util.Arrays.stream(ingredient.getItems())
-                .map(ArsNouveauRecipeScanner::stackKey)
-                .sorted()
-                .toList();
-        return choices.hashCode();
     }
 
     static String recipeSignature(ImbuementRecipe recipe) {
@@ -142,6 +153,22 @@ public final class ArsNouveauRecipeScanner {
         String value = ingredients.size() + "|"
                 + String.join(";", ingredients);
         return Integer.toUnsignedString(value.hashCode(), 16);
+    }
+
+    static String recipeSemanticSignature(ImbuementRecipe recipe) {
+        String input = ingredientSignature(recipe.getInput());
+        String output = stackKey(recipe.getOutput());
+        String pedestals = recipe.getPedestalItems().stream()
+                .map(ArsNouveauRecipeScanner::ingredientSignature)
+                .sorted()
+                .collect(java.util.stream.Collectors.joining(";"));
+        return input + "->" + output + "|source=" + recipe.getSource()
+                + "|pedestals=" + pedestals;
+    }
+
+    private static long nextCatalogVersion() {
+        return NEXT_CATALOG_VERSION.updateAndGet(current ->
+                current == Long.MAX_VALUE ? 1L : current + 1L);
     }
 
     private static String ingredientSignature(Ingredient ingredient) {
@@ -157,9 +184,11 @@ public final class ArsNouveauRecipeScanner {
     }
 
     private record Catalog(
+            long version,
             long fingerprint,
             List<RecipeHolder<ImbuementRecipe>> recipes,
             Map<ResourceLocation, RecipeHolder<ImbuementRecipe>> byId,
-            Map<ResourceLocation, String> signatures) {
+            Map<ResourceLocation, String> signatures,
+            Map<ResourceLocation, String> semanticSignatures) {
     }
 }

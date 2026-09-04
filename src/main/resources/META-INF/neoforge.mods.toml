@@ -112,3 +112,6 @@ config="mekanism_magic.client.mixins.json"
 
 [[mixins]]
 config="pipez_compat.mixins.json"
+
+[[mixins]]
+config="ars_source_production.mixins.json"

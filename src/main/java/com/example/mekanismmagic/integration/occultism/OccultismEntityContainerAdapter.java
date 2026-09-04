@@ -25,6 +25,7 @@ public final class OccultismEntityContainerAdapter
             "trinity_gem",
             "magic_lamp_empty"
     );
+    private static final String FRAGILE_SOUL_GEM = "fragile_soul_gem";
 
     private OccultismEntityContainerAdapter() {
     }
@@ -60,7 +61,20 @@ public final class OccultismEntityContainerAdapter
         if (capturedEntity(stack).isEmpty()) {
             return false;
         }
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(
+                stack.getItem());
         stack.remove(DataComponents.ENTITY_DATA);
+        // Occultism consumes a fragile soul gem when its entity is released;
+        // unlike the normal/trinity gems it must not become a reusable empty
+        // remainder when a ritual machine consumes it as a sacrifice.
+        if (itemId != null && !survivesRelease(itemId.getPath())) {
+            stack.setCount(0);
+        }
         return true;
+    }
+
+    static boolean survivesRelease(String itemPath) {
+        return itemPath != null && CONTAINER_PATHS.contains(itemPath)
+                && !FRAGILE_SOUL_GEM.equals(itemPath);
     }
 }

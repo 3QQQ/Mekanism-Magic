@@ -18,17 +18,26 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RecipesUpdatedEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 @SuppressWarnings("removal")
 @EventBusSubscriber(modid = "mekanism_magic", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class NativeMagicClient {
+    private static boolean occultismRecipeListenerRegistered;
+
     private NativeMagicClient() {
     }
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         if (ModCompatibility.occultismLoaded()) {
+            if (!occultismRecipeListenerRegistered) {
+                NeoForge.EVENT_BUS.addListener(
+                        NativeMagicClient::onOccultismRecipesUpdated);
+                occultismRecipeListenerRegistered = true;
+            }
             event.register(NativeMekanismRegistries.SPIRIT_CONTAINER.get(),
                     NativeSpiritScreen::new);
             event.register(NativeMekanismRegistries.DIMENSION_MINER_CONTAINER.get(),
@@ -49,6 +58,11 @@ public final class NativeMagicClient {
             registerOptionalScreens(event,
                     "arsnouveau.client.ArsNouveauClient");
         }
+    }
+
+    private static void onOccultismRecipesUpdated(
+            RecipesUpdatedEvent event) {
+        OccultismRecipeBridge.invalidateRecipeCaches();
     }
 
     @SubscribeEvent
@@ -134,6 +148,26 @@ public final class NativeMagicClient {
         if (TextureAtlas.LOCATION_BLOCKS.equals(
                 event.getAtlas().location())) {
             MagicMachineAnimationRenderer.invalidateSpriteCache();
+            if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+                invokeOptionalClientHook(
+                        "arsnouveau.client.ArsNouveauClient",
+                        "invalidateSpriteCaches");
+            }
+        }
+    }
+
+    private static void invokeOptionalClientHook(String className,
+                                                 String methodName) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + className)
+                    .getMethod(methodName)
+                    .invoke(null);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to invoke optional client hook "
+                            + className + "#" + methodName,
+                    failure);
         }
     }
 

@@ -50,6 +50,10 @@ public final class ArsNouveauClient {
         ArsNouveauRecipeScanner.refresh(event.getRecipeManager());
     }
 
+    public static void invalidateSpriteCaches() {
+        MagicSourcePipeRenderer.invalidateSpriteCache();
+    }
+
     public static void registerRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(

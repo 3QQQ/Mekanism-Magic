@@ -17,6 +17,8 @@ import appeng.api.util.AECableType;
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks;
+import com.example.mekanismmagic.integration.common.network
+        .MachineNetworkLifecycleHooks;
 import mekanism.api.Action;
 import mekanism.api.inventory.IInventorySlot;
 import net.minecraft.core.Direction;
@@ -50,6 +52,8 @@ public final class Ae2DirectOutputProvider
 
     public static final MachineDirectOutputHooks.Handler HOOK =
             new DirectOutputHook();
+    public static final MachineNetworkLifecycleHooks.Handler LIFECYCLE_HOOK =
+            new LifecycleHook();
 
     private final WeakReference<NativeMagicMachineBlockEntity> tileReference;
     private IManagedGridNode node;
@@ -454,6 +458,13 @@ public final class Ae2DirectOutputProvider
                     ? forTile(tile).networkStatus()
                     : MachineDirectOutputHooks.DirectNetworkStatus
                     .UNAVAILABLE;
+        }
+    }
+
+    private static final class LifecycleHook
+            implements MachineNetworkLifecycleHooks.Handler {
+        private static boolean supports(NativeMagicMachineBlockEntity tile) {
+            return tile.mekanismMagicSupportsDirectNetworkOutput();
         }
 
         @Override

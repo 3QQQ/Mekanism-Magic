@@ -14,9 +14,10 @@ import org.gradle.api.GradleException
 def machineContractCatalog = layout.projectDirectory.file(
         'config/machine-contracts.json')
 def machineContractResources = layout.buildDirectory.dir('resources/main')
-def machineContractJava = fileTree('src/main/java') {
-    include '**/*.java'
-}
+def machineContractJava = files(
+        fileTree('src/main/java') { include '**/*.java' },
+        fileTree('src/ae2/java') { include '**/*.java' },
+        fileTree('src/mekenergistics/java') { include '**/*.java' })
 def machineContractArsEnabled = providers.gradleProperty(
         'mekanism_magic.ars_machine_content')
         .map { it.toBoolean() }
@@ -24,7 +25,7 @@ def machineContractArsEnabled = providers.gradleProperty(
 
 tasks.register('validateMachineContracts') {
     group = 'verification'
-    description = 'Validates machine registrations, packaged resources, loot and model geometry.'
+    description = 'Validates machine registrations, packaged resources, loot, models and automation-safe slots.'
     dependsOn tasks.named('processResources')
 
     inputs.file(machineContractCatalog)
@@ -53,9 +54,9 @@ tasks.register('validateMachineContracts') {
 
         Object catalogJson = readJson(catalogFile, 'machine contract catalog')
         if (!(catalogJson instanceof Map) ||
-                catalogJson.schemaVersion != 1 ||
+                catalogJson.schemaVersion != 2 ||
                 !(catalogJson.entries instanceof List)) {
-            errors << 'Machine contract catalog must contain schemaVersion=1 and an entries array.'
+            errors << 'Machine contract catalog must contain schemaVersion=2 and an entries array.'
         }
 
         List<Map> entries = catalogJson instanceof Map &&
@@ -78,12 +79,67 @@ tasks.register('validateMachineContracts') {
             if (!(entry.profile in ['machine', 'pipe'])) {
                 errors << "Catalog entry '${id}' has invalid profile '${entry.profile}'."
             }
-            if (!(entry.requiresArs instanceof Boolean)) {
-                errors << "Catalog entry '${id}' must declare boolean requiresArs."
+            if (!(entry.requiredMods instanceof List)
+                    || !entry.requiredMods.every {
+                it instanceof String && it ==~ /[a-z][a-z0-9_]*/
+            }) {
+                errors << "Catalog entry '${id}' must declare a requiredMods string array."
+            } else if (entry.requiredMods.toSet().size()
+                    != entry.requiredMods.size()) {
+                errors << "Catalog entry '${id}' contains duplicate requiredMods."
+            }
+            if (entry.rendering != null
+                    && !(entry.rendering in ['block_entity', 'blockstate'])) {
+                errors << "Catalog entry '${id}' has invalid rendering '${entry.rendering}'."
             }
             if (entriesById.put(id, entry) != null) {
                 errors << "Duplicate machine contract id '${id}'."
             }
+        }
+
+        Map behaviorChecks = catalogJson instanceof Map
+                && catalogJson.behaviorChecks instanceof Map
+                ? (Map) catalogJson.behaviorChecks : [:]
+        if (behaviorChecks.requireExplicitFactorySideConfig != true) {
+            errors << 'behaviorChecks must require explicit factory side configuration.'
+        }
+        if (behaviorChecks.requirePreservedMachineDrops != true) {
+            errors << 'behaviorChecks must require preserved machine drops.'
+        }
+        if (behaviorChecks.requireAutomationAwareBasicSlots != true) {
+            errors << 'behaviorChecks must require automation-aware BasicInventorySlot extraction.'
+        }
+        List<String> behaviorListKeys = [
+                'persistentPendingState', 'directAeOutput',
+                'nativeAeProvider', 'customUpgradeState',
+                'mekEPatternAutomation']
+        Map<String, Set<String>> behaviorIds = [:]
+        behaviorListKeys.each { String key ->
+            Object value = behaviorChecks[key]
+            if (!(value instanceof List)
+                    || !value.every { it instanceof String }) {
+                errors << "behaviorChecks.${key} must be a string array."
+                behaviorIds[key] = [] as Set<String>
+            } else {
+                Set<String> ids = new LinkedHashSet<>(value as List<String>)
+                if (ids.size() != value.size()) {
+                    errors << "behaviorChecks.${key} contains duplicate ids."
+                }
+                Set<String> unknown = new TreeSet<>(ids)
+                unknown.removeAll(entriesById.keySet())
+                if (!unknown.isEmpty()) {
+                    errors << "behaviorChecks.${key} references unknown ids: "
+                            + unknown.join(', ')
+                }
+                behaviorIds[key] = ids
+            }
+        }
+        Set<String> overlappingAeModes = new TreeSet<>(
+                behaviorIds.directAeOutput ?: [])
+        overlappingAeModes.retainAll(behaviorIds.nativeAeProvider ?: [])
+        if (!overlappingAeModes.isEmpty()) {
+            errors << 'Machines cannot own both direct-output and crafting-provider AE nodes: '
+                    + overlappingAeModes.join(', ')
         }
 
         // Scan only literal block registration calls used by this project.
@@ -94,9 +150,174 @@ tasks.register('validateMachineContracts') {
         Map<String, String> blockConstantById = [:]
         Map<String, String> tileConstantByBlock = [:]
         Set<String> renderedTileConstants = new TreeSet<>()
+
+        // Preserve offsets and newlines while hiding comments and literals.
+        // This lets the invocation scanner below report the original line and
+        // avoids treating examples in comments or strings as real slot code.
+        Closure<String> maskJavaNonCode = { String source ->
+            StringBuilder masked = new StringBuilder(source.length())
+            int index = 0
+            String state = 'code'
+            while (index < source.length()) {
+                char current = source.charAt(index)
+                char next = index + 1 < source.length()
+                        ? source.charAt(index + 1) : (char) 0
+                char nextNext = index + 2 < source.length()
+                        ? source.charAt(index + 2) : (char) 0
+                if (state == 'lineComment') {
+                    if (current == (char) 10 || current == (char) 13) {
+                        masked.append(current)
+                        state = 'code'
+                    } else {
+                        masked.append(' ')
+                    }
+                    index++
+                    continue
+                }
+                if (state == 'blockComment') {
+                    if (current == (char) 42 && next == (char) 47) {
+                        masked.append('  ')
+                        index += 2
+                        state = 'code'
+                    } else {
+                        masked.append(current == (char) 10 || current == (char) 13
+                                ? current : ' ')
+                        index++
+                    }
+                    continue
+                }
+                if (state == 'string' || state == 'character') {
+                    char closing = state == 'string' ? (char) 34 : (char) 39
+                    if (current == (char) 92 && index + 1 < source.length()) {
+                        masked.append('  ')
+                        index += 2
+                    } else {
+                        masked.append(current == (char) 10 || current == (char) 13
+                                ? current : ' ')
+                        index++
+                        if (current == closing) {
+                            state = 'code'
+                        }
+                    }
+                    continue
+                }
+                if (state == 'textBlock') {
+                    if (current == (char) 34 && next == (char) 34
+                            && nextNext == (char) 34) {
+                        masked.append('   ')
+                        index += 3
+                        state = 'code'
+                    } else {
+                        masked.append(current == (char) 10 || current == (char) 13
+                                ? current : ' ')
+                        index++
+                    }
+                    continue
+                }
+
+                if (current == (char) 47 && next == (char) 47) {
+                    masked.append('  ')
+                    index += 2
+                    state = 'lineComment'
+                } else if (current == (char) 47 && next == (char) 42) {
+                    masked.append('  ')
+                    index += 2
+                    state = 'blockComment'
+                } else if (current == (char) 34 && next == (char) 34
+                        && nextNext == (char) 34) {
+                    masked.append('   ')
+                    index += 3
+                    state = 'textBlock'
+                } else if (current == (char) 34) {
+                    masked.append(' ')
+                    index++
+                    state = 'string'
+                } else if (current == (char) 39) {
+                    masked.append(' ')
+                    index++
+                    state = 'character'
+                } else {
+                    masked.append(current)
+                    index++
+                }
+            }
+            masked.toString()
+        }
+
+        Closure<List<Map<String, Integer>>> basicSlotCalls = {
+            File javaFile, String source ->
+            String code = maskJavaNonCode(source)
+            List<Map<String, Integer>> calls = []
+            def matcher = code =~ /\bBasicInventorySlot\s*\.\s*at\s*\(/
+            while (matcher.find()) {
+                int open = code.indexOf('(', matcher.start())
+                int parentheses = 1
+                int brackets = 0
+                int braces = 0
+                int commas = 0
+                boolean hasArgumentContent = false
+                int cursor = open + 1
+                for (; cursor < code.length() && parentheses > 0; cursor++) {
+                    char token = code.charAt(cursor)
+                    if (token == (char) 40) {
+                        parentheses++
+                    } else if (token == (char) 41) {
+                        parentheses--
+                        if (parentheses == 0) {
+                            break
+                        }
+                    } else if (token == (char) 91) {
+                        brackets++
+                    } else if (token == (char) 93) {
+                        brackets--
+                    } else if (token == (char) 123) {
+                        braces++
+                    } else if (token == (char) 125) {
+                        braces--
+                    } else if (token == (char) 44 && parentheses == 1
+                            && brackets == 0 && braces == 0) {
+                        commas++
+                    }
+                    if (!Character.isWhitespace(token) && token != (char) 44) {
+                        hasArgumentContent = true
+                    }
+                }
+                if (parentheses != 0) {
+                    int line = 1 + code.substring(0, matcher.start()).count('\n')
+                    errors << "Unclosed BasicInventorySlot.at invocation in "
+                            + "${project.relativePath(javaFile)}:${line}."
+                    continue
+                }
+                int line = 1 + code.substring(0, matcher.start()).count('\n')
+                calls << [line: line,
+                          arguments: hasArgumentContent ? commas + 1 : 0]
+            }
+            calls
+        }
+
         machineContractJava.files.sort { it.path }.each { File javaFile ->
             String source = javaFile.getText('UTF-8')
             String ownerClass = javaFile.name.replaceFirst(/\.java$/, '')
+            String maskedSource = maskJavaNonCode(source)
+            if (maskedSource ==~ /(?s).*\bimport\s+static\s+mekanism\.common\.inventory\.slot\.BasicInventorySlot\s*\.\s*at\s*;.*$/) {
+                errors << "Static import of BasicInventorySlot.at is forbidden in "
+                        + "${project.relativePath(javaFile)}; keep the owner explicit so "
+                        + 'the automation-safety contract can inspect the overload.'
+            }
+            basicSlotCalls(javaFile, source).findAll {
+                Map<String, Integer> call ->
+                // The only accepted factory overload is the six-argument
+                // BiPredicate/BiPredicate/validator form. Shorter overloads
+                // either make extraction unconditional or cannot prove that
+                // AutomationType.EXTERNAL is handled explicitly.
+                call.arguments < 6
+            }.each { Map<String, Integer> call ->
+                errors << "Unsafe ${call.arguments}-argument BasicInventorySlot.at "
+                        + "overload in ${project.relativePath(javaFile)}:${call.line}; "
+                        + 'custom or persistent inputs must use the six-argument '
+                        + 'BiPredicate extraction/insertion overload and inspect '
+                        + 'AutomationType explicitly.'
+            }
             [
                     ~/(?s)\bBLOCKS\s*\.\s*register\s*\(\s*"([a-z0-9_]+)"/,
                     ~/(?s)\bregisterImbuementFactoryBlock\s*\(\s*"([a-z0-9_]+)"/,
@@ -173,6 +394,123 @@ tasks.register('validateMachineContracts') {
             errors << "Machine catalog entries without a Java block registration: ${stale.join(', ')}"
         }
 
+        // Lightweight behavior contracts keep the catalog readable while
+        // still guarding the hand-maintained integration edges that cannot
+        // be inferred from block models or loot JSON.
+        Set<String> expectedPersistentState = catalogIds.findAll { String id ->
+            id == 'dimension_miner' || id == 'drygmy_simulator'
+                    || id == 'spirit_processor'
+                    || id == 'imbuement_processor'
+                    || id.contains('spirit_factory')
+                    || id.contains('imbuement_factory')
+        } as Set<String>
+        if ((behaviorIds.persistentPendingState ?: [])
+                != expectedPersistentState) {
+            errors << 'behaviorChecks.persistentPendingState is out of sync; expected: '
+                    + new TreeSet<>(expectedPersistentState).join(', ')
+        }
+        [
+                'src/main/java/com/example/mekanismmagic/blockentity/NativeDimensionMinerBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/arsnouveau/DrygmySimulatorBlockEntity.java'
+        ].each { String path ->
+            File implementation = file(path)
+            String source = implementation.isFile()
+                    ? implementation.getText('UTF-8') : ''
+            if (!source.contains('PENDING_OUTPUTS_NBT')
+                    || !(source.contains('saveNativeMachineData(')
+                    || source.contains('saveArsMachineData('))
+                    || !(source.contains('loadNativeMachineData(')
+                    || source.contains('loadArsMachineData('))) {
+                errors << "Pending-output persistence contract is incomplete in ${path}."
+            }
+        }
+
+        Set<String> factoryIds = catalogIds.findAll {
+            it.endsWith('_factory')
+        } as Set<String>
+        List<String> explicitFactoryImplementations = [
+                'src/main/java/com/example/mekanismmagic/blockentity/NativeSpiritFactoryBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraSpiritFactoryBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/arsnouveau/ImbuementFactoryBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraImbuementFactoryBlockEntity.java'
+        ]
+        if (!factoryIds.isEmpty()) {
+            explicitFactoryImplementations.each { String path ->
+                File implementation = file(path)
+                if (!implementation.isFile()
+                        || !implementation.getText('UTF-8').contains(
+                        'DefaultMachineSideConfig.apply(configComponent)')) {
+                    errors << "Factory side-config contract is missing in ${path}."
+                }
+            }
+        }
+
+        File dropPreserver = file('src/main/java/com/example/mekanismmagic/event/MachineDropPreserver.java')
+        File modEntrypoint = file('src/main/java/com/example/mekanismmagic/MekanismMagic.java')
+        if (!dropPreserver.isFile()
+                || !dropPreserver.getText('UTF-8').contains('machine.saveToItem')
+                || !modEntrypoint.isFile()
+                || !modEntrypoint.getText('UTF-8').contains(
+                'MachineDropPreserver::onBlockDrops')) {
+            errors << 'Global machine-drop preservation hook is missing or unregistered.'
+        }
+
+        Set<String> expectedCustomUpgradeState = catalogIds.findAll { String id ->
+            id == 'imbuement_processor' || id.endsWith('_factory')
+        } as Set<String>
+        if ((behaviorIds.customUpgradeState ?: [])
+                != expectedCustomUpgradeState) {
+            errors << 'behaviorChecks.customUpgradeState is out of sync; expected: '
+                    + new TreeSet<>(expectedCustomUpgradeState).join(', ')
+        }
+        explicitFactoryImplementations.each { String path ->
+            File implementation = file(path)
+            if (implementation.isFile()) {
+                String source = implementation.getText('UTF-8')
+                if (!source.contains('getUpgradeData(')
+                        || !source.contains('parseUpgradeData(')) {
+                    errors << "Factory upgrade-state contract is incomplete in ${path}."
+                }
+            }
+        }
+        File imbuementProcessor = file(
+                'src/main/java/com/example/mekanismmagic/integration/arsnouveau/ImbuementProcessorBlockEntity.java')
+        if (!imbuementProcessor.isFile()
+                || !imbuementProcessor.getText('UTF-8').contains(
+                'getUpgradeData(')) {
+            errors << 'Imbuement processor does not provide its custom factory upgrade payload.'
+        }
+        String aeRegistrationSource = [
+                file('src/ae2/java/com/example/mekanismmagic/integration/ae2/Ae2DirectOutputCompat.java'),
+                file('src/ae2/java/com/example/mekanismmagic/integration/ae2/Ae2ArsCompat.java')
+        ].findAll { it.isFile() }.collect { it.getText('UTF-8') }.join('\n')
+        (behaviorIds.directAeOutput ?: []).each { String id ->
+            String tileToken = id.toUpperCase(Locale.ROOT) + '_TILE'
+            if (!aeRegistrationSource.contains(tileToken)) {
+                errors << "Direct AE output machine '${id}' is not capability-registered."
+            }
+        }
+        (behaviorIds.nativeAeProvider ?: []).each { String id ->
+            String tileToken = id.toUpperCase(Locale.ROOT) + '_TILE'
+            if (!aeRegistrationSource.contains(tileToken)) {
+                errors << "Native AE provider machine '${id}' is not capability-registered."
+            }
+        }
+
+        File mekERegistration = file('src/mekenergistics/java/com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompat.java')
+        Set<String> registeredMekEIds = [] as Set<String>
+        if (mekERegistration.isFile()) {
+            String source = mekERegistration.getText('UTF-8')
+            def pathsMatcher = source =~ /(?s)String\[\]\s+paths\s*=\s*\{(.*?)\};/
+            if (pathsMatcher.find()) {
+                def idMatcher = pathsMatcher.group(1) =~ /"([a-z0-9_]+)"/
+                idMatcher.each { match -> registeredMekEIds << match[1] }
+            }
+        }
+        if (registeredMekEIds != (behaviorIds.mekEPatternAutomation ?: [])) {
+            errors << 'Mek Energistics registration list differs from machine behavior contract.'
+        }
+
         entriesById.each { String id, Map entry ->
             String blockConstant = blockConstantById[id]
             if (blockConstant == null) {
@@ -183,11 +521,13 @@ tasks.register('validateMachineContracts') {
             String tileConstant = tileConstantByBlock[blockConstant]
             if (tileConstant == null) {
                 errors << "Machine '${id}' (${blockConstant}) is not referenced by " +
-                        'TILES.mekBuilder, factoryTile, registerMagicSourcePipeTile or tile; ' +
+                        'TILES.mekBuilder, factoryTile, registerMagicSourcePipeTile, ' +
+                        'or tile; ' +
                         'the placed block would have no block entity.'
                 return
             }
-            if (!renderedTileConstants.contains(tileConstant)) {
+            if (entry.rendering != 'blockstate'
+                    && !renderedTileConstants.contains(tileConstant)) {
                 errors << "Machine '${id}' block entity ${tileConstant} is never passed " +
                         'to registerBlockEntityRenderer; its client model/animation would not load.'
             }
@@ -246,7 +586,10 @@ tasks.register('validateMachineContracts') {
         Set<String> queuedModels = new LinkedHashSet<>()
         entries.each { Map entry ->
             String id = entry.id
-            boolean validateResources = !(entry.requiresArs == true && !arsEnabled)
+            List<String> requiredMods = entry.requiredMods instanceof List
+                    ? entry.requiredMods : []
+            boolean validateResources = !requiredMods.contains('ars_nouveau')
+                    || arsEnabled
             if (!validateResources) {
                 return
             }
@@ -392,6 +735,21 @@ tasks.register('validateMachineContracts') {
             if (model.parent instanceof String) {
                 queuedModels << model.parent
             }
+            // NeoForge composite models keep their actual geometry in child
+            // model references. Follow both supported reference forms so a
+            // missing or out-of-bounds tier-light/chassis child cannot bypass
+            // the machine contract merely because the top-level model is a
+            // composite shell.
+            Collection compositeParents = []
+            collectFieldValues(model.children, 'parent', compositeParents)
+            compositeParents.findAll { it instanceof String }.each {
+                queuedModels << it
+            }
+            Collection compositeModels = []
+            collectFieldValues(model.children, 'model', compositeModels)
+            compositeModels.findAll { it instanceof String }.each {
+                queuedModels << it
+            }
             Collection nestedModels = []
             collectFieldValues(model.overrides, 'model', nestedModels)
             nestedModels.findAll { it instanceof String }.each {
@@ -459,6 +817,67 @@ tasks.register('validateMachineContracts') {
             }
         }
 
+        // A copied crafting recipe whose ingredients were never changed is
+        // almost always an accidental machine alias. Include load conditions
+        // in the fingerprint so deliberately exclusive compatibility recipes
+        // remain legal.
+        Closure<Object> canonicalizeJson
+        canonicalizeJson = { Object value ->
+            if (value instanceof Map) {
+                Map<String, Object> sorted = new TreeMap<>()
+                value.each { key, nested ->
+                    sorted[key.toString()] = canonicalizeJson(nested)
+                }
+                return sorted
+            }
+            if (value instanceof List) {
+                return value.collect { canonicalizeJson(it) }
+            }
+            return value
+        }
+        File recipeRoot = new File(resourceRoot,
+                'data/mekanism_magic/recipe')
+        Map<String, Map<String, String>> craftingFingerprints = [:]
+        if (recipeRoot.isDirectory()) {
+            recipeRoot.eachFileRecurse { File recipeFile ->
+                if (!recipeFile.isFile()
+                        || !recipeFile.name.endsWith('.json')) {
+                    return
+                }
+                Object parsed = readJson(recipeFile, 'crafting recipe')
+                if (!(parsed instanceof Map)
+                        || !(parsed.type in [
+                        'minecraft:crafting_shaped',
+                        'minecraft:crafting_shapeless'])) {
+                    return
+                }
+                Object ingredients = parsed.type ==
+                        'minecraft:crafting_shaped'
+                        ? [pattern: parsed.pattern, key: parsed.key]
+                        : parsed.ingredients
+                String fingerprint = JsonOutput.toJson(canonicalizeJson([
+                        type: parsed.type,
+                        ingredients: ingredients,
+                        conditions: parsed['neoforge:conditions'] ?: []
+                ]))
+                String output = parsed.result instanceof Map
+                        && parsed.result.id instanceof String
+                        ? parsed.result.id : '<unknown>'
+                String recipeId = project.relativePath(recipeFile)
+                Map<String, String> previous =
+                        craftingFingerprints[fingerprint]
+                if (previous != null && previous.output != output) {
+                    errors << "Crafting recipes ${previous.recipe} and " +
+                            "${recipeId} have identical ingredients and " +
+                            "conditions but different outputs " +
+                            "(${previous.output} / ${output})."
+                } else if (previous == null) {
+                    craftingFingerprints[fingerprint] = [
+                            recipe: recipeId, output: output]
+                }
+            }
+        }
+
         if (!errors.isEmpty()) {
             String report = errors.collect { "  - ${it}" }.join(System.lineSeparator())
             throw new GradleException("Machine contract validation failed with " +
@@ -466,7 +885,7 @@ tasks.register('validateMachineContracts') {
         }
 
         logger.lifecycle("Validated ${entriesById.size()} machine contracts " +
-                "(${registeredIds.size()} Java registrations, " +
-                "Ars resources ${arsEnabled ? 'enabled' : 'skipped'}).")
+                "(${registeredIds.size()} Java registrations, requiredMods " +
+                "schema v2, Ars resources ${arsEnabled ? 'enabled' : 'skipped'}).")
     }
 }

@@ -5,9 +5,11 @@ import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.pipez.PipezItemHandlerCompat;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
+import mekanism.api.inventory.IInventorySlot;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.container.slot.ContainerSlotType;
 import mekanism.common.inventory.slot.BasicInventorySlot;
@@ -36,11 +38,20 @@ public final class NativeDimensionMinerBlockEntity
     public static final int MINER_OUTPUT_COUNT = 27;
     private static final int BASE_MINER_OUTPUT_LIMIT = Integer.MAX_VALUE;
     private static final int EJECT_INTERVAL_TICKS = 20;
+    private static final String PENDING_OUTPUTS_NBT =
+            "miner_pending_outputs";
+    private static final String PENDING_INPUT_NBT = "miner_pending_input";
+    private static final String PENDING_MULTIPLIER_NBT =
+            "miner_pending_operation_multiplier";
+    private static final String PENDING_ENERGY_NBT =
+            "miner_pending_energy_per_tick";
 
     private List<BasicInventorySlot> minerOutputs;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
     private final List<BufferedOutput> bufferedOutputs = new ArrayList<>();
     private ItemStack pendingInput = ItemStack.EMPTY;
+    private int pendingOperationMultiplier = 1;
+    private long pendingEnergyPerTick;
     private int ejectCooldown;
     private boolean ejectRetryPending;
     private boolean outputTransferDirty;
@@ -49,6 +60,9 @@ public final class NativeDimensionMinerBlockEntity
     private boolean aeBackpressured;
     private boolean lastAeOnline;
     private long nextNativeEjectGameTime;
+    private int directPushCallBudget =
+            INITIAL_DIRECT_PUSH_CALLS_PER_TICK;
+    private int directPushCursor;
 
     public NativeDimensionMinerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.DIMENSION_MINER_BLOCK.get()
@@ -131,6 +145,79 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     @Override
+    protected boolean isLongBufferedOutputSlot(IInventorySlot slot) {
+        return isMinerOutputSlot(slot);
+    }
+
+    @Override
+    protected ItemStack extractLongBufferedOutput(
+            IInventorySlot inventorySlot, int amount, Action action) {
+        if (amount <= 0 || minerOutputs == null) {
+            return ItemStack.EMPTY;
+        }
+        int outputIndex = minerOutputs.indexOf(inventorySlot);
+        if (outputIndex < 0) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack visible = inventorySlot.getStack();
+        ItemStack template;
+        if (!visible.isEmpty()) {
+            template = visible.copyWithCount(1);
+        } else if (outputIndex < bufferedOutputs.size()
+                && bufferedOutputs.get(outputIndex).count > 0) {
+            template = bufferedOutputs.get(outputIndex).stack;
+        } else {
+            return ItemStack.EMPTY;
+        }
+
+        long available = visible.isEmpty() ? 0 : visible.getCount();
+        for (BufferedOutput buffered : bufferedOutputs) {
+            if (buffered.count > 0
+                    && ItemStack.isSameItemSameComponents(
+                    buffered.stack, template)) {
+                available = saturatingAdd(available, buffered.count);
+            }
+        }
+        int requested = PipezItemHandlerCompat.boundedExtractionAmount(
+                        amount, available);
+        if (requested <= 0 || !action.execute()) {
+            return requested <= 0 ? ItemStack.EMPTY
+                    : template.copyWithCount(requested);
+        }
+
+        int remaining = requested;
+        int removed = 0;
+        if (!visible.isEmpty()
+                && ItemStack.isSameItemSameComponents(visible, template)) {
+            int fromVisible = inventorySlot.shrinkStack(
+                    Math.min(remaining, visible.getCount()),
+                    Action.EXECUTE);
+            remaining -= fromVisible;
+            removed += fromVisible;
+        }
+        for (BufferedOutput buffered : bufferedOutputs) {
+            if (remaining <= 0) {
+                break;
+            }
+            if (buffered.count <= 0
+                    || !ItemStack.isSameItemSameComponents(
+                    buffered.stack, template)) {
+                continue;
+            }
+            int fromBuffer = (int) Math.min(remaining, buffered.count);
+            buffered.count -= fromBuffer;
+            remaining -= fromBuffer;
+            removed += fromBuffer;
+        }
+        if (removed > 0) {
+            outputTransferDirty = true;
+            setChanged();
+        }
+        return removed <= 0 ? ItemStack.EMPTY
+                : template.copyWithCount(removed);
+    }
+
+    @Override
     public boolean mekanismMagicSupportsPatternAutomation() {
         return false;
     }
@@ -171,11 +258,11 @@ public final class NativeDimensionMinerBlockEntity
         }
         changed |= mekanismMagicRecipeItemDisplay().update(List.of(
                 new RecipeItemDisplayState.Entry(0,
-                        ItemStack.EMPTY, pendingOutputs.getFirst())));
+                        pendingInput, ItemStack.EMPTY)));
         if (!bufferedReady) {
             return finishServerUpdate(changed, false);
         }
-        long usage = stackScaledEnergyUsage();
+        long usage = Math.max(1L, pendingEnergyPerTick);
         if (energyContainer == null || energyContainer.getEnergy() < usage) {
             setNotEnoughEnergyWarning(true);
             return finishServerUpdate(changed, false);
@@ -188,6 +275,8 @@ public final class NativeDimensionMinerBlockEntity
             progress = 0;
             mergeBufferedOutputs(pendingOutputs);
             pendingOutputs.clear();
+            pendingOperationMultiplier = 1;
+            pendingEnergyPerTick = 0L;
             outputTransferDirty = true;
             attemptOutputTransfer();
             changed = true;
@@ -207,7 +296,9 @@ public final class NativeDimensionMinerBlockEntity
         int silkTouch = enchantmentLevel(input, Enchantments.SILK_TOUCH);
         int rolls = OccultismRecipeBridge.minerRollsPerOperation(input)
                 + minimumRandomBonus(fortune, 3);
-        int stackMultiplier = stackOperationMultiplier();
+        pendingOperationMultiplier = stackOperationMultiplier();
+        pendingEnergyPerTick = stackScaledEnergyUsage(
+                pendingOperationMultiplier);
         for (OccultismRecipeBridge.MinerOutput rolled
                 : OccultismRecipeBridge.rollMinerOutputs(
                 level, input, rolls)) {
@@ -215,7 +306,8 @@ public final class NativeDimensionMinerBlockEntity
             int multiplier = silkTouch <= 0 ? 1
                     : 1 + level.random.nextIntBetweenInclusive(
                     0, silkTouch);
-            scaleOutputCount(output, multiplier, stackMultiplier);
+            scaleOutputCount(output, multiplier,
+                    pendingOperationMultiplier);
             addPendingOutput(output);
         }
     }
@@ -426,39 +518,60 @@ public final class NativeDimensionMinerBlockEntity
     }
 
     private boolean pushBufferedOutputsPhysically() {
+        // Zero-count placeholders are deliberately retained during one
+        // Pipez pass so later virtual slot mappings do not shift between its
+        // simulate and execute calls. It is safe to compact them now.
+        bufferedOutputs.removeIf(output -> output.count <= 0);
         if (bufferedOutputs.isEmpty()) {
+            directPushCursor = 0;
             return false;
         }
+        int budget = Math.max(MIN_DIRECT_PUSH_CALLS_PER_TICK,
+                Math.min(MAX_DIRECT_PUSH_CALLS_PER_TICK,
+                        directPushCallBudget));
         int calls = 0;
+        long totalMoved = 0;
         boolean bufferChanged = false;
-        boolean movedInRound;
-        do {
-            movedInRound = false;
-            for (BufferedOutput buffered : bufferedOutputs) {
-                if (buffered.count <= 0
-                        || calls >= MAX_DIRECT_PUSH_CALLS_PER_TICK) {
-                    continue;
-                }
-                int chunk = (int) Math.min(Integer.MAX_VALUE,
-                        buffered.count);
-                ItemStack attempt = buffered.stack.copyWithCount(chunk);
-                ItemStack remainder = pushDirectlyToTargets(attempt);
-                calls++;
-                long moved = chunk - remainder.getCount();
-                if (moved > 0) {
-                    buffered.count -= moved;
-                    bufferChanged = true;
-                    movedInRound = true;
-                }
+        int noProgress = 0;
+        int entries = bufferedOutputs.size();
+        if (directPushCursor < 0 || directPushCursor >= entries) {
+            directPushCursor = 0;
+        }
+        while (calls < budget && noProgress < entries) {
+            BufferedOutput buffered = bufferedOutputs.get(directPushCursor);
+            directPushCursor = (directPushCursor + 1) % entries;
+            if (buffered.count <= 0) {
+                noProgress++;
+                continue;
             }
-        } while (movedInRound
-                && calls < MAX_DIRECT_PUSH_CALLS_PER_TICK);
+            int chunk = (int) Math.min(Integer.MAX_VALUE,
+                    buffered.count);
+            ItemStack attempt = buffered.stack.copyWithCount(chunk);
+            ItemStack remainder = pushDirectlyToTargets(attempt);
+            calls++;
+            long moved = chunk - remainder.getCount();
+            if (moved > 0) {
+                buffered.count -= moved;
+                totalMoved = saturatingAdd(totalMoved, moved);
+                bufferChanged = true;
+                noProgress = 0;
+            } else {
+                noProgress++;
+            }
+        }
         bufferedOutputs.removeIf(output -> output.count <= 0);
+        if (bufferedOutputs.isEmpty()) {
+            directPushCursor = 0;
+        } else {
+            directPushCursor %= bufferedOutputs.size();
+        }
         if (bufferChanged) {
             setChanged();
         }
-        return calls >= MAX_DIRECT_PUSH_CALLS_PER_TICK
-                && !bufferedOutputs.isEmpty();
+        boolean remaining = !bufferedOutputs.isEmpty();
+        directPushCallBudget = adaptDirectPushCallBudget(
+                budget, calls, totalMoved, remaining);
+        return calls >= budget && remaining;
     }
 
     private record AeBatchResult(
@@ -533,6 +646,22 @@ public final class NativeDimensionMinerBlockEntity
         if (!outputs.isEmpty()) {
             tag.put("miner_long_buffer", outputs);
         }
+        net.minecraft.nbt.ListTag pending = new net.minecraft.nbt.ListTag();
+        for (ItemStack output : pendingOutputs) {
+            if (!output.isEmpty()) {
+                pending.add(saveCountedItemStack(output, registries));
+            }
+        }
+        if (!pending.isEmpty()) {
+            tag.put(PENDING_OUTPUTS_NBT, pending);
+            tag.putInt(PENDING_MULTIPLIER_NBT,
+                    pendingOperationMultiplier);
+            tag.putLong(PENDING_ENERGY_NBT,
+                    Math.max(1L, pendingEnergyPerTick));
+        }
+        if (!pendingInput.isEmpty()) {
+            tag.put(PENDING_INPUT_NBT, pendingInput.save(registries));
+        }
     }
 
     @Override
@@ -552,6 +681,36 @@ public final class NativeDimensionMinerBlockEntity
                 bufferedOutputs.add(new BufferedOutput(stack, count));
             }
         }
+        pendingOutputs.clear();
+        net.minecraft.nbt.ListTag pending = tag.getList(
+                PENDING_OUTPUTS_NBT, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int index = 0; index < pending.size(); index++) {
+            ItemStack stack = loadCountedItemStack(
+                    pending.getCompound(index), registries);
+            if (!stack.isEmpty()) {
+                pendingOutputs.add(stack);
+            }
+        }
+        pendingInput = ItemStack.parseOptional(registries,
+                tag.getCompound(PENDING_INPUT_NBT));
+        pendingOperationMultiplier = tag.contains(
+                PENDING_MULTIPLIER_NBT, net.minecraft.nbt.Tag.TAG_INT)
+                ? Math.max(1, tag.getInt(PENDING_MULTIPLIER_NBT))
+                : stackOperationMultiplier();
+        pendingEnergyPerTick = tag.contains(
+                PENDING_ENERGY_NBT, net.minecraft.nbt.Tag.TAG_LONG)
+                ? Math.max(1L, tag.getLong(PENDING_ENERGY_NBT))
+                : stackScaledEnergyUsage(pendingOperationMultiplier);
+        // Treat incomplete/corrupt pending state as absent. Keeping only the
+        // rolled output or only its input signature would either duplicate a
+        // result or bind it to a different miner tool on the next tick.
+        if (pendingOutputs.isEmpty() || pendingInput.isEmpty()) {
+            pendingOutputs.clear();
+            pendingInput = ItemStack.EMPTY;
+            pendingOperationMultiplier = 1;
+            pendingEnergyPerTick = 0L;
+            progress = 0;
+        }
         normalizeVisibleOutputSlots();
         outputTransferDirty = !bufferedOutputs.isEmpty();
         aeBackpressured = !bufferedOutputs.isEmpty();
@@ -562,9 +721,26 @@ public final class NativeDimensionMinerBlockEntity
     protected void onNativeUpgradeChanged(mekanism.api.Upgrade upgrade) {
         mekanism.api.Upgrade stackUpgrade =
                 NativeMekanismRegistries.dimensionMinerStackUpgrade();
-        if (stackUpgrade != null && upgrade == stackUpgrade) {
-            resetPending();
+        if (!pendingOutputs.isEmpty()
+                && (upgrade == mekanism.api.Upgrade.SPEED
+                || upgrade == mekanism.api.Upgrade.ENERGY
+                || stackUpgrade != null && upgrade == stackUpgrade)) {
+            rebasePendingWorkForUpgrade();
         }
+    }
+
+    private void rebasePendingWorkForUpgrade() {
+        int oldRequired = Math.max(1, progressRequired);
+        int newRequired = Math.max(1,
+                mekanism.common.util.MekanismUtils.getTicks(this,
+                        OccultismRecipeBridge.minerDuration(pendingInput)));
+        progress = (int) Math.min(newRequired - 1L,
+                (long) Math.max(0, progress) * newRequired / oldRequired);
+        progressRequired = newRequired;
+        // The rolled output multiplier remains fixed, while ordinary speed
+        // and energy upgrades immediately rebalance duration and FE/t.
+        pendingEnergyPerTick = stackScaledEnergyUsage(
+                pendingOperationMultiplier);
     }
 
     private int stackOperationMultiplier() {
@@ -596,10 +772,10 @@ public final class NativeDimensionMinerBlockEntity
         }
     }
 
-    private long stackScaledEnergyUsage() {
+    private long stackScaledEnergyUsage(int operationMultiplier) {
         long base = mekanism.common.util.MekanismUtils.getEnergyPerTick(
                 this, baseEnergyPerTick());
-        int multiplier = stackOperationMultiplier();
+        int multiplier = Math.max(1, operationMultiplier);
         long scaled = base > Long.MAX_VALUE / multiplier
                 ? Long.MAX_VALUE : base * multiplier;
         // Never require more energy per tick than the machine can store.
@@ -629,9 +805,64 @@ public final class NativeDimensionMinerBlockEntity
         }
     }
 
+    /** Package-private hooks used only by the isolated runtime GameTests. */
+    void seedBufferedOutputDevelopment(ItemStack stack, long count) {
+        mergeBufferedOutput(stack, count);
+    }
+
+    long developmentTotalOutput(ItemStack template) {
+        long total = 0;
+        for (BasicInventorySlot slot : minerOutputs) {
+            ItemStack stack = slot.getStack();
+            if (!stack.isEmpty()
+                    && ItemStack.isSameItemSameComponents(stack, template)) {
+                total = saturatingAdd(total, stack.getCount());
+            }
+        }
+        for (BufferedOutput buffered : bufferedOutputs) {
+            if (buffered.count > 0
+                    && ItemStack.isSameItemSameComponents(
+                    buffered.stack, template)) {
+                total = saturatingAdd(total, buffered.count);
+            }
+        }
+        return total;
+    }
+
+    int seedDevelopmentTest(ItemStack miner) {
+        if (level == null || !OccultismRecipeBridge.isMinerItem(miner)) {
+            return 0;
+        }
+        inputSlot.setStack(miner.copy());
+        preparePendingOutputs(inputSlot.getStack());
+        if (pendingOutputs.isEmpty()) {
+            return 0;
+        }
+        progress = Math.max(0, progressRequired - 1);
+        return pendingOutputs.stream().mapToInt(ItemStack::getCount).sum();
+    }
+
+    List<ItemStack> developmentPendingOutputs() {
+        return pendingOutputs.stream().map(ItemStack::copy).toList();
+    }
+
+    ItemStack developmentPendingInput() {
+        return pendingInput.copy();
+    }
+
+    int developmentPendingOperationMultiplier() {
+        return pendingOperationMultiplier;
+    }
+
+    long developmentPendingEnergyPerTick() {
+        return pendingEnergyPerTick;
+    }
+
     private void resetPending() {
         pendingOutputs.clear();
         pendingInput = ItemStack.EMPTY;
+        pendingOperationMultiplier = 1;
+        pendingEnergyPerTick = 0L;
         progress = 0;
         progressRequired = 1;
     }

@@ -6,12 +6,16 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MekEnergisticsAutomationMixin",
+    "MekEnergisticsBoundedSmartFeederMixin",
     "MekEnergisticsExtraSpiritFactoryProfileMixin",
     "MekEnergisticsImbuementPatternMixin",
     "MekEnergisticsInstallerGuardMixin",
     "MekEnergisticsNativeAeOutputGuardMixin",
+    "MekEnergisticsOccultismPatternMixin",
+    "MekEnergisticsPendingPatternContextMixin",
     "MekEnergisticsTargetResolverGuardMixin",
-    "MekEnergisticsSpiritFactoryInstallerMixin"
+    "MekEnergisticsSpiritFactoryInstallerMixin",
+    "MekEnergisticsTierInstallerStateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

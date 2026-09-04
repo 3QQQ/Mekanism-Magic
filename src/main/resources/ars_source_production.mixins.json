@@ -1,0 +1,17 @@
+{
+  "required": false,
+  "minVersion": "0.8.7",
+  "package": "com.example.mekanismmagic.integration.arsnouveau.mixin",
+  "plugin": "com.example.mekanismmagic.integration.arsnouveau.ArsSourceProductionMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "SourcelinkEventProductionMixin",
+    "VolcanicProductionMixin",
+    "MycelialProductionMixin",
+    "VitalicProductionMixin",
+    "AlchemicalProductionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

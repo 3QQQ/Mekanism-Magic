@@ -8,8 +8,11 @@ import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks.DirectNetworkStatus;
+import com.example.mekanismmagic.integration.common.network
+        .MachineNetworkLifecycleHooks;
 import com.example.mekanismmagic.integration.common.recipe.InputUse;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
+import com.example.mekanismmagic.integration.pipez.PipezItemHandlerCompat;
 import mekanism.api.IContentsListener;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
@@ -44,6 +47,9 @@ import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.ItemStack;
@@ -74,7 +80,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         IRecipeItemDisplay {
     private static final int FAST_EJECT_BACKOFF_TICKS = 10;
     private static final int FAST_EJECT_REJECTED_BACKOFF_TICKS = 10;
-    protected static final int MAX_DIRECT_PUSH_CALLS_PER_TICK = 256;
+    protected static final int MIN_DIRECT_PUSH_CALLS_PER_TICK = 2;
+    protected static final int INITIAL_DIRECT_PUSH_CALLS_PER_TICK = 8;
+    protected static final int MAX_DIRECT_PUSH_CALLS_PER_TICK = 32;
     protected static final int DIRECT_NETWORK_BATCH_INTERVAL_TICKS = 20;
     private static final int RECIPE_LOOKUP_BACKOFF_TICKS = 5;
     public static final int INPUT_SLOTS = 16;
@@ -86,8 +94,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public static final int CHALK_SLOT_START = 21;
     public static final int DICTIONARY_SLOT = CHALK_SLOT_START;
     public static final int CHALK_SLOT_COUNT = 16;
+    public static final int RITUAL_REMAINDER_SLOT =
+            CHALK_SLOT_START + CHALK_SLOT_COUNT;
     public static final int CATALYST_LIBRARY_SLOT_START = 43;
-    public static final int CATALYST_LIBRARY_SLOT_COUNT = 30;
+    /** Slot count used by released 1.0.5/1.0.5fix machine items. */
+    public static final int LEGACY_CATALYST_LIBRARY_SLOT_COUNT = 30;
+    /** Fixed current-page window; the backing catalyst library is dynamic. */
+    public static final int CATALYST_LIBRARY_SLOT_COUNT = 16;
     public static final int MACHINE_INVENTORY_SIZE =
             CATALYST_LIBRARY_SLOT_START + CATALYST_LIBRARY_SLOT_COUNT;
     protected TileComponentConfig configComponent;
@@ -269,8 +282,12 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         var itemConfig = configComponent.setupItemIOConfig(
                 inputSlots, outputSlots, energySlot, false);
+        // A custom slot is input-only by default. Bidirectional or output
+        // custom slots must be declared explicitly with addNativeItemSlotInfo;
+        // silently treating every extra as an output lets the native ejector
+        // simulate removal from persistent catalysts and context items.
         addNativeItemSlotInfo(itemConfig, DataType.EXTRA,
-                true, true, extras);
+                true, false, extras);
         return itemConfig;
     }
 
@@ -325,11 +342,14 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         NativeSlotAccess access = nativeSlotAccess == null ? null
                 : nativeSlotAccess.get(inventorySlot);
-        if (side != null && (access == null || !access.canInput())) {
+        // All IItemHandler entry points are automation, including the
+        // unsided capability. AutomationType.handler(null) means INTERNAL in
+        // Mekanism and would bypass manual-only/persistent slot predicates.
+        if (access == null || !access.canInput()) {
             return stack;
         }
         return inventorySlot.insertItem(stack, action,
-                AutomationType.handler(side));
+                AutomationType.EXTERNAL);
     }
 
     @Override
@@ -341,19 +361,29 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         NativeSlotAccess access = nativeSlotAccess == null ? null
                 : nativeSlotAccess.get(inventorySlot);
-        if (side != null && (access == null || !access.canOutput())) {
+        if (access == null || !access.canOutput()) {
             return ItemStack.EMPTY;
         }
-        if (side != null && amount > 0
-                && com.example.mekanismmagic.integration.pipez
-                .PipezItemHandlerCompat.isBulkExtractionActive()) {
+        if (amount > 0
+                && PipezItemHandlerCompat.isBulkExtractionActive()) {
+            if (isLongBufferedOutputSlot(inventorySlot)) {
+                // Pipez has already limited amount to its configured rate and
+                // simulated destination acceptance. Allow long-buffer
+                // machines to commit that exact amount without first
+                // materializing it as 27 normal stacks.
+                return extractLongBufferedOutput(
+                        inventorySlot, amount, action);
+            }
             ItemStack stored = inventorySlot.getStack();
+            boolean extractable = !stored.isEmpty()
+                    && !inventorySlot.extractItem(1, Action.SIMULATE,
+                    AutomationType.EXTERNAL).isEmpty();
             if (stored.isEmpty()
-                    || stored.getCount() <= stored.getMaxStackSize()
-                    || inventorySlot.extractItem(1, Action.SIMULATE,
-                    AutomationType.handler(side)).isEmpty()) {
+                    || !PipezItemHandlerCompat.requiresBulkExtraction(
+                            stored.getCount(), stored.getMaxStackSize(),
+                            extractable)) {
                 return inventorySlot.extractItem(amount, action,
-                        AutomationType.handler(side));
+                        AutomationType.EXTERNAL);
             }
             ItemStack template = stored.copy();
             int requested = Math.min(amount, template.getCount());
@@ -364,7 +394,56 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             return template.copyWithCount(extracted);
         }
         return inventorySlot.extractItem(amount, action,
-                AutomationType.handler(side));
+                AutomationType.EXTERNAL);
+    }
+
+    /**
+     * True only for visible output slots backed by an additional logical long
+     * buffer. The hook is consulted solely inside Pipez' ordered extraction
+     * transaction; normal item-handler callers keep the vanilla stack limit.
+     */
+    protected boolean isLongBufferedOutputSlot(IInventorySlot slot) {
+        return false;
+    }
+
+    /**
+     * Simulates or commits a Pipez-authorized extraction from a visible slot
+     * and its associated long buffer. Implementations must return exactly the
+     * amount removed on execute and must not mutate on simulate.
+     */
+    protected ItemStack extractLongBufferedOutput(
+            IInventorySlot slot, int amount, Action action) {
+        return slot.extractItem(amount, action, AutomationType.EXTERNAL);
+    }
+
+    /**
+     * Adapts the next physical-output call budget to the target's observed
+     * acceptance. Slow one-at-a-time handlers rapidly fall back to two calls,
+     * while high-throughput handlers may grow to a hard cap of 32 calls.
+     */
+    public static int adaptDirectPushCallBudget(
+            int currentBudget, int calls, long moved,
+            boolean outputRemaining) {
+        int current = Math.max(MIN_DIRECT_PUSH_CALLS_PER_TICK,
+                Math.min(MAX_DIRECT_PUSH_CALLS_PER_TICK, currentBudget));
+        if (!outputRemaining) {
+            return INITIAL_DIRECT_PUSH_CALLS_PER_TICK;
+        }
+        if (calls <= 0 || moved <= 0) {
+            return MIN_DIRECT_PUSH_CALLS_PER_TICK;
+        }
+        // Four items or fewer per handler invocation is the pathological
+        // low-acceptance case that previously consumed 256 calls every tick.
+        if (moved <= (long) calls * 4L) {
+            return Math.max(MIN_DIRECT_PUSH_CALLS_PER_TICK, current / 2);
+        }
+        // Only grow after the current budget was fully useful. 64 items per
+        // call is a normal inventory-stack transfer and a good indication
+        // that a larger bounded burst will improve throughput.
+        if (calls >= current && moved >= (long) calls * 64L) {
+            return Math.min(MAX_DIRECT_PUSH_CALLS_PER_TICK, current * 2);
+        }
+        return current;
     }
 
     @Override
@@ -375,39 +454,84 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         NativeSlotAccess access = nativeSlotAccess == null ? null
                 : nativeSlotAccess.get(inventorySlot);
-        return (side == null || access != null && access.canInput())
-                && inventorySlot.isItemValid(stack);
+        return access != null && access.canInput()
+                && PersistentInputMutationGuard
+                .permitsExternalInsertion(inventorySlot, stack);
     }
 
     @Override
     public void setStackInSlot(int slot, ItemStack stack, Direction side) {
         IInventorySlot inventorySlot = getInventorySlot(slot, side);
-        if (inventorySlot == null) {
+        if (inventorySlot == null || stack == null) {
             return;
         }
-        if (side != null) {
-            NativeSlotAccess access = nativeSlotAccess == null ? null
-                    : nativeSlotAccess.get(inventorySlot);
-            if (access == null) {
-                return;
-            }
-            ItemStack current = inventorySlot.getStack();
-            boolean same = ItemStack.isSameItemSameComponents(current, stack);
-            boolean adds = !stack.isEmpty() && (current.isEmpty() || !same
-                    || stack.getCount() > current.getCount());
-            boolean removes = !current.isEmpty() && (stack.isEmpty() || !same
-                    || stack.getCount() < current.getCount());
-            if ((adds && (!access.canInput()
-                    || !inventorySlot.isItemValid(stack)))
-                    || (removes && !access.canOutput())) {
-                return;
-            }
+        NativeSlotAccess access = nativeSlotAccess == null ? null
+                : nativeSlotAccess.get(inventorySlot);
+        if (access == null) {
+            return;
+        }
+        ItemStack current = inventorySlot.getStack();
+        boolean same = ItemStack.isSameItemSameComponents(current, stack);
+        boolean adds = !stack.isEmpty() && (current.isEmpty() || !same
+                || stack.getCount() > current.getCount());
+        boolean removes = !current.isEmpty() && (stack.isEmpty() || !same
+                || stack.getCount() < current.getCount());
+        if ((adds && (!access.canInput()
+                || !PersistentInputMutationGuard
+                .permitsExternalInsertion(inventorySlot, stack)))
+                || (removes && !access.canOutput())) {
+            return;
+        }
+        if (!permitsExternalStackReplacement(inventorySlot, stack)) {
+            return;
         }
         inventorySlot.setStack(stack);
     }
 
+    /**
+     * Hook for persistent/context slots that must enforce their normal
+     * insertion/extraction predicates against direct capability mutation.
+     */
+    protected boolean permitsExternalStackReplacement(
+            IInventorySlot slot, ItemStack replacement) {
+        return PersistentInputMutationGuard.permits(slot, replacement);
+    }
+
     protected final Map<Integer, IInventorySlot> logicalSlots() {
         return logicalSlots;
+    }
+
+    /**
+     * ItemStack's disk codec rejects oversized counts. Persist machine
+     * batches as a one-item component template plus an independent long
+     * count, while retaining a legacy direct-stack read path.
+     */
+    protected static CompoundTag saveCountedItemStack(
+            ItemStack stack, HolderLookup.Provider registries) {
+        CompoundTag entry = new CompoundTag();
+        if (stack == null || stack.isEmpty()) {
+            return entry;
+        }
+        entry.put("stack", stack.copyWithCount(1).save(registries));
+        entry.putLong("count", stack.getCount());
+        return entry;
+    }
+
+    protected static ItemStack loadCountedItemStack(
+            CompoundTag entry, HolderLookup.Provider registries) {
+        if (entry == null || entry.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        boolean countedFormat = entry.contains("stack", Tag.TAG_COMPOUND);
+        ItemStack stack = ItemStack.parseOptional(registries,
+                countedFormat ? entry.getCompound("stack") : entry);
+        long count = countedFormat ? entry.getLong("count")
+                : stack.getCount();
+        if (stack.isEmpty() || count <= 0 || count > Integer.MAX_VALUE) {
+            return ItemStack.EMPTY;
+        }
+        stack.setCount((int) count);
+        return stack;
     }
 
     protected abstract Optional<MachineRecipeResult> findRecipe(
@@ -491,6 +615,20 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected void setSpiritSourceFromUpgrade(ItemStack source) {
     }
 
+    protected long getSpiritTradeNonceForUpgrade() {
+        return 0L;
+    }
+
+    protected void setSpiritTradeNonceFromUpgrade(long nonce) {
+    }
+
+    protected long getSpiritTradeSaltForUpgrade() {
+        return 0L;
+    }
+
+    protected void setSpiritTradeSaltFromUpgrade(long salt) {
+    }
+
     public final TileComponentConfig getConfig() {
         return configComponent;
     }
@@ -572,7 +710,9 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
                         : List.copyOf(configuredOutputSlots),
                 false, getComponents(), getSpiritSourceForUpgrade(),
                 new int[]{Math.max(1, progressRequired)},
-                snapshotLogicalSlotsForUpgrade());
+                snapshotLogicalSlotsForUpgrade(),
+                new long[]{getSpiritTradeNonceForUpgrade()},
+                getSpiritTradeSaltForUpgrade());
     }
 
     @Override
@@ -603,6 +743,12 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         }
         if (upgrade instanceof SpiritMachineUpgradeData spiritUpgrade) {
             setSpiritSourceFromUpgrade(spiritUpgrade.spiritSource);
+            setSpiritTradeNonceFromUpgrade(
+                    spiritUpgrade.spiritTradeNonces.length == 0
+                            ? spiritUpgrade.spiritTradeNonce
+                            : spiritUpgrade.spiritTradeNonces[0]);
+            setSpiritTradeSaltFromUpgrade(
+                    spiritUpgrade.spiritTradeSalt);
             if (logicalSlots != null) {
                 spiritUpgrade.logicalSlots.forEach((index, stack) -> {
                     IInventorySlot target = logicalSlots.get(index);
@@ -769,7 +915,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (!usedActiveRecipeCache) {
             changed |= recipeEntityDisplay.update(
                     recipeEntityDisplaySource(recipe));
-            changed |= recipeItemDisplay.updateRecipe(snapshot, recipe);
+            changed |= updateRecipeItemDisplay(snapshot, recipe);
         }
         progressRequired = Math.max(1, mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()));
         ItemStack output = outputSlot == null
@@ -1162,6 +1308,12 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return recipe.output();
     }
 
+    /** Allows a machine to add persistent context items to its work display. */
+    protected boolean updateRecipeItemDisplay(
+            ItemStackHandler inventory, MachineRecipeResult recipe) {
+        return recipeItemDisplay.updateRecipe(inventory, recipe);
+    }
+
     @Override
     public RecipeEntityDisplayState mekanismMagicRecipeEntityDisplay() {
         return recipeEntityDisplay;
@@ -1186,8 +1338,17 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return snapshot;
     }
 
+    /**
+     * Optional datapack-backed recipe catalog revision. Including it in the
+     * normal input fingerprint invalidates the cached recipe immediately
+     * after a reload without making every machine rescan every working tick.
+     */
+    protected long recipeLookupRevision() {
+        return 0L;
+    }
+
     private long recipeInputFingerprint() {
-        long fingerprint = 1;
+        long fingerprint = 31L + recipeLookupRevision();
         for (int slot = 0; slot < MACHINE_INVENTORY_SIZE; slot++) {
             IInventorySlot inventorySlot = logicalSlots == null
                     ? null : logicalSlots.get(slot);
@@ -1261,8 +1422,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     }
 
     private static String recipeKey(MachineRecipeResult recipe) {
-        return recipe.id() + "|" + recipe.output().getCount() + "|"
-                + recipe.duration() + "|" + recipe.inputs();
+        ItemStack output = recipe.output();
+        return recipe.id() + "|"
+                + net.minecraft.core.registries.BuiltInRegistries.ITEM
+                .getKey(output.getItem()) + "|"
+                + output.getCount() + "|" + output.getComponents().hashCode()
+                + "|" + recipe.duration() + "|" + recipe.inputs()
+                + "|" + recipe.resourceCosts();
     }
 
     @Override
@@ -1292,9 +1458,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         clearFastEjectCapabilityCaches();
         super.onLoad();
         onNativeMachineLoaded();
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.onLoad(this);
-        }
+        MachineNetworkLifecycleHooks.onLoad(this);
     }
 
     /**
@@ -1310,9 +1474,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         clearFastEjectCapabilityCaches();
         super.setRemoved();
         onNativeMachineRemoved();
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.onRemoved(this);
-        }
+        MachineNetworkLifecycleHooks.onRemoved(this);
     }
 
     /** Optional cleanup hook; common capability caches are already cleared. */
@@ -1324,9 +1486,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         super.clearRemoved();
         clearFastEjectCapabilityCaches();
         onNativeMachineRevived();
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.onRevived(this);
-        }
+        MachineNetworkLifecycleHooks.onRevived(this);
     }
 
     /** Optional revive hook; common capability caches are already fresh. */
@@ -1336,17 +1496,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     public void onChunkUnloaded() {
         super.onChunkUnloaded();
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.onChunkUnloaded(this);
-        }
+        MachineNetworkLifecycleHooks.onChunkUnloaded(this);
     }
 
     @Override
     public void blockRemoved() {
         super.blockRemoved();
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.onBlockRemoved(this);
-        }
+        MachineNetworkLifecycleHooks.onBlockRemoved(this);
     }
 
     private void clearFastEjectCapabilityCaches() {
@@ -1362,9 +1518,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         tag.putInt("magic_progress_required", progressRequired);
         tag.putString("magic_active_recipe", activeRecipe);
         saveNativeMachineData(tag, registries);
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.save(this, tag, registries);
-        }
+        MachineNetworkLifecycleHooks.save(this, tag, registries);
     }
 
     @Override
@@ -1379,9 +1533,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         // persisted inputs on the next server tick.
         clearActiveRecipeCache();
         loadNativeMachineData(tag, registries);
-        if (mekanismMagicSupportsDirectNetworkOutput()) {
-            MachineDirectOutputHooks.load(this, tag, registries);
-        }
+        MachineNetworkLifecycleHooks.load(this, tag, registries);
     }
 
     /** Machine-specific persistent data, always chained after common data. */

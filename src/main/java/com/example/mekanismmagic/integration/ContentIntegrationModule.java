@@ -10,6 +10,16 @@ public interface ContentIntegrationModule {
 
     void register(IEventBus modBus);
 
+    /** Whether this module requires the addon's shared items and creative tab. */
+    default boolean registersGameContent() {
+        return true;
+    }
+
+    /** Whether this module needs optional shared plugin items. */
+    default boolean registersPluginItems() {
+        return true;
+    }
+
     default boolean isLoaded() {
         return ModCompatibility.loaded(modId());
     }

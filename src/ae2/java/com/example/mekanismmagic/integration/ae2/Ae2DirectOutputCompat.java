@@ -6,6 +6,8 @@ import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.network
+        .MachineNetworkLifecycleHooks;
+import com.example.mekanismmagic.integration.common.network
         .MagicSourceExternalEndpointHooks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -22,6 +24,8 @@ public final class Ae2DirectOutputCompat {
             return;
         }
         registered = true;
+        MachineNetworkLifecycleHooks.register(
+                Ae2DirectOutputProvider.LIFECYCLE_HOOK);
         MachineDirectOutputHooks.register(Ae2DirectOutputProvider.HOOK);
         if (ModCompatibility.loaded(
                 ModCompatibility.ARS_ENERGISTIQUE)) {

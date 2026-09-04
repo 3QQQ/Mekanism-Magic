@@ -82,6 +82,9 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
                 } else if (isSacrificeGuiSlot(guiSlot)) {
                     guiSlot.hover(slot -> List.of(Component.translatable(
                             "gui.mekanism_magic.sacrifice")));
+                } else if (isSacrificeRemainderGuiSlot(guiSlot)) {
+                    guiSlot.hover(slot -> List.of(Component.translatable(
+                            "gui.mekanism_magic.sacrifice_remainder")));
                 }
             }
         }
@@ -146,5 +149,11 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
         return x == 20 && y == 85;
+    }
+
+    private static boolean isSacrificeRemainderGuiSlot(GuiSlot slot) {
+        int x = slot.getRelativeX() + 1;
+        int y = slot.getRelativeY() + 1;
+        return x == 176 && y == 80;
     }
 }

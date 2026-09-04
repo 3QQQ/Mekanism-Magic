@@ -43,6 +43,7 @@ public final class ImbuementFactoryScreen extends GuiConfigurableTile<
     private GuiSlot catalystLockSlot;
     private boolean libraryOpen;
     private int displayedCatalystPage = -1;
+    private int displayedCatalystVisibleSlotCount = -1;
 
     public ImbuementFactoryScreen(ImbuementFactoryContainer container,
                                   Inventory inventory, Component title) {
@@ -219,11 +220,13 @@ public final class ImbuementFactoryScreen extends GuiConfigurableTile<
                     - CatalystLibraryLayout.SLOT_TOP);
             if (x >= 0 && x < 72 && y >= 0 && y < 72
                     && x % 18 < 17 && y % 18 < 17) {
+                int pageSlot = (y / 18) * 4 + x / 18;
                 int index = getTileEntity().catalystPage()
-                        * CatalystLibraryLayout.PAGE_SIZE
-                        + (y / 18) * 4 + x / 18;
-                clickMachineButton(300 + index);
-                return true;
+                        * CatalystLibraryLayout.PAGE_SIZE + pageSlot;
+                if (index < getTileEntity().catalystVisibleSlotCount()) {
+                    clickMachineButton(300 + pageSlot);
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -238,10 +241,13 @@ public final class ImbuementFactoryScreen extends GuiConfigurableTile<
     private void updateLibraryVisibility() {
         int currentPage = getTileEntity().catalystPage();
         displayedCatalystPage = currentPage;
+        displayedCatalystVisibleSlotCount =
+                getTileEntity().catalystVisibleSlotCount();
         for (int index = 0; index < librarySlots.size(); index++) {
             GuiSlot slot = librarySlots.get(index);
             slot.visible = libraryOpen
-                    && index / CatalystLibraryLayout.PAGE_SIZE == currentPage;
+                    && currentPage * CatalystLibraryLayout.PAGE_SIZE + index
+                    < displayedCatalystVisibleSlotCount;
             slot.active = false;
         }
         for (MekanismButton button : libraryButtons) {
@@ -253,8 +259,10 @@ public final class ImbuementFactoryScreen extends GuiConfigurableTile<
     @Override
     public void containerTick() {
         super.containerTick();
-        if (libraryOpen && displayedCatalystPage
-                != getTileEntity().catalystPage()) {
+        if (libraryOpen && (displayedCatalystPage
+                != getTileEntity().catalystPage()
+                || displayedCatalystVisibleSlotCount
+                != getTileEntity().catalystVisibleSlotCount())) {
             updateLibraryVisibility();
         }
     }

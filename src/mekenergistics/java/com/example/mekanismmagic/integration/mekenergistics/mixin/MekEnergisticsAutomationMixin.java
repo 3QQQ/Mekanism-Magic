@@ -60,4 +60,15 @@ public abstract class MekEnergisticsAutomationMixin
     public boolean meIsBusy() {
         return mekanismMagicHost().mekanismMagicIsBusy();
     }
+
+    /** Mek Energistics 3.0.6 does not consult meIsBusy internally. */
+    public boolean isPatternBusy() {
+        return mekanismMagicHost().mekanismMagicIsBusy();
+    }
+
+    @Override
+    public boolean meGroupParallelItemInputs() {
+        return mekanismMagicHost()
+                .mekanismMagicGroupParallelItemInputs();
+    }
 }

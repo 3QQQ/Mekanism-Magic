@@ -15,10 +15,17 @@ import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
+import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiPredicate;
 
 @JeiPlugin
 public final class MekanismMagicJeiPlugin implements IModPlugin {
@@ -40,6 +47,17 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                     UltimateMiniRitualRecipe.class);
     private static volatile List<OccultismRecipeBridge.RitualJeiData>
             registeredRituals = List.of();
+    private static volatile List<OccultismRecipeBridge.PentacleJeiData>
+            registeredPentacles = List.of();
+    private static volatile List<OccultismRecipeBridge.SpiritJeiData>
+            registeredSpirits = List.of();
+    private static volatile List<OccultismRecipeBridge.MinerJeiData>
+            registeredMiners = List.of();
+    private static volatile IJeiRuntime runtime;
+    private static volatile long displayedRecipeRevision = Long.MIN_VALUE;
+    private static volatile long displayedSpiritRevision = Long.MIN_VALUE;
+    private static final AtomicBoolean RUNTIME_REFRESH_QUEUED =
+            new AtomicBoolean();
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -124,15 +142,20 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             List<OccultismRecipeBridge.RitualJeiData> rituals =
                     OccultismRecipeBridge.ritualJeiRecipes(
                             Minecraft.getInstance().level);
+            List<OccultismRecipeBridge.SpiritJeiData> spirits =
+                    OccultismRecipeBridge.spiritJeiRecipes(
+                            Minecraft.getInstance().level);
+            List<OccultismRecipeBridge.MinerJeiData> miners =
+                    OccultismRecipeBridge.minerJeiRecipes(
+                            Minecraft.getInstance().level);
+            registeredPentacles = List.copyOf(pentacles);
             registeredRituals = List.copyOf(rituals);
+            registeredSpirits = List.copyOf(spirits);
+            registeredMiners = List.copyOf(miners);
             registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
             registration.addRecipes(RITUAL_TYPE, rituals);
-            registration.addRecipes(SPIRIT_TYPE,
-                    OccultismRecipeBridge.spiritJeiRecipes(
-                            Minecraft.getInstance().level));
-            registration.addRecipes(MINER_TYPE,
-                    OccultismRecipeBridge.minerJeiRecipes(
-                            Minecraft.getInstance().level));
+            registration.addRecipes(SPIRIT_TYPE, spirits);
+            registration.addRecipes(MINER_TYPE, miners);
             List<UltimateMiniRitualRecipe> ultimateRecipes =
                     Minecraft.getInstance().level.getRecipeManager()
                             .getAllRecipesFor(
@@ -148,8 +171,255 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
+        runtime = jeiRuntime;
+        displayedRecipeRevision = OccultismRecipeBridge.recipeRevision();
+        displayedSpiritRevision =
+                OccultismRecipeBridge.spiritProcessingRevision();
+    }
+
+    @Override
     public void onRuntimeUnavailable() {
+        runtime = null;
+        RUNTIME_REFRESH_QUEUED.set(false);
+        registeredPentacles = List.of();
         registeredRituals = List.of();
+        registeredSpirits = List.of();
+        registeredMiners = List.of();
+        displayedRecipeRevision = Long.MIN_VALUE;
+        displayedSpiritRevision = Long.MIN_VALUE;
+    }
+
+    /**
+     * Reconciles the active client JEI catalog after an Occultism config or
+     * datapack reload. This entry point is invoked reflectively from the
+     * common bridge so a dedicated server never links JEI/client classes.
+     */
+    public static void requestOccultismRuntimeRefresh() {
+        if (runtime == null
+                || !RUNTIME_REFRESH_QUEUED.compareAndSet(false, true)) {
+            return;
+        }
+        Minecraft.getInstance().execute(() -> {
+            try {
+                refreshOccultismRuntime();
+            } finally {
+                RUNTIME_REFRESH_QUEUED.set(false);
+                // A second reload can arrive while this pass is reconciling.
+                // Requeue only when its revision was not observed, avoiding
+                // both a lost update and a permanent client-tick poller.
+                if (runtime != null && Minecraft.getInstance().level != null
+                        && (displayedRecipeRevision
+                        != OccultismRecipeBridge.recipeRevision()
+                        || displayedSpiritRevision
+                        != OccultismRecipeBridge
+                        .spiritProcessingRevision())) {
+                    requestOccultismRuntimeRefresh();
+                }
+            }
+        });
+    }
+
+    private static void refreshOccultismRuntime() {
+        IJeiRuntime activeRuntime = runtime;
+        var level = Minecraft.getInstance().level;
+        if (activeRuntime == null || level == null
+                || !ModCompatibility.occultismLoaded()) {
+            return;
+        }
+        long recipeRevision = OccultismRecipeBridge.recipeRevision();
+        long spiritRevision =
+                OccultismRecipeBridge.spiritProcessingRevision();
+        boolean recipesChanged = recipeRevision
+                != displayedRecipeRevision;
+        boolean spiritsChanged = spiritRevision
+                != displayedSpiritRevision;
+        if (!recipesChanged && !spiritsChanged) {
+            return;
+        }
+
+        IRecipeManager recipes = activeRuntime.getRecipeManager();
+        if (recipesChanged) {
+            List<OccultismRecipeBridge.PentacleJeiData> freshPentacles =
+                    OccultismRecipeBridge.pentacleJeiRecipes(level);
+            updatePentacleIngredients(activeRuntime,
+                    registeredPentacles, freshPentacles);
+            registeredPentacles = reconcileRecipes(recipes,
+                    MINI_RITUAL_TYPE, registeredPentacles,
+                    freshPentacles,
+                    MekanismMagicJeiPlugin::samePentacleRecipe);
+            registeredRituals = reconcileRecipes(recipes,
+                    RITUAL_TYPE, registeredRituals,
+                    OccultismRecipeBridge.ritualJeiRecipes(level),
+                    MekanismMagicJeiPlugin::sameRitualRecipe);
+            registeredMiners = reconcileRecipes(recipes,
+                    MINER_TYPE, registeredMiners,
+                    OccultismRecipeBridge.minerJeiRecipes(level),
+                    MekanismMagicJeiPlugin::sameMinerRecipe);
+            displayedRecipeRevision = recipeRevision;
+        }
+        if (recipesChanged || spiritsChanged) {
+            registeredSpirits = reconcileRecipes(recipes,
+                    SPIRIT_TYPE, registeredSpirits,
+                    OccultismRecipeBridge.spiritJeiRecipes(level),
+                    MekanismMagicJeiPlugin::sameSpiritRecipe);
+            displayedSpiritRevision = spiritRevision;
+        }
+    }
+
+    private static <T> List<T> reconcileRecipes(
+            IRecipeManager manager, RecipeType<T> type,
+            List<T> previous, List<T> fresh,
+            BiPredicate<T, T> equivalent) {
+        boolean[] reused = new boolean[previous.size()];
+        List<T> reconciled = new ArrayList<>(fresh.size());
+        List<T> additions = new ArrayList<>();
+        for (T candidate : fresh) {
+            int match = -1;
+            for (int index = 0; index < previous.size(); index++) {
+                if (!reused[index]
+                        && equivalent.test(previous.get(index), candidate)) {
+                    match = index;
+                    break;
+                }
+            }
+            if (match >= 0) {
+                reused[match] = true;
+                reconciled.add(previous.get(match));
+            } else {
+                reconciled.add(candidate);
+                additions.add(candidate);
+            }
+        }
+        List<T> retired = new ArrayList<>();
+        for (int index = 0; index < previous.size(); index++) {
+            if (!reused[index]) {
+                retired.add(previous.get(index));
+            }
+        }
+        if (!retired.isEmpty()) {
+            manager.hideRecipes(type, retired);
+        }
+        if (!additions.isEmpty()) {
+            manager.addRecipes(type, additions);
+            manager.unhideRecipes(type, additions);
+        }
+        return List.copyOf(reconciled);
+    }
+
+    private static void updatePentacleIngredients(
+            IJeiRuntime activeRuntime,
+            List<OccultismRecipeBridge.PentacleJeiData> previous,
+            List<OccultismRecipeBridge.PentacleJeiData> fresh) {
+        List<ItemStack> oldStacks = previous.stream()
+                .map(OccultismRecipeBridge.PentacleJeiData::output)
+                .toList();
+        List<ItemStack> newStacks = fresh.stream()
+                .map(OccultismRecipeBridge.PentacleJeiData::output)
+                .toList();
+        List<ItemStack> removed = oldStacks.stream()
+                .filter(old -> newStacks.stream().noneMatch(
+                        current -> sameStack(old, current)))
+                .toList();
+        List<ItemStack> added = newStacks.stream()
+                .filter(current -> oldStacks.stream().noneMatch(
+                        old -> sameStack(old, current)))
+                .map(ItemStack::copy)
+                .toList();
+        if (!removed.isEmpty()) {
+            activeRuntime.getIngredientManager()
+                    .removeIngredientsAtRuntime(
+                            VanillaTypes.ITEM_STACK, removed);
+        }
+        if (!added.isEmpty()) {
+            activeRuntime.getIngredientManager()
+                    .addIngredientsAtRuntime(
+                            VanillaTypes.ITEM_STACK, added);
+        }
+    }
+
+    private static boolean samePentacleRecipe(
+            OccultismRecipeBridge.PentacleJeiData first,
+            OccultismRecipeBridge.PentacleJeiData second) {
+        return first.pentacleId().equals(second.pentacleId())
+                && first.chalkColors().equals(second.chalkColors())
+                && sameStacks(first.materials(), second.materials())
+                && sameStack(first.output(), second.output());
+    }
+
+    private static boolean sameRitualRecipe(
+            OccultismRecipeBridge.RitualJeiData first,
+            OccultismRecipeBridge.RitualJeiData second) {
+        return first.recipeId().equals(second.recipeId())
+                && first.pentacleId().equals(second.pentacleId())
+                && sameIngredients(first.ingredients(), second.ingredients())
+                && sameIngredient(first.activation(), second.activation())
+                && sameStacks(first.sacrifices(), second.sacrifices())
+                && sameStack(first.selector(), second.selector())
+                && sameStack(first.output(), second.output());
+    }
+
+    private static boolean sameSpiritRecipe(
+            OccultismRecipeBridge.SpiritJeiData first,
+            OccultismRecipeBridge.SpiritJeiData second) {
+        return first.recipeId().equals(second.recipeId())
+                && first.recipeType().equals(second.recipeType())
+                && first.weight() == second.weight()
+                && sameIngredient(first.input(), second.input())
+                && sameStack(first.spirit(), second.spirit())
+                && sameStack(first.output(), second.output());
+    }
+
+    private static boolean sameMinerRecipe(
+            OccultismRecipeBridge.MinerJeiData first,
+            OccultismRecipeBridge.MinerJeiData second) {
+        return first.recipeId().equals(second.recipeId())
+                && first.weight() == second.weight()
+                && sameIngredient(first.input(), second.input())
+                && sameStack(first.output(), second.output());
+    }
+
+    private static boolean sameIngredients(
+            List<Ingredient> first, List<Ingredient> second) {
+        if (first.size() != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < first.size(); index++) {
+            if (!sameIngredient(first.get(index), second.get(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean sameIngredient(Ingredient first,
+                                          Ingredient second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || second == null) {
+            return false;
+        }
+        return sameStacks(List.of(first.getItems()),
+                List.of(second.getItems()));
+    }
+
+    private static boolean sameStacks(List<ItemStack> first,
+                                      List<ItemStack> second) {
+        if (first.size() != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < first.size(); index++) {
+            if (!sameStack(first.get(index), second.get(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean sameStack(ItemStack first, ItemStack second) {
+        return first.getCount() == second.getCount()
+                && ItemStack.isSameItemSameComponents(first, second);
     }
 
     static List<net.minecraft.world.item.ItemStack> boundRitualSelectors(
@@ -176,7 +446,8 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeTransferHandlers(
             IRecipeTransferRegistration registration) {
-        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+        if (ModCompatibility.arsNouveauMachineContentEnabled()
+                && ModCompatibility.loaded("ae2")) {
             try {
                 Class.forName("com.example.mekanismmagic.integration."
                                 + "ae2.Ae2IdentifierImbuementJeiTransfer")

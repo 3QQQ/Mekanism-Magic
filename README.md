@@ -1,6 +1,7 @@
 # Mekanism Magic
 
-Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式、魔灵配方和维度矿工提供 Mekanism 风格的机器、工厂、升级、自动化和 JEI 支持。
+Mekanism Magic 是面向 Mekanism 与魔法模组的自动化附属，为神秘学和 Ars Nouveau
+提供 Mekanism 风格的机器、升级和自动化。
 
 ## 双版本支持
 
@@ -13,10 +14,12 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 
 ## 主要功能
 
-- 魔灵处理器：处理 Occultism 的灵火、粉碎、结晶和交易配方。
+- 魔灵处理器：按原版魔灵职业处理灵火、粉碎、结晶、熔炼和交易配方。
 - 魔灵工厂：基础、高级、精英、终极工厂；安装 Mekanism Extras 时支持绝对、至尊、宇宙、无限工厂。
-- 仪式引擎：16 个仪式材料输入槽、仪式选择、激活、献祭和单输出。
-- 微缩仪式制作机：根据真实五芒星成型材料制作微缩五芒星，粉笔槽使用 Mekanism 风格模块面板。
+- 仪式引擎：16 个无序材料槽，完整映射 Occultism 158 条仪式，并保留激活、献祭、
+  动态物品组件、实体复活和随机召唤语义。
+- 微缩仪式制作机：根据真实五芒星成型材料制作可展开的微缩五芒星；右键顶面展开，
+  潜行右键原结构回收，放置状态锁定以防材料复制。
 - 终极微缩仪式：使用四个最高等级 Marid 五芒星制作，可作为通用仪式选择器。
 - 维度矿工处理机：单个不消耗矿工输入，三行九槽输出，支持附魔和自动输出。
 - 安装 Mekanism Extras 时，维度矿机支持最高 256 倍并行的堆叠升级。
@@ -46,8 +49,8 @@ Mekanism Magic 是 Mekanism 与 Occultism 的附属模组，为神秘学仪式�
 推荐环境：
 
 - Minecraft 1.21.1
-- NeoForge 21.1.194 或更高
-- Mekanism 10.7.15 或更高
+- NeoForge 21.1.228 或更高
+- Mekanism 10.7.19 或更高
 - Occultism 1.222.0 或更高
 - Java 21
 
@@ -97,12 +100,13 @@ Forge 分支已验证 Mekanism Generators、Mekanism Extras 1.5.0、MoreMachine 
 
 - [Forge 1.20.1 移植状态](docs/FORGE_1201_PORT.md)
 - [附属模组兼容性](docs/COMPATIBILITY.md)
-- [Ars Nouveau 适配准备](docs/ARS_NOUVEAU_ADAPTATION.md)
+- [Ars Nouveau 适配说明](docs/ARS_NOUVEAU_ADAPTATION.md)
+- [Forbidden & Arcanus 适配计划](docs/FORBIDDEN_ARCANUS_ADAPTATION.md)
 
 构建产物位于：
 
 ```text
-build/libs/mekanism_magic-1.0.1-neoforge-1.21.1.jar
+build/libs/mekanism_magic-1.0.6-neoforge-1.21.1.jar
 ```
 
 请使用与 Minecraft/加载器版本匹配的分支和 JAR；不要将 NeoForge 1.21.1 构建产物放入 Forge 1.20.1。

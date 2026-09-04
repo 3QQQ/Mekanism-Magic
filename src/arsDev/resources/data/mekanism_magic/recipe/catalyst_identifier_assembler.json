@@ -1,15 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "GSG",
+    "PBP",
     "ECE",
-    "GSG"
+    "PSP"
   ],
   "key": {
-    "G": {"item": "ars_nouveau:source_gem"},
-    "S": {"item": "ars_nouveau:source_jar"},
-    "E": {"item": "mekanism:energy_tablet"},
-    "C": {"item": "mekanism:steel_casing"}
+    "P": {"item": "ars_nouveau:blank_parchment"},
+    "B": {"item": "mekanism:basic_control_circuit"},
+    "E": {"item": "ars_nouveau:source_gem"},
+    "C": {"item": "mekanism:steel_casing"},
+    "S": {"item": "ars_nouveau:scribes_table"}
   },
   "result": {
     "id": "mekanism_magic:catalyst_identifier_assembler",

@@ -57,8 +57,13 @@ public final class MagicMachineAnimationRenderer<
         private final int secondary;
 
         Kind(String texturePath, int primary, int secondary) {
-            texture = ResourceLocation.fromNamespaceAndPath(
-                    "mekanism_magic", "block/" + texturePath);
+            this(ResourceLocation.fromNamespaceAndPath(
+                    "mekanism_magic", "block/" + texturePath),
+                    primary, secondary);
+        }
+
+        Kind(ResourceLocation texture, int primary, int secondary) {
+            this.texture = texture;
             this.primary = primary;
             this.secondary = secondary;
         }
@@ -124,7 +129,6 @@ public final class MagicMachineAnimationRenderer<
             blockTexture("animation/core_orb");
     private static final ResourceLocation ENERGY_RIBBON =
             blockTexture("animation/energy_ribbon");
-
     public MagicMachineAnimationRenderer(
             BlockEntityRendererProvider.Context context, Kind kind) {
         this.kind = kind;

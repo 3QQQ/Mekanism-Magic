@@ -67,10 +67,19 @@ public final class MagicSourcePipeRenderer
             CACHED_SOURCE = new Int2ObjectArrayMap<>(14);
     private static final Map<MagicSourceNetwork, FillState>
             DISPLAYED_SCALES = new WeakHashMap<>();
+    private static final Map<MagicSourceTransmitter, ConnectionRenderState>
+            CONNECTION_STATES = new WeakHashMap<>();
 
     public MagicSourcePipeRenderer(
             BlockEntityRendererProvider.Context context) {
         super(context);
+    }
+
+    /** Discards every object that may retain sprites from the old atlas. */
+    public static void invalidateSpriteCache() {
+        CACHED_SOURCE.clear();
+        DISPLAYED_SCALES.clear();
+        CONNECTION_STATES.clear();
     }
 
     @Override
@@ -123,8 +132,8 @@ public final class MagicSourcePipeRenderer
         int sourceColor = colorWithAlpha(SOURCE_TEXTURE_RGB,
                 136 + Math.round(displayedScale * 48F
                         + basePulse * 48F));
-        List<String> connectionContents = new ArrayList<>();
-        boolean[] renderSides = new boolean[6];
+        int nonNormalSideMask = 0;
+        int connectionFingerprint = 0;
         boolean hasHorizontalSide = false;
         int verticalSides = 0;
         int connectedAxes = 0;
@@ -135,19 +144,18 @@ public final class MagicSourcePipeRenderer
         for (Direction side : EnumUtils.DIRECTIONS) {
             ConnectionType connectionType =
                     pipe.getConnectionType(side);
+            connectionFingerprint |= connectionType.ordinal()
+                    << side.ordinal() * 2;
             if (connectionType == ConnectionType.NORMAL) {
                 MekanismRenderer.renderObject(
                         getModel(side, textureU, textureV,
                                 textureUReverse, textureVReverse, stage), matrix,
                         buffer, sourceColor, glow, overlayLight,
                         FaceDisplay.FRONT, camera, tile.getBlockPos());
-            } else if (connectionType != ConnectionType.NONE) {
-                connectionContents.add(side.getSerializedName()
-                        + connectionType.getSerializedName()
-                        .toUpperCase(Locale.ROOT));
             }
-            renderSides[side.ordinal()] =
-                    connectionType != ConnectionType.NORMAL;
+            if (connectionType != ConnectionType.NORMAL) {
+                nonNormalSideMask |= 1 << side.ordinal();
+            }
             if (connectionType != ConnectionType.NONE) {
                 connectedAxes |= 1 << side.getAxis().ordinal();
                 if (side.getAxis().isHorizontal()) {
@@ -165,7 +173,7 @@ public final class MagicSourcePipeRenderer
                 stage, renderBase, flowAxis);
         for (Direction side : EnumUtils.DIRECTIONS) {
             model.setSideRender(side,
-                    renderSides[side.ordinal()]
+                    (nonNormalSideMask & 1 << side.ordinal()) != 0
                             || side.getAxis().isVertical()
                             && renderBase && stage != STAGES - 1);
         }
@@ -173,6 +181,8 @@ public final class MagicSourcePipeRenderer
                 sourceColor, glow, overlayLight,
                 FaceDisplay.FRONT, camera, tile.getBlockPos());
 
+        List<String> connectionContents = connectionContents(
+                pipe, connectionFingerprint);
         if (!connectionContents.isEmpty()) {
             matrix.pushPose();
             matrix.translate(0.5, 0.5, 0.5);
@@ -226,6 +236,28 @@ public final class MagicSourcePipeRenderer
         float speed = target > state.scale ? FILL_SPEED : DRAIN_SPEED;
         state.scale = Mth.approach(state.scale, target, elapsed * speed);
         return state.scale;
+    }
+
+    private static List<String> connectionContents(
+            MagicSourceTransmitter pipe, int fingerprint) {
+        ConnectionRenderState cached = CONNECTION_STATES.get(pipe);
+        if (cached != null && cached.fingerprint == fingerprint) {
+            return cached.contents;
+        }
+        List<String> contents = new ArrayList<>(2);
+        for (Direction side : EnumUtils.DIRECTIONS) {
+            ConnectionType connection = pipe.getConnectionType(side);
+            if (connection != ConnectionType.NONE
+                    && connection != ConnectionType.NORMAL) {
+                contents.add(side.getSerializedName()
+                        + connection.getSerializedName()
+                        .toUpperCase(Locale.ROOT));
+            }
+        }
+        List<String> immutable = List.copyOf(contents);
+        CONNECTION_STATES.put(pipe,
+                new ConnectionRenderState(fingerprint, immutable));
+        return immutable;
     }
 
     private static int colorWithAlpha(int rgb, int alpha) {
@@ -384,5 +416,9 @@ public final class MagicSourcePipeRenderer
             this.scale = scale;
             this.lastRenderTime = lastRenderTime;
         }
+    }
+
+    private record ConnectionRenderState(
+            int fingerprint, List<String> contents) {
     }
 }

@@ -1,14 +1,15 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
+import mekanism.api.Action;
+import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
 import mekanism.api.inventory.IInventorySlot;
+import mekanism.common.attachments.containers.item.AttachedItems;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
-import mekanism.common.inventory.slot.BasicInventorySlot;
-import mekanism.common.inventory.container.slot.InventoryContainerSlot;
-import mekanism.common.inventory.container.slot.ContainerSlotType;
+import mekanism.common.inventory.container.sync.SyncableItemStack;
 import mekanism.common.upgrade.IUpgradeData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -19,9 +20,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.example.mekanismmagic.integration.common.network.PatternAutomationRefreshHooks;
 
 /**
  * Mekanism implementation of Ars Nouveau imbuement recipes.
@@ -30,10 +31,13 @@ public final class ImbuementProcessorBlockEntity
         extends ArsSourceMachineBlockEntity
         implements CatalystIdentifierSelectionHost {
     public static final int REAGENT_SLOT = 0;
-    private List<BasicInventorySlot> catalystLibrarySlots;
+    private CatalystLibraryStorage catalystLibraryStorage;
+    private List<CatalystLibraryWindowSlot> catalystLibrarySlots;
+    private ItemStack syncedPhysicalCatalyst = ItemStack.EMPTY;
     private boolean catalystLibraryOpen;
     private int selectedCatalystIndex = -1;
     private int catalystPage;
+    private int syncedCatalystVisibleSlotCount = 1;
     private boolean virtualCatalystSelected;
     private int virtualCatalystIndex = -1;
     private String virtualCatalystId = "";
@@ -41,6 +45,7 @@ public final class ImbuementProcessorBlockEntity
     private String cachedVirtualCatalystId = "";
     private int cachedVirtualCatalystIndex = Integer.MIN_VALUE;
     private long cachedCatalystCatalogVersion = Long.MIN_VALUE;
+    private long observedRecipeCatalogVersion = Long.MIN_VALUE;
 
     public ImbuementProcessorBlockEntity(BlockPos pos, BlockState state) {
         super(ArsNouveauRegistries.IMBUEMENT_PROCESSOR_BLOCK.get()
@@ -58,19 +63,28 @@ public final class ImbuementProcessorBlockEntity
                                       IContentsListener listener) {
         inputSlot = registerLogicalSlot(helper, REAGENT_SLOT,
                 InputInventorySlot.at(listener, 64, 17));
-        catalystLibrarySlots = new ArrayList<>();
         IContentsListener libraryListener = () -> {
             listener.onContentsChanged();
+            clampCatalystPage();
             setChanged();
         };
-        for (int index = 0; index < CATALYST_LIBRARY_SLOT_COUNT; index++) {
-            int pageSlot = index % 16;
-            catalystLibrarySlots.add(registerLogicalSlot(helper,
-                    CATALYST_LIBRARY_SLOT_START + index,
-                    new CatalystLibrarySlot(this, index / 16,
-                            libraryListener,
-                            CatalystLibraryLayout.slotX(176, pageSlot),
-                            CatalystLibraryLayout.slotY(pageSlot))));
+        catalystLibraryStorage = new CatalystLibraryStorage(
+                libraryListener::onContentsChanged);
+        CatalystLibraryStorage.PageWindow window = catalystLibraryStorage
+                .pageWindow(this::catalystPage,
+                        this::catalystWindowRecipeCount);
+        catalystLibrarySlots = CatalystLibraryWindowSlot.createManualWindow(
+                window,
+                () -> level != null && level.isClientSide(),
+                () -> level == null || !level.isClientSide()
+                        || catalystLibraryOpen,
+                stack -> stack.is(
+                        ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get()),
+                pageSlot -> CatalystLibraryLayout.slotX(176, pageSlot),
+                CatalystLibraryLayout::slotY);
+        for (int index = 0; index < catalystLibrarySlots.size(); index++) {
+            registerLogicalSlot(helper, CATALYST_LIBRARY_SLOT_START + index,
+                    catalystLibrarySlots.get(index));
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
                 OutputInventorySlot.at(listener, 116, 35));
@@ -83,12 +97,49 @@ public final class ImbuementProcessorBlockEntity
             ItemStackHandler inventory) {
         ResourceLocation patternRecipe = ArsNouveauRecipeBridge
                 .patternRecipe(inventory.getStackInSlot(REAGENT_SLOT));
+        if (patternRecipe != null
+                && (!canAdoptMarkedPatternRecipe(patternRecipe)
+                || !selectCatalystIdentifierForRecipe(patternRecipe))) {
+            return Optional.empty();
+        }
         if (patternRecipe != null) {
-            selectCatalystIdentifierForRecipe(patternRecipe);
+            inventory.setStackInSlot(REAGENT_SLOT,
+                    ArsNouveauRecipeBridge.recipeInputView(
+                            inventory.getStackInSlot(REAGENT_SLOT)));
         }
         ItemStack selected = selectedCatalystIdentifier();
         return ArsNouveauRecipeBridge.findImbuementByIdentifier(
                 level, inventory, REAGENT_SLOT, selected);
+    }
+
+    @Override
+    protected long recipeLookupRevision() {
+        return level == null ? 0L : ArsNouveauRecipeScanner.version(
+                level.getRecipeManager());
+    }
+
+    @Override
+    protected boolean onUpdateServer() {
+        boolean revisionChanged = refreshRecipeCatalogVersion();
+        return super.onUpdateServer() || revisionChanged;
+    }
+
+    private boolean refreshRecipeCatalogVersion() {
+        long revision = recipeLookupRevision();
+        if (observedRecipeCatalogVersion == revision) {
+            return false;
+        }
+        boolean initial = observedRecipeCatalogVersion == Long.MIN_VALUE;
+        observedRecipeCatalogVersion = revision;
+        invalidateVirtualCatalystCache();
+        clampCatalystPage();
+        if (!initial) {
+            progress = 0;
+            progressRequired = 1;
+            activeRecipe = "";
+        }
+        PatternAutomationRefreshHooks.request(this);
+        return true;
     }
 
     @Override
@@ -135,11 +186,8 @@ public final class ImbuementProcessorBlockEntity
     @Override
     public IUpgradeData getUpgradeData(
             net.minecraft.core.HolderLookup.Provider registries) {
-        List<ItemStack> catalysts = catalystLibrarySlots == null
-                ? List.of() : catalystLibrarySlots.stream()
-                .map(IInventorySlot::getStack)
-                .map(ItemStack::copy)
-                .toList();
+        List<ItemStack> catalysts = catalystLibraryStorage == null
+                ? List.of() : catalystLibraryStorage.snapshot();
         return new ImbuementFactoryUpgradeData(registries, redstone,
                 getControlType(), energyContainer, new int[]{progress},
                 energySlot,
@@ -153,6 +201,7 @@ public final class ImbuementProcessorBlockEntity
                 sourceModesForUpgrade(), sourceLinksForUpgrade());
     }
 
+    @Override
     public ItemStack selectedCatalystIdentifier() {
         if (virtualCatalystSelected && level != null) {
             long version = ArsNouveauRecipeScanner.version(
@@ -173,12 +222,10 @@ public final class ImbuementProcessorBlockEntity
             }
             return cachedVirtualCatalyst;
         }
-        if (catalystLibrarySlots == null
-                || selectedCatalystIndex < 0
-                || selectedCatalystIndex >= catalystLibrarySlots.size()) {
-            return ItemStack.EMPTY;
+        if (level != null && level.isClientSide()) {
+            return syncedPhysicalCatalyst;
         }
-        return catalystLibrarySlots.get(selectedCatalystIndex).getStack();
+        return physicalSelectedCatalyst();
     }
 
     public int selectedCatalystIndex() {
@@ -190,14 +237,35 @@ public final class ImbuementProcessorBlockEntity
     }
 
     public int catalystPageCount() {
-        return Math.max(1, Math.ceilDiv(
-                CATALYST_LIBRARY_SLOT_COUNT, 16));
+        if (level != null && level.isClientSide()) {
+            return Math.max(1, Math.ceilDiv(
+                    Math.max(1, syncedCatalystVisibleSlotCount),
+                    CatalystLibraryStorage.PAGE_SIZE));
+        }
+        return catalystLibraryStorage == null ? 1
+                : catalystLibraryStorage.pageCount(
+                        catalystWindowRecipeCount());
+    }
+
+    public int catalystVisibleSlotCount() {
+        if (level != null && level.isClientSide()) {
+            return Math.max(1, syncedCatalystVisibleSlotCount);
+        }
+        return catalystLibraryStorage == null ? 1
+                : catalystLibraryStorage.visibleSlotCount(
+                        catalystIdentifierRecipeCount());
+    }
+
+    private int catalystWindowRecipeCount() {
+        return level != null && level.isClientSide()
+                ? Math.max(1, syncedCatalystVisibleSlotCount)
+                : catalystIdentifierRecipeCount();
     }
 
     public ItemStack catalystPageStack(int pageSlot) {
-        int index = catalystPage * 16 + pageSlot;
-        return index >= 0 && index < catalystLibrarySlots.size()
-                ? catalystLibrarySlots.get(index).getStack()
+        return catalystLibrarySlots != null && pageSlot >= 0
+                && pageSlot < catalystLibrarySlots.size()
+                ? catalystLibrarySlots.get(pageSlot).getStack()
                 : ItemStack.EMPTY;
     }
 
@@ -207,12 +275,23 @@ public final class ImbuementProcessorBlockEntity
         setChanged();
     }
 
+    private void clampCatalystPage() {
+        if (level != null && level.isClientSide()) {
+            catalystPage = Math.max(0, Math.min(
+                    catalystPageCount() - 1, catalystPage));
+        } else {
+            catalystPage = catalystLibraryStorage == null ? 0
+                    : catalystLibraryStorage.clampPage(
+                            catalystPage, catalystWindowRecipeCount());
+        }
+    }
+
     public void selectCatalystIdentifier(int index) {
-        if (catalystLibrarySlots == null || index < 0
-                || index >= catalystLibrarySlots.size()) {
+        if (catalystLibraryStorage == null || index < 0
+                || index >= catalystVisibleSlotCount()) {
             return;
         }
-        if (!catalystLibrarySlots.get(index).getStack().isEmpty()) {
+        if (!catalystLibraryStorage.get(index).isEmpty()) {
             selectedCatalystIndex = index;
             virtualCatalystSelected = false;
             virtualCatalystIndex = -1;
@@ -223,27 +302,51 @@ public final class ImbuementProcessorBlockEntity
     }
 
     public boolean selectCatalystIdentifierId(String id) {
-        int index = ArsNouveauRecipeBridge.catalystIdentifierJeiIndex(
-                level, id);
-        if (index >= 0) {
-            ItemStack canonical = ArsNouveauRecipeBridge
-                    .catalystIdentifierJeiStack(level, index);
-            String canonicalId = canonical.isEmpty() ? id
-                    : CatalystIdentifierItem.catalystId(
-                            canonical).toString();
-            if (virtualCatalystSelected
-                    && canonicalId.equals(virtualCatalystId)) {
-                return true;
-            }
-            virtualCatalystSelected = true;
-            virtualCatalystIndex = index;
-            virtualCatalystId = canonicalId;
-            cachedVirtualCatalyst = ItemStack.EMPTY;
-            cachedCatalystCatalogVersion = Long.MIN_VALUE;
-            setChanged();
+        VirtualCatalystSelection selection =
+                resolveVirtualCatalystSelection(id);
+        if (selection == null) {
+            return false;
+        }
+        if (virtualCatalystSelected
+                && selection.id().equals(virtualCatalystId)) {
             return true;
         }
-        return false;
+        applyVirtualCatalystSelection(selection);
+        return true;
+    }
+
+    @Override
+    public boolean canSelectCatalystIdentifierId(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        ItemStack selected = selectedCatalystIdentifier();
+        if (!selected.isEmpty() && id.equals(
+                CatalystIdentifierItem.catalystId(selected).toString())) {
+            return true;
+        }
+        return inputSlot != null && inputSlot.getStack().isEmpty()
+                && !mekanismMagicIsBusy();
+    }
+
+    private boolean canAdoptMarkedPatternRecipe(
+            ResourceLocation recipeId) {
+        String desired = catalystIdentifierIdForRecipe(recipeId);
+        if (desired.isEmpty()) {
+            return false;
+        }
+        ItemStack selected = selectedCatalystIdentifier();
+        if (!selected.isEmpty() && desired.equals(
+                CatalystIdentifierItem.catalystId(selected).toString())) {
+            return true;
+        }
+        ItemStack input = inputSlot == null
+                ? ItemStack.EMPTY : inputSlot.getStack();
+        return progress <= 0 && !input.isEmpty()
+                && recipeId.equals(
+                ArsNouveauRecipeBridge.patternRecipe(input))
+                && !com.example.mekanismmagic.integration.common.network
+                .PatternAutomationRefreshHooks.hasPendingPatternWork(this);
     }
 
     public void selectCatalystIdentifierRecipe(int index) {
@@ -256,13 +359,113 @@ public final class ImbuementProcessorBlockEntity
     }
 
     public void clearCatalystIdentifierSelection() {
+        applyClearedCatalystSelection();
+    }
+
+    /**
+     * Atomically accepts one external processing-pattern input and its
+     * non-physical catalyst context. The complete stack is simulated before
+     * either the input slot or catalyst selection changes.
+     */
+    public boolean acceptAutomatedImbuementInput(
+            ItemStack input, boolean requiresCatalyst, String catalystId) {
+        if (inputSlot == null || input == null || input.isEmpty()
+                || mekanismMagicIsBusy()
+                || !inputSlot.getStack().isEmpty()) {
+            return false;
+        }
+        VirtualCatalystSelection requestedSelection = requiresCatalyst
+                ? resolveVirtualCatalystSelection(catalystId) : null;
+        if (requiresCatalyst && requestedSelection == null) {
+            return false;
+        }
+        ItemStack simulatedRemainder = inputSlot.insertItem(
+                input, Action.SIMULATE, AutomationType.EXTERNAL);
+        if (!simulatedRemainder.isEmpty()) {
+            return false;
+        }
+
+        ItemStack previousInput = inputSlot.getStack().copy();
+        CatalystSelectionState previousSelection =
+                captureCatalystSelection();
+        try {
+            ItemStack remainder = inputSlot.insertItem(
+                    input, Action.EXECUTE, AutomationType.EXTERNAL);
+            if (!remainder.isEmpty()) {
+                restoreAutomatedInputState(
+                        previousInput, previousSelection);
+                return false;
+            }
+            if (requestedSelection == null) {
+                applyClearedCatalystSelection();
+            } else {
+                applyVirtualCatalystSelection(requestedSelection);
+            }
+            return true;
+        } catch (RuntimeException | Error failure) {
+            restoreAutomatedInputState(previousInput, previousSelection);
+            throw failure;
+        }
+    }
+
+    private VirtualCatalystSelection resolveVirtualCatalystSelection(
+            String id) {
+        if (level == null || id == null || id.isBlank()) {
+            return null;
+        }
+        int index = ArsNouveauRecipeBridge.catalystIdentifierJeiIndex(
+                level, id);
+        if (index < 0) {
+            return null;
+        }
+        ItemStack canonical = ArsNouveauRecipeBridge
+                .catalystIdentifierJeiStack(level, index);
+        String canonicalId = canonical.isEmpty() ? id
+                : CatalystIdentifierItem.catalystId(canonical).toString();
+        return new VirtualCatalystSelection(index, canonicalId);
+    }
+
+    private void applyVirtualCatalystSelection(
+            VirtualCatalystSelection selection) {
+        virtualCatalystSelected = true;
+        virtualCatalystIndex = selection.index();
+        virtualCatalystId = selection.id();
+        invalidateVirtualCatalystCache();
+        setChanged();
+    }
+
+    private void applyClearedCatalystSelection() {
         virtualCatalystSelected = false;
         virtualCatalystIndex = -1;
         virtualCatalystId = "";
         selectedCatalystIndex = -1;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
+        invalidateVirtualCatalystCache();
         setChanged();
+    }
+
+    private CatalystSelectionState captureCatalystSelection() {
+        return new CatalystSelectionState(selectedCatalystIndex,
+                virtualCatalystSelected, virtualCatalystIndex,
+                virtualCatalystId);
+    }
+
+    private void restoreAutomatedInputState(
+            ItemStack previousInput,
+            CatalystSelectionState previousSelection) {
+        inputSlot.setStack(previousInput);
+        selectedCatalystIndex = previousSelection.selectedIndex();
+        virtualCatalystSelected = previousSelection.virtualSelected();
+        virtualCatalystIndex = previousSelection.virtualIndex();
+        virtualCatalystId = previousSelection.virtualId();
+        invalidateVirtualCatalystCache();
+        setChanged();
+    }
+
+    private void invalidateVirtualCatalystCache() {
+        cachedVirtualCatalyst = ItemStack.EMPTY;
+        cachedVirtualCatalystId = "";
+        cachedVirtualCatalystIndex = Integer.MIN_VALUE;
+        cachedCatalystCatalogVersion = Long.MIN_VALUE;
     }
 
     public int catalystIdentifierRecipeCount() {
@@ -285,12 +488,23 @@ public final class ImbuementProcessorBlockEntity
         return virtualCatalystIndex;
     }
 
+    private record VirtualCatalystSelection(int index, String id) {
+    }
+
+    private record CatalystSelectionState(
+            int selectedIndex,
+            boolean virtualSelected,
+            int virtualIndex,
+            String virtualId) {
+    }
+
     public int catalystIdentifierIndex(String id) {
-        if (catalystLibrarySlots == null || id == null || id.isEmpty()) {
+        if (catalystLibraryStorage == null || id == null || id.isEmpty()) {
             return -1;
         }
-        for (int index = 0; index < catalystLibrarySlots.size(); index++) {
-            var data = catalystLibrarySlots.get(index).getStack()
+        List<ItemStack> catalysts = catalystLibraryStorage.snapshot();
+        for (int index = 0; index < catalysts.size(); index++) {
+            var data = catalysts.get(index)
                     .get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
             if (data != null && id.equals(data.getUnsafe()
                     .getString("catalyst_id"))) {
@@ -300,12 +514,35 @@ public final class ImbuementProcessorBlockEntity
         return -1;
     }
 
+    private ItemStack physicalSelectedCatalyst() {
+        return catalystLibraryStorage == null || selectedCatalystIndex < 0
+                ? ItemStack.EMPTY
+                : catalystLibraryStorage.get(selectedCatalystIndex);
+    }
+
     public void setCatalystLibraryOpen(boolean open) {
         catalystLibraryOpen = open;
     }
 
-    public boolean isCatalystLibrarySlotActive() {
-        return level == null || !level.isClientSide() || catalystLibraryOpen;
+    @Override
+    public void applyInventorySlots(
+            net.minecraft.world.level.block.entity.BlockEntity.DataComponentInput input,
+            List<IInventorySlot> slots, AttachedItems attached) {
+        int firstWindow = catalystLibrarySlots == null
+                || catalystLibrarySlots.isEmpty() ? -1
+                : slots.indexOf(catalystLibrarySlots.getFirst());
+        if (firstWindow >= 0 && CatalystLibraryMigration
+                .isLegacyAttachment(attached, slots.size())) {
+            List<ItemStack> legacy = CatalystLibraryMigration
+                    .copyAttachedRange(attached, firstWindow,
+                            LEGACY_CATALYST_LIBRARY_SLOT_COUNT);
+            super.applyInventorySlots(input, slots,
+                    CatalystLibraryMigration.remapLegacyAttachment(
+                            attached, slots.size(), firstWindow));
+            catalystLibraryStorage.replace(legacy);
+            return;
+        }
+        super.applyInventorySlots(input, slots, attached);
     }
 
     @Override
@@ -314,6 +551,16 @@ public final class ImbuementProcessorBlockEntity
         container.track(mekanism.common.inventory.container.sync.SyncableInt.create(
                 () -> selectedCatalystIndex,
                 value -> selectedCatalystIndex = Math.max(-1, value)));
+        // This must precede the page tracker. During initial sync the client
+        // needs the retained tail size before it clamps a saved tail page.
+        container.track(mekanism.common.inventory.container.sync.SyncableInt.create(
+                this::catalystVisibleSlotCount,
+                value -> syncedCatalystVisibleSlotCount =
+                        Math.max(1, value)));
+        container.track(SyncableItemStack.create(
+                this::physicalSelectedCatalyst,
+                value -> syncedPhysicalCatalyst = value == null
+                        ? ItemStack.EMPTY : value.copy()));
         container.track(mekanism.common.inventory.container.sync.SyncableInt.create(
                 () -> catalystPage,
                 value -> catalystPage = Math.max(0, Math.min(
@@ -335,16 +582,33 @@ public final class ImbuementProcessorBlockEntity
         tag.putBoolean("virtual_catalyst_selected",
                 virtualCatalystSelected);
         tag.putString("virtual_catalyst_id", virtualCatalystId);
+        if (catalystLibraryStorage != null) {
+            catalystLibraryStorage.save(tag,
+                    CatalystLibraryMigration.STORAGE_NBT, registries);
+        }
     }
 
     @Override
     protected void loadArsMachineData(
             CompoundTag tag,
             net.minecraft.core.HolderLookup.Provider registries) {
+        if (catalystLibraryStorage != null
+                && !catalystLibraryStorage.load(tag,
+                CatalystLibraryMigration.STORAGE_NBT, registries)) {
+            List<IInventorySlot> allSlots = getInventorySlots(null);
+            int firstWindow = catalystLibrarySlots == null
+                    || catalystLibrarySlots.isEmpty() ? -1
+                    : allSlots.indexOf(catalystLibrarySlots.getFirst());
+            if (firstWindow >= 0) {
+                catalystLibraryStorage.replace(CatalystLibraryMigration
+                        .migrateLegacyWorldInventory(tag, registries,
+                                allSlots, firstWindow));
+            }
+        }
         selectedCatalystIndex = tag.contains("catalyst_selected_index")
                 ? Math.max(-1, tag.getInt("catalyst_selected_index")) : -1;
-        catalystPage = Math.max(0, Math.min(
-                catalystPageCount() - 1, tag.getInt("catalyst_page")));
+        catalystPage = Math.max(0, tag.getInt("catalyst_page"));
+        clampCatalystPage();
         virtualCatalystSelected = tag.getBoolean(
                 "virtual_catalyst_selected");
         virtualCatalystId = tag.getString("virtual_catalyst_id");
@@ -354,41 +618,5 @@ public final class ImbuementProcessorBlockEntity
         virtualCatalystIndex = -1;
         cachedVirtualCatalyst = ItemStack.EMPTY;
         cachedCatalystCatalogVersion = Long.MIN_VALUE;
-    }
-
-    private static final class CatalystLibrarySlot
-            extends BasicInventorySlot {
-        private final ImbuementProcessorBlockEntity tile;
-        private final int page;
-        private final int x;
-        private final int y;
-
-        private CatalystLibrarySlot(ImbuementProcessorBlockEntity tile,
-                                    int page, IContentsListener listener,
-                                    int x, int y) {
-            super((stack, automation) -> true,
-                    (stack, automation) -> true,
-                    stack -> stack.is(
-                            ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get()),
-                    listener, x, y);
-            this.tile = tile;
-            this.page = page;
-            this.x = x;
-            this.y = y;
-            setSlotType(ContainerSlotType.INPUT);
-        }
-
-        @Override
-        public InventoryContainerSlot createContainerSlot() {
-            return new InventoryContainerSlot(this, x, y, getSlotType(),
-                    getSlotOverlay(), warning -> {
-                    }, this::setStackUnchecked) {
-                @Override
-                public boolean isActive() {
-                    return tile.isCatalystLibrarySlotActive()
-                            && tile.catalystPage() == page;
-                }
-            };
-        }
     }
 }

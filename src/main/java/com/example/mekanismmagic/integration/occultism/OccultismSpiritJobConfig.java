@@ -15,6 +15,9 @@ final class OccultismSpiritJobConfig {
                           float outputMultiplier, int operationCount) {
     }
 
+    record TraderSettings(int operationTicks, int operationCount) {
+    }
+
     static WorkerSettings settings(String recipeType, int spiritTier) {
         WorkerSettings fallback = defaults(recipeType, spiritTier);
         String settingsField = settingsField(recipeType, spiritTier);
@@ -33,10 +36,34 @@ final class OccultismSpiritJobConfig {
                     fallback.outputMultiplier());
             int operationCount = intConfig(worker, "operationCount",
                     fallback.operationCount());
-            return new WorkerSettings(Math.max(1, recipeTier),
+            return new WorkerSettings(Math.max(0, recipeTier),
                     Math.max(0, timeMultiplier),
                     Math.max(0, outputMultiplier),
                     Math.max(0, operationCount));
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return fallback;
+        }
+    }
+
+    static TraderSettings traderSettings(String jobId) {
+        TraderSettings fallback = traderDefaults(jobId);
+        String settingsField = OccultismSpiritJobPolicy
+                .traderConfigField(jobId);
+        if (settingsField.isEmpty()) {
+            return fallback;
+        }
+        try {
+            Class<?> occultism = Class.forName(
+                    "com.klikli_dev.occultism.Occultism");
+            Object serverConfig = occultism.getField(
+                    "SERVER_CONFIG").get(null);
+            Object spiritJobs = field(serverConfig, "spiritJobs");
+            Object trader = field(spiritJobs, settingsField);
+            return new TraderSettings(
+                    Math.max(1, intConfig(trader, "operationTimer",
+                            fallback.operationTicks())),
+                    Math.max(0, intConfig(trader, "operationCount",
+                            fallback.operationCount())));
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return fallback;
         }
@@ -56,17 +83,22 @@ final class OccultismSpiritJobConfig {
         return switch (recipeType) {
             case "crushing" -> "crusher" + spirit;
             case "crystallize" -> "crystallizer" + spirit;
+            case "smelting", "blasting", "smoking",
+                 "campfire_cooking" -> "smelter" + spirit;
             default -> "";
         };
     }
 
     private static WorkerSettings defaults(String recipeType, int spiritTier) {
-        float outputMultiplier = switch (spiritTier) {
-            case 2 -> 1.5F;
-            case 3 -> 2.0F;
-            case 4 -> 3.0F;
-            default -> 1.0F;
-        };
+        boolean multipliedOutput = "crushing".equals(recipeType)
+                || "crystallize".equals(recipeType);
+        float outputMultiplier = multipliedOutput
+                ? switch (spiritTier) {
+                    case 2 -> 1.5F;
+                    case 3 -> 2.0F;
+                    case 4 -> 3.0F;
+                    default -> 1.0F;
+                } : 1.0F;
         float timeMultiplier = switch (recipeType) {
             case "crushing" -> switch (spiritTier) {
                 case 1 -> 2.0F;
@@ -80,10 +112,30 @@ final class OccultismSpiritJobConfig {
                 case 4 -> 0.1F;
                 default -> 1.0F;
             };
+            case "smelting", "blasting", "smoking",
+                 "campfire_cooking" -> switch (spiritTier) {
+                case 2 -> 0.5F;
+                case 3 -> 0.1F;
+                case 4 -> 0.01F;
+                default -> 1.0F;
+            };
             default -> 1.0F;
         };
         return new WorkerSettings(Math.max(1, spiritTier), timeMultiplier,
                 outputMultiplier, 1);
+    }
+
+    private static TraderSettings traderDefaults(String jobId) {
+        return switch (OccultismSpiritJobPolicy.normalizeJobId(jobId)) {
+            case "occultism:trader_otherworld_saplings" ->
+                    new TraderSettings(20, 1);
+            case "occultism:trader_otherstone",
+                 "occultism:trader_otherrock" ->
+                    new TraderSettings(10, 4);
+            case "occultism:gambler" ->
+                    new TraderSettings(200, 16);
+            default -> new TraderSettings(80, 1);
+        };
     }
 
     private static Object field(Object target, String name)
@@ -94,14 +146,24 @@ final class OccultismSpiritJobConfig {
 
     private static int intConfig(Object settings, String field, int fallback)
             throws ReflectiveOperationException {
-        Object value = configValue(settings, field);
-        return value instanceof Number number ? number.intValue() : fallback;
+        try {
+            Object value = configValue(settings, field);
+            return value instanceof Number number
+                    ? number.intValue() : fallback;
+        } catch (NoSuchFieldException ignored) {
+            return fallback;
+        }
     }
 
     private static float floatConfig(Object settings, String field, float fallback)
             throws ReflectiveOperationException {
-        Object value = configValue(settings, field);
-        return value instanceof Number number ? number.floatValue() : fallback;
+        try {
+            Object value = configValue(settings, field);
+            return value instanceof Number number
+                    ? number.floatValue() : fallback;
+        } catch (NoSuchFieldException ignored) {
+            return fallback;
+        }
     }
 
     private static Object configValue(Object settings, String fieldName)

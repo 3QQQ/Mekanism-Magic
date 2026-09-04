@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.integration.mekenergistics;
 
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.ClassReader;
 import org.spongepowered.asm.service.MixinService;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -24,7 +25,17 @@ public final class MekEnergisticsCompatMixinPlugin
             "com.beipuo.mekenergistics.blockentity.support."
                     + "AbstractMeAeSupport",
             "com.beipuo.mekenergistics.blockentity.support."
+                    + "AbstractMeAeSupport$1",
+            "com.beipuo.mekenergistics.blockentity.support."
                     + "MeSmartPatternMultiplication",
+            "com.beipuo.mekenergistics.blockentity.support."
+                    + "MeSmartPatternMultiplication$PendingPattern",
+            "com.beipuo.mekenergistics.blockentity.support.io."
+                    + "MeInputLayout",
+            "com.beipuo.mekenergistics.blockentity.support.io."
+                    + "MeInputPort",
+            "com.beipuo.mekenergistics.blockentity.api."
+                    + "MePatternIoOwner",
             "com.beipuo.mekenergistics.common.machine.MeMekanismMachine",
             "com.beipuo.mekenergistics.item.MeTierInstallerItem",
             "com.beipuo.mekenergistics.item.MeInstallerUpgradeHandler",
@@ -36,6 +47,7 @@ public final class MekEnergisticsCompatMixinPlugin
                     + "MeUpgradeRecipeMachineAdapter",
             "com.beipuo.mekenergistics.upgrade.MeUpgradeType"
     };
+    private static volatile Boolean compatibleAbi;
 
     private static boolean loaded() {
         // Mixin plugins run before the normal FML ModList is ready. Querying
@@ -48,7 +60,128 @@ public final class MekEnergisticsCompatMixinPlugin
                 return false;
             }
         }
-        return true;
+        return compatibleMemberAbi();
+    }
+
+    private static boolean compatibleMemberAbi() {
+        Boolean cached = compatibleAbi;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (MekEnergisticsCompatMixinPlugin.class) {
+            if (compatibleAbi == null) {
+                String support = "com.beipuo.mekenergistics.blockentity."
+                        + "support.AbstractMeAeSupport";
+                String feeder = support + "$1";
+                String inputLayout = "com.beipuo.mekenergistics."
+                        + "blockentity.support.io.MeInputLayout";
+                String smart = "com.beipuo.mekenergistics.blockentity."
+                        + "support.MeSmartPatternMultiplication";
+                String pending = "com.beipuo.mekenergistics.blockentity."
+                        + "support.MeSmartPatternMultiplication$PendingPattern";
+                compatibleAbi = fieldPresent(feeder, "val$layout",
+                        "Lcom/beipuo/mekenergistics/blockentity/support/io/"
+                                + "MeInputLayout;")
+                        && methodPresent(feeder, "feed",
+                        "([Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(feeder, "maxAcceptedCopies",
+                        "([Lappeng/api/stacks/KeyCounter;)J")
+                        && methodPresent(inputLayout, "route",
+                        "([Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(inputLayout, "maxAcceptedCopies",
+                        "([Lappeng/api/stacks/KeyCounter;)J")
+                        && methodPresent(inputLayout, "ports",
+                        "()Ljava/util/List;")
+                        && methodPresent(smart, "hasPendingWork", "()Z")
+                        && fieldPresent(pending, "definition",
+                        "Lappeng/api/stacks/AEKey;")
+                        && methodPresent(pending, "toKeyCounters",
+                        "(J)[Lappeng/api/stacks/KeyCounter;")
+                        && fieldPresent(support, "ownerTile",
+                        "Lmekanism/common/tile/base/TileEntityMekanism;")
+                        && fieldPresent(support,
+                        "smartPatternMultiplication",
+                        "Lcom/beipuo/mekenergistics/blockentity/support/"
+                                + "MeSmartPatternMultiplication;")
+                        && methodPresent(support, "patternInputLayout",
+                        "()Lcom/beipuo/mekenergistics/blockentity/support/io/"
+                                + "MeInputLayout;")
+                        && methodPresent(support, "routePatternInputs",
+                        "([Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(support, "hasRegisteredPattern",
+                        "(Lappeng/api/crafting/IPatternDetails;)Z")
+                        && methodPresent(support, "maxAcceptedCopies",
+                        "([Lappeng/api/stacks/KeyCounter;)J")
+                        && methodPresent(support, "routeDataPatternInputs",
+                        "([Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(support, "getAvailablePatterns",
+                        "()Ljava/util/List;")
+                        && methodPresent(support, "pushPatternWithAdapter",
+                        "(Lappeng/api/crafting/IPatternDetails;"
+                                + "[Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(support,
+                        "dispatchWithSmartPatternFallback",
+                        "(ZZLcom/beipuo/mekenergistics/blockentity/support/"
+                                + "MeSmartPatternMultiplication;"
+                                + "Lappeng/api/crafting/IPatternDetails;"
+                                + "[Lappeng/api/stacks/KeyCounter;"
+                                + "Ljava/lang/Runnable;"
+                                + "Ljava/util/function/BooleanSupplier;)Z")
+                        && methodPresent(support,
+                        "processSmartPatternViaAdapter", "()Z")
+                        && methodPresent(support, "enqueueSmartPattern",
+                        "(Lappeng/api/crafting/IPatternDetails;"
+                                + "[Lappeng/api/stacks/KeyCounter;)Z")
+                        && methodPresent(support,
+                        "processPassiveCrafting", "(Z)Z")
+                        && methodPresent(support,
+                        "isSmartPatternMultiplicationEnabled", "()Z")
+                        && methodPresent(support, "updatePatterns", "()V")
+                        && methodPresent(support,
+                        "flushInterfaceRecovery", "()Z")
+                        && methodPresent(support,
+                        "hasInterfaceRecovery", "()Z")
+                        && methodPresent(support, "alertAeTicker", "()V")
+                        && methodPresent(support,
+                        "refundToNetworkOrBuffer",
+                        "(Lappeng/api/stacks/AEKey;J)V");
+            }
+            return compatibleAbi;
+        }
+    }
+
+    private static boolean fieldPresent(
+            String className, String fieldName, String descriptor) {
+        ClassNode node = readClassNode(className);
+        return node != null && node.fields.stream().anyMatch(field ->
+                field.name.equals(fieldName)
+                        && field.desc.equals(descriptor));
+    }
+
+    private static boolean methodPresent(
+            String className, String methodName, String descriptor) {
+        ClassNode node = readClassNode(className);
+        return node != null && node.methods.stream().anyMatch(method ->
+                method.name.equals(methodName)
+                        && method.desc.equals(descriptor));
+    }
+
+    private static ClassNode readClassNode(String className) {
+        String resource = className.replace('.', '/') + ".class";
+        try (InputStream stream = MixinService.getService()
+                .getResourceAsStream(resource)) {
+            if (stream == null) {
+                return null;
+            }
+            ClassNode node = new ClassNode();
+            new ClassReader(stream).accept(node,
+                    ClassReader.SKIP_CODE
+                            | ClassReader.SKIP_DEBUG
+                            | ClassReader.SKIP_FRAMES);
+            return node;
+        } catch (IOException | RuntimeException ignored) {
+            return null;
+        }
     }
 
     private static boolean classPresent(String className) {
@@ -73,7 +206,10 @@ public final class MekEnergisticsCompatMixinPlugin
     @Override
     public boolean shouldApplyMixin(String targetClassName,
                                     String mixinClassName) {
-        return loaded();
+        if (!loaded()) {
+            return false;
+        }
+        return true;
     }
 
     @Override

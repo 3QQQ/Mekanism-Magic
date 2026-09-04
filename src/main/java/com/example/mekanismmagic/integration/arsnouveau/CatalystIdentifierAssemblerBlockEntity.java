@@ -70,6 +70,17 @@ public final class CatalystIdentifierAssemblerBlockEntity
         return ArsThreeByThreeMachineLayout.ENERGY_SLOT_Y;
     }
 
+    /**
+     * Identifier outputs carry recipe component data. Use the bounded direct
+     * item-handler path for ordinary inventories and third-party interfaces;
+     * Mekanism logistical transporters are detected by the shared base and
+     * still fall back to Mekanism's native transit request.
+     */
+    @Override
+    protected boolean useFastEjectPath() {
+        return true;
+    }
+
     int seedDevelopmentTest(ResourceLocation recipeId) {
         if (level == null) {
             return 0;

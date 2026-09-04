@@ -5,6 +5,7 @@ import com.example.mekanismmagic.client.gui.MagicGuiTheme;
 import com.example.mekanismmagic.client.gui.MekEnergisticsGuiCompat;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementProcessorBlockEntity;
 import com.example.mekanismmagic.integration.arsnouveau.CatalystLibraryLayout;
+import com.example.mekanismmagic.integration.arsnouveau.CatalystLibraryStorage;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.gui.element.slot.SlotType;
 import mekanism.client.gui.element.button.MekanismButton;
@@ -26,6 +27,7 @@ public final class ImbuementProcessorScreen
     private GuiSlot catalystLockSlot;
     private boolean libraryOpen;
     private int displayedCatalystPage = -1;
+    private int displayedCatalystVisibleSlotCount = -1;
     private static final int LOCK_SLOT_X = 64;
     private static final int LOCK_SLOT_Y = 53;
     public ImbuementProcessorScreen(
@@ -145,12 +147,26 @@ public final class ImbuementProcessorScreen
                     - CatalystLibraryLayout.slotLeft(imageWidth));
             int y = (int) (mouseY - topPos
                     - CatalystLibraryLayout.SLOT_TOP);
-            if (x >= 0 && x < 72 && y >= 0 && y < 72
-                    && x % 18 < 17 && y % 18 < 17) {
-                int index = getTileEntity().catalystPage() * 16
-                        + (y / 18) * 4 + x / 18;
-                clickMachineButton(300 + index);
-                return true;
+            int gridWidth = CatalystLibraryLayout.COLUMNS
+                    * CatalystLibraryLayout.SLOT_SPACING;
+            int gridHeight = Math.ceilDiv(
+                    CatalystLibraryLayout.PAGE_SIZE,
+                    CatalystLibraryLayout.COLUMNS)
+                    * CatalystLibraryLayout.SLOT_SPACING;
+            if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight
+                    && x % CatalystLibraryLayout.SLOT_SPACING
+                    < CatalystLibraryLayout.SLOT_SPACING - 1
+                    && y % CatalystLibraryLayout.SLOT_SPACING
+                    < CatalystLibraryLayout.SLOT_SPACING - 1) {
+                int windowSlot = (y / CatalystLibraryLayout.SLOT_SPACING)
+                        * CatalystLibraryLayout.COLUMNS
+                        + x / CatalystLibraryLayout.SLOT_SPACING;
+                int index = CatalystLibraryStorage.absoluteIndex(
+                        getTileEntity().catalystPage(), windowSlot);
+                if (index < getTileEntity().catalystVisibleSlotCount()) {
+                    clickMachineButton(300 + windowSlot);
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -164,10 +180,15 @@ public final class ImbuementProcessorScreen
 
     private void updateLibraryVisibility() {
         int currentPage = getTileEntity().catalystPage();
+        int visibleSlotCount = getTileEntity().catalystVisibleSlotCount();
         displayedCatalystPage = currentPage;
+        displayedCatalystVisibleSlotCount = visibleSlotCount;
         for (int index = 0; index < librarySlots.size(); index++) {
             GuiSlot slot = librarySlots.get(index);
-            slot.visible = libraryOpen && index / 16 == currentPage;
+            int absoluteIndex = CatalystLibraryStorage.absoluteIndex(
+                    currentPage, index);
+            slot.visible = libraryOpen
+                    && absoluteIndex < visibleSlotCount;
             slot.active = false;
         }
         for (MekanismButton button : libraryButtons) {
@@ -179,8 +200,10 @@ public final class ImbuementProcessorScreen
     @Override
     public void containerTick() {
         super.containerTick();
-        if (libraryOpen && displayedCatalystPage
-                != getTileEntity().catalystPage()) {
+        if (libraryOpen && (displayedCatalystPage
+                != getTileEntity().catalystPage()
+                || displayedCatalystVisibleSlotCount
+                != getTileEntity().catalystVisibleSlotCount())) {
             updateLibraryVisibility();
         }
     }
@@ -216,12 +239,15 @@ public final class ImbuementProcessorScreen
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
         int slotLeft = CatalystLibraryLayout.slotLeft(imageWidth);
+        int rows = Math.ceilDiv(CatalystLibraryLayout.PAGE_SIZE,
+                CatalystLibraryLayout.COLUMNS);
         return x >= slotLeft
-                && x <= slotLeft + 3 * CatalystLibraryLayout.SLOT_SPACING
+                && x <= slotLeft + (CatalystLibraryLayout.COLUMNS - 1)
+                * CatalystLibraryLayout.SLOT_SPACING
                 && (x - slotLeft) % CatalystLibraryLayout.SLOT_SPACING == 0
                 && y >= CatalystLibraryLayout.SLOT_TOP
                 && y <= CatalystLibraryLayout.SLOT_TOP
-                + 3 * CatalystLibraryLayout.SLOT_SPACING
+                + (rows - 1) * CatalystLibraryLayout.SLOT_SPACING
                 && (y - CatalystLibraryLayout.SLOT_TOP)
                 % CatalystLibraryLayout.SLOT_SPACING == 0;
     }

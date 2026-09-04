@@ -276,6 +276,41 @@ public final class ArsNouveauRecipeBridge {
                 data.getUnsafe().getString("pattern_recipe"));
     }
 
+    public static boolean hasPatternRecipeMarker(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null
+                && data.getUnsafe().contains("pattern_recipe");
+    }
+
+    /** Read-only recipe view with only our transient AE marker removed. */
+    public static ItemStack recipeInputView(ItemStack stack) {
+        return hasPatternRecipeMarker(stack)
+                ? clearPatternRecipeMarker(stack) : stack;
+    }
+
+    public static ItemStack clearPatternRecipeMarker(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return stack == null ? ItemStack.EMPTY : stack.copy();
+        }
+        ItemStack cleared = stack.copy();
+        CustomData existing = cleared.get(DataComponents.CUSTOM_DATA);
+        if (existing == null
+                || !existing.getUnsafe().contains("pattern_recipe")) {
+            return cleared;
+        }
+        CompoundTag data = existing.copyTag();
+        data.remove("pattern_recipe");
+        if (data.isEmpty()) {
+            cleared.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            cleared.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
+        }
+        return cleared;
+    }
+
     /**
      * Copies a real processing input and attaches the virtual catalyst
      * context. The item is consumed normally; the catalyst identifier itself
@@ -559,7 +594,8 @@ public final class ArsNouveauRecipeBridge {
         if (level == null) {
             return Optional.empty();
         }
-        ItemStack reagent = inventory.getStackInSlot(inputSlot);
+        ItemStack reagent = recipeInputView(
+                inventory.getStackInSlot(inputSlot));
         if (reagent.isEmpty()) {
             return Optional.empty();
         }

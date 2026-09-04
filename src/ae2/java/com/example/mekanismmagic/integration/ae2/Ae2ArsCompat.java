@@ -3,7 +3,9 @@ package com.example.mekanismmagic.integration.ae2;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRegistries;
+import com.example.mekanismmagic.integration.arsnouveau.ArsSourceNetworkAccess;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementProcessorBlockEntity;
+import com.example.mekanismmagic.integration.common.network.MachineNetworkLifecycleHooks;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
@@ -11,10 +13,22 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import appeng.api.AECapabilities;
 
 public final class Ae2ArsCompat {
+    private static boolean registered;
+
     private Ae2ArsCompat() {
     }
 
-    public static void register(IEventBus modBus) {
+    public static synchronized void register(IEventBus modBus) {
+        if (registered) {
+            return;
+        }
+        registered = true;
+        MachineNetworkLifecycleHooks.register(
+                Ae2ImbuementProvider.LIFECYCLE_HOOK);
+        if (ModCompatibility.loaded(ModCompatibility.ARS_ENERGISTIQUE)) {
+            ArsSourceNetworkAccess.register(
+                    Ae2ArsSourceNetworkAccess.INSTANCE);
+        }
         modBus.addListener(Ae2ArsCompat::registerCapabilities);
     }
 

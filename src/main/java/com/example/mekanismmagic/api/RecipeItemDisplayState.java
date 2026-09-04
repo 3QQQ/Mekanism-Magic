@@ -12,6 +12,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 
 /**
  * Server-synchronised recipe item identities used solely by block entity
@@ -58,11 +59,30 @@ public final class RecipeItemDisplayState {
             List<? extends IInventorySlot> inputSlots,
             ItemStack sharedSelector,
             IntFunction<ItemStack> outputLookup) {
-        long fingerprint = stackFingerprint(sharedSelector);
+        return updateFactory(inputSlots, sharedSelector, 0L,
+                process -> true, outputLookup);
+    }
+
+    /**
+     * Updates visible factory lanes using the machine's actual per-process
+     * activity. A context revision invalidates output identities after a
+     * datapack or server-config reload without resolving recipes every tick.
+     */
+    public boolean updateFactory(
+            List<? extends IInventorySlot> inputSlots,
+            ItemStack sharedSelector,
+            long contextRevision,
+            IntPredicate visibleLane,
+            IntFunction<ItemStack> outputLookup) {
+        long fingerprint = 31L * stackFingerprint(sharedSelector)
+                + contextRevision;
         for (int process = 0; process < inputSlots.size(); process++) {
             fingerprint = 31L * fingerprint + process;
             fingerprint = 31L * fingerprint
                     + stackFingerprint(inputSlots.get(process).getStack());
+            fingerprint = 31L * fingerprint
+                    + (visibleLane == null || visibleLane.test(process)
+                    ? 1L : 0L);
         }
         if (fingerprint == factoryFingerprint) {
             return false;
@@ -73,6 +93,9 @@ public final class RecipeItemDisplayState {
         for (int process = 0;
              process < inputSlots.size() && next.size() < 3;
              process++) {
+            if (visibleLane != null && !visibleLane.test(process)) {
+                continue;
+            }
             ItemStack input = displayCopy(
                     inputSlots.get(process).getStack());
             if (input.isEmpty()) {

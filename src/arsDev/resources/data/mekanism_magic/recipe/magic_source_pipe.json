@@ -1,19 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "GSG",
-    "SCS",
-    "GSG"
+    "SGS"
   ],
   "key": {
     "G": {
       "item": "ars_nouveau:source_gem"
     },
     "S": {
-      "item": "ars_nouveau:source_jar"
-    },
-    "C": {
-      "item": "mekanism:steel_casing"
+      "tag": "c:ingots/steel"
     }
   },
   "result": {

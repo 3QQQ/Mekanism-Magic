@@ -159,7 +159,11 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
 
     @Override
     public int addSource(int amount) {
-        return setSource(getSource() + amount);
+        ISourceCap storage = getSourceStorage();
+        if (storage != null) {
+            storage.receiveSource(amount, false);
+        }
+        return getSource();
     }
 
     @Override
@@ -171,7 +175,11 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
 
     @Override
     public int removeSource(int amount) {
-        return setSource(getSource() - amount);
+        ISourceCap storage = getSourceStorage();
+        if (storage != null) {
+            storage.extractSource(amount, false);
+        }
+        return getSource();
     }
 
     @Override

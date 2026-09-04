@@ -5,6 +5,7 @@ import com.example.mekanismmagic.integration.common.entity.CapturedEntity;
 import com.example.mekanismmagic.integration.common.entity.EntityContainerRegistry;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
+import com.example.mekanismmagic.integration.pipez.PipezItemHandlerCompat;
 import com.hollingsworth.arsnouveau.api.ANFakePlayer;
 import com.hollingsworth.arsnouveau.common.lib.EntityTags;
 import com.hollingsworth.arsnouveau.setup.config.Config;
@@ -60,6 +61,16 @@ public final class DrygmySimulatorBlockEntity
     private static final int MAX_STACK_OPERATION_MULTIPLIER = 1 << 8;
     private static final String VISUAL_PROCESSING_NBT =
             "drygmy_visual_processing";
+    private static final String PENDING_OUTPUTS_NBT =
+            "drygmy_pending_outputs";
+    private static final String PENDING_SIGNATURE_NBT =
+            "drygmy_pending_signature";
+    private static final String PENDING_MULTIPLIER_NBT =
+            "drygmy_pending_operation_multiplier";
+    private static final String PENDING_SOURCE_COST_NBT =
+            "drygmy_pending_source_cost";
+    private static final String PENDING_ENERGY_NBT =
+            "drygmy_pending_energy_per_tick";
     private static final ResourceLocation PROCESS_ID =
             ResourceLocation.fromNamespaceAndPath(
                     "mekanism_magic", "drygmy_simulation");
@@ -67,9 +78,23 @@ public final class DrygmySimulatorBlockEntity
     private List<BasicInventorySlot> jarSlots;
     private List<BasicInventorySlot> outputSlots;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
+    // BlockItem restores BLOCK_ENTITY_DATA before Mekanism's inventory data
+    // components. Jar-slot listeners therefore run after our custom NBT and
+    // would erase a prepared roll. Hold it until the first server tick, then
+    // bind it only if the fully restored jar signature still matches.
+    private final List<ItemStack> deferredPendingOutputs = new ArrayList<>();
     private final List<BufferedOutput> bufferedOutputs = new ArrayList<>();
     private final List<LivingEntity> cachedLootEntities = new ArrayList<>();
     private String pendingSignature = "";
+    private int pendingOperationMultiplier = 1;
+    private int pendingSourceCost;
+    private long pendingEnergyPerTick;
+    private String deferredPendingSignature = "";
+    private int deferredPendingProgress;
+    private int deferredPendingProgressRequired = 1;
+    private int deferredPendingOperationMultiplier = 1;
+    private int deferredPendingSourceCost;
+    private long deferredPendingEnergyPerTick;
     private String cachedJarSignature = "";
     private String cachedLootEntitySignature = "";
     private int cachedUniqueEntityTypeCount;
@@ -82,6 +107,9 @@ public final class DrygmySimulatorBlockEntity
     private boolean aeBackpressured;
     private boolean lastAeOnline;
     private long nextNativeEjectGameTime;
+    private int directPushCallBudget =
+            INITIAL_DIRECT_PUSH_CALLS_PER_TICK;
+    private int directPushCursor;
     private boolean visualProcessing;
     private int visualStallTicks;
     private MachineRecipeResult cachedProcessResult;
@@ -101,6 +129,7 @@ public final class DrygmySimulatorBlockEntity
         IContentsListener inputListener = () -> {
             pendingOutputs.clear();
             pendingSignature = "";
+            clearCurrentPendingOperationContext();
             cachedJarSignature = "";
             jarSignatureDirty = true;
             clearCachedLootEntities();
@@ -195,8 +224,82 @@ public final class DrygmySimulatorBlockEntity
     }
 
     @Override
+    protected boolean isLongBufferedOutputSlot(IInventorySlot slot) {
+        return isDrygmyOutputSlot(slot);
+    }
+
+    @Override
+    protected ItemStack extractLongBufferedOutput(
+            IInventorySlot inventorySlot, int amount, Action action) {
+        if (amount <= 0 || outputSlots == null) {
+            return ItemStack.EMPTY;
+        }
+        int outputIndex = outputSlots.indexOf(inventorySlot);
+        if (outputIndex < 0) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack visible = inventorySlot.getStack();
+        ItemStack template;
+        if (!visible.isEmpty()) {
+            template = visible.copyWithCount(1);
+        } else if (outputIndex < bufferedOutputs.size()
+                && bufferedOutputs.get(outputIndex).count > 0) {
+            template = bufferedOutputs.get(outputIndex).stack;
+        } else {
+            return ItemStack.EMPTY;
+        }
+
+        long available = visible.isEmpty() ? 0 : visible.getCount();
+        for (BufferedOutput buffered : bufferedOutputs) {
+            if (buffered.count > 0
+                    && ItemStack.isSameItemSameComponents(
+                    buffered.stack, template)) {
+                available = saturatingAdd(available, buffered.count);
+            }
+        }
+        int requested = PipezItemHandlerCompat.boundedExtractionAmount(
+                        amount, available);
+        if (requested <= 0 || !action.execute()) {
+            return requested <= 0 ? ItemStack.EMPTY
+                    : template.copyWithCount(requested);
+        }
+
+        int remaining = requested;
+        int removed = 0;
+        if (!visible.isEmpty()
+                && ItemStack.isSameItemSameComponents(visible, template)) {
+            int fromVisible = inventorySlot.shrinkStack(
+                    Math.min(remaining, visible.getCount()),
+                    Action.EXECUTE);
+            remaining -= fromVisible;
+            removed += fromVisible;
+        }
+        for (BufferedOutput buffered : bufferedOutputs) {
+            if (remaining <= 0) {
+                break;
+            }
+            if (buffered.count <= 0
+                    || !ItemStack.isSameItemSameComponents(
+                    buffered.stack, template)) {
+                continue;
+            }
+            int fromBuffer = (int) Math.min(remaining, buffered.count);
+            buffered.count -= fromBuffer;
+            remaining -= fromBuffer;
+            removed += fromBuffer;
+        }
+        if (removed > 0) {
+            outputTransferDirty = true;
+            setChanged();
+        }
+        return removed <= 0 ? ItemStack.EMPTY
+                : template.copyWithCount(removed);
+    }
+
+    @Override
     protected boolean onUpdateServer() {
         clearNativeRecipeWarnings();
+        restoreDeferredPendingState();
         boolean bufferedReady = attemptOutputTransfer();
         boolean changed = autoPullNearbySource();
         changed |= nativeBaseUpdate();
@@ -229,7 +332,7 @@ public final class DrygmySimulatorBlockEntity
         if (!hasRecipeResources(process)) {
             return finishVisualUpdate(changed, false);
         }
-        long usage = stackScaledEnergyUsage();
+        long usage = Math.max(1L, pendingEnergyPerTick);
         boolean powered = hasEnergyForRecipe(process, usage);
         boolean sourceOnly = !powered && canRunWithoutEnergy(process);
         if (!powered && !sourceOnly) {
@@ -255,6 +358,8 @@ public final class DrygmySimulatorBlockEntity
             progress = 0;
             mergeBufferedOutputs(pendingOutputs);
             pendingOutputs.clear();
+            clearCurrentPendingOperationContext();
+            refreshSourceLimits();
             nextLootPreparationGameTime = Long.MIN_VALUE;
             outputTransferDirty = true;
             attemptOutputTransfer();
@@ -295,6 +400,12 @@ public final class DrygmySimulatorBlockEntity
                                 String signature) {
         pendingOutputs.clear();
         pendingSignature = signature;
+        pendingOperationMultiplier = stackOperationMultiplier();
+        pendingSourceCost = sourceCostPerOperation(
+                pendingOperationMultiplier);
+        pendingEnergyPerTick = stackScaledEnergyUsage(
+                pendingOperationMultiplier);
+        cachedProcessResult = null;
         progress = 0;
         progressRequired = Math.max(1,
                 mekanism.common.util.MekanismUtils.getTicks(this,
@@ -314,38 +425,45 @@ public final class DrygmySimulatorBlockEntity
             experience += Math.max(0,
                     entity.getExperienceReward(serverLevel, fakePlayer));
         }
-        possibleLoot.removeIf(ItemStack::isEmpty);
-        if (possibleLoot.isEmpty()) {
-            return;
-        }
-        int bonus = cachedUniqueEntityTypeCount
-                * Config.DRYGMY_UNIQUE_BONUS.get()
-                + Math.min(Config.DRYGMY_QUANTITY_CAP.get(),
-                entityCount);
-        int targetItems = Math.max(1,
-                Config.DRYGMY_BASE_ITEM.get() + bonus);
-        long produced = 0;
-        int selectionRolls = Math.min(
-                targetItems, MAX_LOOT_SELECTION_ROLLS);
-        for (int roll = 0;
-             roll < selectionRolls && produced < targetItems;
-             roll++) {
-            ItemStack selected = possibleLoot.get(
-                    serverLevel.random.nextInt(possibleLoot.size()))
-                    .copy();
-            if (selected.isEmpty()) {
-                continue;
-            }
-            long remaining = targetItems - produced;
-            if (roll + 1 == selectionRolls
-                    && selected.getCount() < remaining) {
-                selected.setCount((int) remaining);
-            }
-            pendingOutputs.add(selected);
-            produced += selected.getCount();
-        }
+        DrygmyLootPolicy.filterCandidates(possibleLoot);
+        int operationMultiplier = pendingOperationMultiplier;
+        List<ItemStack> fixedOutputs =
+                DrygmyLootPolicy.extractFixedOutputs(
+                        possibleLoot, cachedLootEntities,
+                        operationMultiplier);
         addExperienceGems(experience / 4);
-        scalePendingOutputs(stackOperationMultiplier());
+        if (!possibleLoot.isEmpty()) {
+            int bonus = cachedUniqueEntityTypeCount
+                    * Config.DRYGMY_UNIQUE_BONUS.get()
+                    + Math.min(Config.DRYGMY_QUANTITY_CAP.get(),
+                    entityCount);
+            int targetItems = Math.max(1,
+                    Config.DRYGMY_BASE_ITEM.get() + bonus);
+            long produced = 0;
+            int selectionRolls = Math.min(
+                    targetItems, MAX_LOOT_SELECTION_ROLLS);
+            for (int roll = 0;
+                 roll < selectionRolls && produced < targetItems;
+                 roll++) {
+                ItemStack selected = possibleLoot.get(
+                        serverLevel.random.nextInt(possibleLoot.size()))
+                        .copy();
+                if (selected.isEmpty()) {
+                    continue;
+                }
+                long remaining = targetItems - produced;
+                if (roll + 1 == selectionRolls
+                        && selected.getCount() < remaining) {
+                    selected.setCount((int) remaining);
+                }
+                pendingOutputs.add(selected);
+                produced += selected.getCount();
+            }
+        }
+        scalePendingOutputs(operationMultiplier);
+        // Fixed custom-death drops already represent the stack-operation
+        // count and must not be multiplied with ordinary selected loot again.
+        pendingOutputs.addAll(fixedOutputs);
     }
 
     private void rebuildCachedLootEntities(
@@ -454,8 +572,8 @@ public final class DrygmySimulatorBlockEntity
     }
 
     private MachineRecipeResult processResult() {
-        int multiplier = stackOperationMultiplier();
-        int sourceCost = sourceCostPerOperation(multiplier);
+        int multiplier = Math.max(1, pendingOperationMultiplier);
+        int sourceCost = Math.max(0, pendingSourceCost);
         if (cachedProcessResult == null
                 || cachedProcessMultiplier != multiplier
                 || cachedProcessSourceCost != sourceCost) {
@@ -641,39 +759,60 @@ public final class DrygmySimulatorBlockEntity
     }
 
     private boolean pushBufferedOutputsPhysically() {
+        // Zero-count placeholders are deliberately retained during one
+        // Pipez pass so later virtual slot mappings do not shift between its
+        // simulate and execute calls. It is safe to compact them now.
+        bufferedOutputs.removeIf(output -> output.count <= 0);
         if (bufferedOutputs.isEmpty()) {
+            directPushCursor = 0;
             return false;
         }
+        int budget = Math.max(MIN_DIRECT_PUSH_CALLS_PER_TICK,
+                Math.min(MAX_DIRECT_PUSH_CALLS_PER_TICK,
+                        directPushCallBudget));
         int calls = 0;
+        long totalMoved = 0;
         boolean bufferChanged = false;
-        boolean movedInRound;
-        do {
-            movedInRound = false;
-            for (BufferedOutput buffered : bufferedOutputs) {
-                if (buffered.count <= 0
-                        || calls >= MAX_DIRECT_PUSH_CALLS_PER_TICK) {
-                    continue;
-                }
-                int chunk = (int) Math.min(
-                        Integer.MAX_VALUE, buffered.count);
-                ItemStack attempt = buffered.stack.copyWithCount(chunk);
-                ItemStack remainder = pushDirectlyToTargets(attempt);
-                calls++;
-                long moved = chunk - remainder.getCount();
-                if (moved > 0) {
-                    buffered.count -= moved;
-                    bufferChanged = true;
-                    movedInRound = true;
-                }
+        int noProgress = 0;
+        int entries = bufferedOutputs.size();
+        if (directPushCursor < 0 || directPushCursor >= entries) {
+            directPushCursor = 0;
+        }
+        while (calls < budget && noProgress < entries) {
+            BufferedOutput buffered = bufferedOutputs.get(directPushCursor);
+            directPushCursor = (directPushCursor + 1) % entries;
+            if (buffered.count <= 0) {
+                noProgress++;
+                continue;
             }
-        } while (movedInRound
-                && calls < MAX_DIRECT_PUSH_CALLS_PER_TICK);
+            int chunk = (int) Math.min(
+                    Integer.MAX_VALUE, buffered.count);
+            ItemStack attempt = buffered.stack.copyWithCount(chunk);
+            ItemStack remainder = pushDirectlyToTargets(attempt);
+            calls++;
+            long moved = chunk - remainder.getCount();
+            if (moved > 0) {
+                buffered.count -= moved;
+                totalMoved = saturatingAdd(totalMoved, moved);
+                bufferChanged = true;
+                noProgress = 0;
+            } else {
+                noProgress++;
+            }
+        }
         bufferedOutputs.removeIf(output -> output.count <= 0);
+        if (bufferedOutputs.isEmpty()) {
+            directPushCursor = 0;
+        } else {
+            directPushCursor %= bufferedOutputs.size();
+        }
         if (bufferChanged) {
             setChanged();
         }
-        return calls >= MAX_DIRECT_PUSH_CALLS_PER_TICK
-                && !bufferedOutputs.isEmpty();
+        boolean remaining = !bufferedOutputs.isEmpty();
+        directPushCallBudget = adaptDirectPushCallBudget(
+                budget, calls, totalMoved, remaining);
+        return calls >= budget && remaining;
     }
 
     private record AeBatchResult(
@@ -738,6 +877,8 @@ public final class DrygmySimulatorBlockEntity
     private void resetProcess() {
         pendingOutputs.clear();
         pendingSignature = "";
+        clearCurrentPendingOperationContext();
+        clearDeferredPendingState();
         nextLootPreparationGameTime = Long.MIN_VALUE;
         progress = 0;
         progressRequired = 1;
@@ -747,6 +888,7 @@ public final class DrygmySimulatorBlockEntity
     protected void saveArsMachineData(
             CompoundTag tag,
             net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveArsMachineData(tag, registries);
         net.minecraft.nbt.ListTag outputs = new net.minecraft.nbt.ListTag();
         for (BufferedOutput buffered : bufferedOutputs) {
             CompoundTag entry = new CompoundTag();
@@ -757,6 +899,41 @@ public final class DrygmySimulatorBlockEntity
         if (!outputs.isEmpty()) {
             tag.put("drygmy_long_buffer", outputs);
         }
+        List<ItemStack> pendingToSave = deferredPendingOutputs.isEmpty()
+                ? pendingOutputs : deferredPendingOutputs;
+        String signatureToSave = deferredPendingOutputs.isEmpty()
+                ? pendingSignature : deferredPendingSignature;
+        int multiplierToSave = deferredPendingOutputs.isEmpty()
+                ? pendingOperationMultiplier
+                : deferredPendingOperationMultiplier;
+        int sourceCostToSave = deferredPendingOutputs.isEmpty()
+                ? pendingSourceCost : deferredPendingSourceCost;
+        long energyToSave = deferredPendingOutputs.isEmpty()
+                ? pendingEnergyPerTick : deferredPendingEnergyPerTick;
+        net.minecraft.nbt.ListTag pending = new net.minecraft.nbt.ListTag();
+        for (ItemStack output : pendingToSave) {
+            if (!output.isEmpty()) {
+                pending.add(saveCountedItemStack(output, registries));
+            }
+        }
+        if (!pending.isEmpty() && !signatureToSave.isEmpty()) {
+            tag.put(PENDING_OUTPUTS_NBT, pending);
+            tag.putString(PENDING_SIGNATURE_NBT, signatureToSave);
+            tag.putInt(PENDING_MULTIPLIER_NBT,
+                    Math.max(1, multiplierToSave));
+            tag.putInt(PENDING_SOURCE_COST_NBT,
+                    Math.max(0, sourceCostToSave));
+            tag.putLong(PENDING_ENERGY_NBT,
+                    Math.max(1L, energyToSave));
+            if (!deferredPendingOutputs.isEmpty()) {
+                // NativeMagicMachineBlockEntity wrote the common progress
+                // fields before invoking this hook, so replace them with the
+                // deferred values if inventory restoration reset the fields.
+                tag.putInt("magic_progress", deferredPendingProgress);
+                tag.putInt("magic_progress_required",
+                        deferredPendingProgressRequired);
+            }
+        }
         tag.putBoolean(VISUAL_PROCESSING_NBT, visualProcessing);
     }
 
@@ -764,6 +941,7 @@ public final class DrygmySimulatorBlockEntity
     protected void loadArsMachineData(
             CompoundTag tag,
             net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadArsMachineData(tag, registries);
         clearCachedLootEntities();
         bufferedOutputs.clear();
         net.minecraft.nbt.ListTag outputs = tag.getList(
@@ -777,6 +955,42 @@ public final class DrygmySimulatorBlockEntity
                 bufferedOutputs.add(new BufferedOutput(stack, count));
             }
         }
+        pendingOutputs.clear();
+        pendingSignature = "";
+        clearDeferredPendingState();
+        deferredPendingSignature = tag.getString(PENDING_SIGNATURE_NBT);
+        deferredPendingOperationMultiplier = tag.contains(
+                PENDING_MULTIPLIER_NBT, net.minecraft.nbt.Tag.TAG_INT)
+                ? Math.max(1, tag.getInt(PENDING_MULTIPLIER_NBT))
+                : stackOperationMultiplier();
+        deferredPendingSourceCost = tag.contains(
+                PENDING_SOURCE_COST_NBT, net.minecraft.nbt.Tag.TAG_INT)
+                ? Math.max(0, tag.getInt(PENDING_SOURCE_COST_NBT))
+                : sourceCostPerOperation(
+                        deferredPendingOperationMultiplier);
+        deferredPendingEnergyPerTick = tag.contains(
+                PENDING_ENERGY_NBT, net.minecraft.nbt.Tag.TAG_LONG)
+                ? Math.max(1L, tag.getLong(PENDING_ENERGY_NBT))
+                : stackScaledEnergyUsage(
+                        deferredPendingOperationMultiplier);
+        net.minecraft.nbt.ListTag pending = tag.getList(
+                PENDING_OUTPUTS_NBT, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int index = 0; index < pending.size(); index++) {
+            ItemStack stack = loadCountedItemStack(
+                    pending.getCompound(index), registries);
+            if (!stack.isEmpty()) {
+                deferredPendingOutputs.add(stack);
+            }
+        }
+        if (deferredPendingSignature.isEmpty()
+                || deferredPendingOutputs.isEmpty()) {
+            clearDeferredPendingState();
+            progress = 0;
+        } else {
+            deferredPendingProgress = Math.max(0, progress);
+            deferredPendingProgressRequired = Math.max(1,
+                    progressRequired);
+        }
         normalizeVisibleOutputSlots();
         outputTransferDirty = !bufferedOutputs.isEmpty();
         aeBackpressured = !bufferedOutputs.isEmpty();
@@ -786,6 +1000,53 @@ public final class DrygmySimulatorBlockEntity
         cachedJarSignature = "";
         jarSignatureDirty = true;
         nextLootPreparationGameTime = Long.MIN_VALUE;
+    }
+
+    private void restoreDeferredPendingState() {
+        if (deferredPendingOutputs.isEmpty()) {
+            return;
+        }
+        String restoredJarSignature = jarSignature();
+        boolean restored = deferredPendingSignature.equals(
+                restoredJarSignature);
+        if (restored) {
+            pendingOutputs.clear();
+            deferredPendingOutputs.stream()
+                    .map(ItemStack::copy)
+                    .forEach(pendingOutputs::add);
+            pendingSignature = deferredPendingSignature;
+            pendingOperationMultiplier =
+                    deferredPendingOperationMultiplier;
+            pendingSourceCost = deferredPendingSourceCost;
+            pendingEnergyPerTick = deferredPendingEnergyPerTick;
+            progress = deferredPendingProgress;
+            progressRequired = deferredPendingProgressRequired;
+            cachedProcessResult = null;
+            refreshSourceLimits();
+        }
+        clearDeferredPendingState();
+        if (!restored) {
+            refreshSourceLimits();
+        }
+    }
+
+    private void clearDeferredPendingState() {
+        deferredPendingOutputs.clear();
+        deferredPendingSignature = "";
+        deferredPendingProgress = 0;
+        deferredPendingProgressRequired = 1;
+        deferredPendingOperationMultiplier = 1;
+        deferredPendingSourceCost = 0;
+        deferredPendingEnergyPerTick = 0L;
+    }
+
+    private void clearCurrentPendingOperationContext() {
+        pendingOperationMultiplier = 1;
+        pendingSourceCost = 0;
+        pendingEnergyPerTick = 0L;
+        cachedProcessResult = null;
+        cachedProcessMultiplier = -1;
+        cachedProcessSourceCost = -1;
     }
 
     @Override
@@ -814,8 +1075,28 @@ public final class DrygmySimulatorBlockEntity
             cachedProcessMultiplier = -1;
             cachedProcessSourceCost = -1;
             refreshSourceLimits();
-            resetProcess();
+            // Preserve the already rolled loot and elapsed progress. The new
+            // stack multiplier is intentionally applied to the next harvest;
+            // clearing here made upgrade insertion/removal a reroll button.
         }
+        if (!pendingOutputs.isEmpty()
+                && (upgrade == mekanism.api.Upgrade.SPEED
+                || upgrade == mekanism.api.Upgrade.ENERGY
+                || stackUpgrade != null && upgrade == stackUpgrade)) {
+            rebasePendingWorkForUpgrade();
+        }
+    }
+
+    private void rebasePendingWorkForUpgrade() {
+        int oldRequired = Math.max(1, progressRequired);
+        int newRequired = Math.max(1,
+                mekanism.common.util.MekanismUtils.getTicks(
+                        this, baseProcessDuration()));
+        progress = (int) Math.min(newRequired - 1L,
+                (long) Math.max(0, progress) * newRequired / oldRequired);
+        progressRequired = newRequired;
+        pendingEnergyPerTick = stackScaledEnergyUsage(
+                pendingOperationMultiplier);
     }
 
     @Override
@@ -869,8 +1150,9 @@ public final class DrygmySimulatorBlockEntity
         // Upgrade counts reach the client through Mekanism's component sync,
         // which does not invoke the server recalculation hook there. Derive
         // the displayed limit so the Source bar updates immediately.
-        return Math.max(scaledSourceValue(
-                ArsNouveauMachineConfig.SOURCE_CAPACITY), getSource());
+        return Math.max(Math.max(scaledSourceValue(
+                ArsNouveauMachineConfig.SOURCE_CAPACITY), getSource()),
+                pendingSourceCapacityFloor());
     }
 
     private void refreshSourceLimits() {
@@ -882,8 +1164,9 @@ public final class DrygmySimulatorBlockEntity
             return;
         }
         var storage = getSourceStorage();
-        int capacity = scaledSourceValue(
-                ArsNouveauMachineConfig.SOURCE_CAPACITY);
+        int capacity = Math.max(scaledSourceValue(
+                ArsNouveauMachineConfig.SOURCE_CAPACITY),
+                pendingSourceCapacityFloor());
         storage.setMaxSource(capacity);
         storage.setMaxReceive(getTransferRate());
         storage.setMaxExtract(getTransferRate());
@@ -896,6 +1179,11 @@ public final class DrygmySimulatorBlockEntity
         long scaled = (long) Math.max(1, base)
                 * stackOperationMultiplier();
         return (int) Math.min(Integer.MAX_VALUE, scaled);
+    }
+
+    private int pendingSourceCapacityFloor() {
+        return Math.max(pendingSourceCost,
+                deferredPendingSourceCost);
     }
 
     private static int maximumScaledSourceValue(int base) {
@@ -916,10 +1204,10 @@ public final class DrygmySimulatorBlockEntity
                 1 << Math.min(upgrades, 8));
     }
 
-    private long stackScaledEnergyUsage() {
+    private long stackScaledEnergyUsage(int operationMultiplier) {
         long base = mekanism.common.util.MekanismUtils.getEnergyPerTick(
                 this, baseEnergyPerTick());
-        int multiplier = stackOperationMultiplier();
+        int multiplier = Math.max(1, operationMultiplier);
         long scaled = base > Long.MAX_VALUE / multiplier
                 ? Long.MAX_VALUE : base * multiplier;
         return energyContainer == null
@@ -1014,8 +1302,25 @@ public final class DrygmySimulatorBlockEntity
                 .sum();
     }
 
+    List<ItemStack> developmentPendingOutputs() {
+        return pendingOutputs.stream().map(ItemStack::copy).toList();
+    }
+
+    String developmentPendingSignature() {
+        return pendingSignature;
+    }
+
+    int developmentPendingOperationMultiplier() {
+        return pendingOperationMultiplier;
+    }
+
+    long developmentPendingEnergyPerTick() {
+        return pendingEnergyPerTick;
+    }
+
     int developmentSourceCost() {
-        return sourceCostPerOperation();
+        return pendingOutputs.isEmpty() ? sourceCostPerOperation()
+                : pendingSourceCost;
     }
 
     boolean developmentHasCreativeSourceUpgrade() {

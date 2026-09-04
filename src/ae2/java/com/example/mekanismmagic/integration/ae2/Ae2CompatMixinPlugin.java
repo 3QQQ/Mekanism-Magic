@@ -10,12 +10,25 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
-/** Prevents the optional AE2 mixin from resolving when AE2 is absent. */
+/**
+ * Prevents the identifier-pattern mixin from resolving unless both AE2 and
+ * the Ars recipe API referenced by its decoder are present.
+ */
 public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
-    private static boolean ae2Present() {
+    private static boolean aePresent() {
+        return resourcePresent(
+                "appeng/crafting/pattern/AEPatternDecoder.class");
+    }
+
+    private static boolean arsPresent() {
+        return resourcePresent(
+                "com/hollingsworth/arsnouveau/common/crafting/recipes/"
+                        + "ImbuementRecipe.class");
+    }
+
+    private static boolean resourcePresent(String path) {
         try (InputStream stream = MixinService.getService()
-                .getResourceAsStream(
-                        "appeng/crafting/pattern/AEPatternDecoder.class")) {
+                .getResourceAsStream(path)) {
             return stream != null;
         } catch (IOException | RuntimeException ignored) {
             return false;
@@ -26,7 +39,10 @@ public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
     @Override public String getRefMapperConfig() { return null; }
     @Override public boolean shouldApplyMixin(
             String targetClassName, String mixinClassName) {
-        return ae2Present();
+        if (!aePresent()) {
+            return false;
+        }
+        return arsPresent();
     }
     @Override public void acceptTargets(
             Set<String> myTargets, Set<String> otherTargets) { }

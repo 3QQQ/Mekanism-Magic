@@ -12,7 +12,9 @@ public final class MekEnergisticsCompat {
     private static final String[] SAFETY_GATE_CLASSES = {
             "com.beipuo.mekenergistics.item.MeTierInstallerItem",
             "com.beipuo.mekenergistics.item.MeInstallerUpgradeHandler",
-            "com.beipuo.mekenergistics.item.MeInstallerTargetResolver"
+            "com.beipuo.mekenergistics.item.MeInstallerTargetResolver",
+            "com.beipuo.mekenergistics.blockentity.support."
+                    + "AbstractMeAeSupport$1"
     };
 
     private MekEnergisticsCompat() {
@@ -21,7 +23,6 @@ public final class MekEnergisticsCompat {
     public static void registerBlocks() {
         verifySafetyGateClasses();
         String[] paths = {
-                "imbuement_processor",
                 "basic_imbuement_factory",
                 "advanced_imbuement_factory",
                 "elite_imbuement_factory",
@@ -70,6 +71,22 @@ public final class MekEnergisticsCompat {
                         "Missing required Mek Energistics safety gate: "
                                 + className, exception);
             }
+        }
+        try {
+            Class<?> support = Class.forName(
+                    "com.beipuo.mekenergistics.blockentity.support."
+                            + "AbstractMeAeSupport",
+                    true, loader);
+            if (!MekEnergisticsPendingRefund.class
+                    .isAssignableFrom(support)) {
+                throw new IllegalStateException(
+                        "Mek Energistics ABI gate rejected this runtime; "
+                                + "Mekanism Magic pattern registration is "
+                                + "disabled safely");
+            }
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException(
+                    "Missing Mek Energistics pattern support", exception);
         }
     }
 }

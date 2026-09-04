@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +30,21 @@ public final class Ae2IdentifierImbuementPattern
     private final AEProcessingPattern delegate;
     private final ResourceLocation recipeId;
     private final ItemStack identifier;
+    private final String semanticSignature;
+    private final WeakReference<Level> levelReference;
+    private final long catalogVersion;
 
     private Ae2IdentifierImbuementPattern(
             AEItemKey definition, AEProcessingPattern delegate,
-            ResourceLocation recipeId, ItemStack identifier) {
+            ResourceLocation recipeId, ItemStack identifier,
+            String semanticSignature, long catalogVersion, Level level) {
         this.definition = definition;
         this.delegate = delegate;
         this.recipeId = recipeId;
         this.identifier = identifier;
+        this.semanticSignature = semanticSignature;
+        this.levelReference = new WeakReference<>(level);
+        this.catalogVersion = catalogVersion;
     }
 
     public static Ae2IdentifierImbuementPattern tryDecode(
@@ -53,14 +61,22 @@ public final class Ae2IdentifierImbuementPattern
         ItemStack identifier = ItemStack.EMPTY;
         List<GenericStack> filteredInputs = new ArrayList<>(
                 encoded.sparseInputs().size());
-        boolean hasRealInput = false;
+        int identifierInputs = 0;
+        int realInputs = 0;
         for (GenericStack input : encoded.sparseInputs()) {
+            if (input == null) {
+                filteredInputs.add(null);
+                continue;
+            }
+            if (input.amount() <= 0L || input.amount() > Integer.MAX_VALUE
+                    || !(input.what() instanceof AEItemKey)) {
+                return null;
+            }
             ItemStack possibleIdentifier = itemStack(input);
             if (possibleIdentifier.is(ArsNouveauRegistries
                     .CATALYST_IDENTIFIER_ITEM.get())) {
-                if (!identifier.isEmpty()
-                        && !ItemStack.isSameItemSameComponents(
-                        identifier, possibleIdentifier)) {
+                identifierInputs++;
+                if (identifierInputs != 1 || input.amount() != 1L) {
                     return null;
                 }
                 identifier = possibleIdentifier.copyWithCount(1);
@@ -75,11 +91,15 @@ public final class Ae2IdentifierImbuementPattern
                 }
                 filteredInputs.add(null);
             } else {
+                realInputs++;
+                if (realInputs != 1 || input.amount() != 1L) {
+                    return null;
+                }
                 filteredInputs.add(input);
-                hasRealInput |= input != null && input.amount() > 0;
             }
         }
-        if (identifier.isEmpty() || !hasRealInput) {
+        if (identifierInputs != 1 || realInputs != 1
+                || identifier.isEmpty()) {
             return null;
         }
         if (recipeId == null) {
@@ -104,8 +124,15 @@ public final class Ae2IdentifierImbuementPattern
         if (filteredKey == null) {
             return null;
         }
+        String semanticSignature = ArsNouveauRecipeScanner
+                .semanticSignature(level.getRecipeManager(), recipeId);
+        if (semanticSignature.isEmpty()) {
+            return null;
+        }
         return new Ae2IdentifierImbuementPattern(definition,
-                new AEProcessingPattern(filteredKey), recipeId, identifier);
+                new AEProcessingPattern(filteredKey), recipeId, identifier,
+                semanticSignature, ArsNouveauRecipeScanner.version(
+                        level.getRecipeManager()), level);
     }
 
     /**
@@ -125,7 +152,9 @@ public final class Ae2IdentifierImbuementPattern
             return false;
         }
         for (GenericStack input : encoded.sparseInputs()) {
-            if (itemStack(input).is(ArsNouveauRegistries
+            if (input != null
+                    && input.what() instanceof AEItemKey item
+                    && item.toStack(1).is(ArsNouveauRegistries
                     .CATALYST_IDENTIFIER_ITEM.get())) {
                 return true;
             }
@@ -160,6 +189,17 @@ public final class Ae2IdentifierImbuementPattern
         return recipeId;
     }
 
+    /** Rejects queued/decoded jobs whose recipe semantics changed on reload. */
+    public boolean matchesCurrentRecipe(Level level) {
+        return level != null
+                && catalogVersion == ArsNouveauRecipeScanner.version(
+                level.getRecipeManager())
+                && semanticSignature.equals(ArsNouveauRecipeScanner
+                .semanticSignature(level.getRecipeManager(), recipeId))
+                && ArsNouveauRecipeBridge.identifierMatchesRecipe(
+                level, identifier, recipeId);
+    }
+
     private static boolean matchesCurrentRecipe(
             Level level, ResourceLocation recipeId, ItemStack identifier,
             List<GenericStack> inputs, List<GenericStack> outputs) {
@@ -181,24 +221,48 @@ public final class Ae2IdentifierImbuementPattern
                     com.hollingsworth.arsnouveau.common.crafting.recipes
                             .ImbuementRecipe> holder,
             List<GenericStack> inputs, List<GenericStack> outputs) {
-        boolean inputMatches = inputs.stream()
-                .map(Ae2IdentifierImbuementPattern::itemStack)
-                .filter(stack -> !stack.isEmpty())
-                .anyMatch(holder.value().getInput()::test);
+        ItemStack actualInput = singleItem(inputs);
+        boolean inputMatches = !actualInput.isEmpty()
+                && actualInput.getCount() == 1
+                && holder.value().getInput().test(actualInput);
         AEItemKey expectedOutput = AEItemKey.of(
                 holder.value().getResultItem(level.registryAccess()));
-        boolean outputMatches = expectedOutput != null && outputs.stream()
-                .filter(stack -> stack != null && stack.amount() > 0)
-                .anyMatch(stack -> expectedOutput.equals(stack.what()));
+        GenericStack actualOutput = singleStack(outputs);
+        ItemStack expectedStack = holder.value().getResultItem(
+                level.registryAccess());
+        boolean outputMatches = expectedOutput != null
+                && actualOutput != null
+                && expectedOutput.equals(actualOutput.what())
+                && actualOutput.amount() == expectedStack.getCount();
         return inputMatches && outputMatches;
     }
 
+    private static ItemStack singleItem(List<GenericStack> stacks) {
+        GenericStack stack = singleStack(stacks);
+        return stack == null ? ItemStack.EMPTY : itemStack(stack);
+    }
+
+    private static GenericStack singleStack(List<GenericStack> stacks) {
+        GenericStack found = null;
+        for (GenericStack stack : stacks) {
+            if (stack == null) {
+                continue;
+            }
+            if (stack.amount() <= 0L || found != null) {
+                return null;
+            }
+            found = stack;
+        }
+        return found;
+    }
+
     private static ItemStack itemStack(GenericStack stack) {
-        if (stack == null || !(stack.what() instanceof AEItemKey item)) {
+        if (stack == null || stack.amount() <= 0L
+                || stack.amount() > Integer.MAX_VALUE
+                || !(stack.what() instanceof AEItemKey item)) {
             return ItemStack.EMPTY;
         }
-        return item.toStack((int) Math.min(Integer.MAX_VALUE,
-                Math.max(1, stack.amount())));
+        return item.toStack((int) stack.amount());
     }
 
     @Override
@@ -218,12 +282,17 @@ public final class Ae2IdentifierImbuementPattern
 
     @Override
     public boolean supportsPushInputsToExternalInventory() {
-        return delegate.supportsPushInputsToExternalInventory();
+        Level level = levelReference.get();
+        return level != null && matchesCurrentRecipe(level)
+                && delegate.supportsPushInputsToExternalInventory();
     }
 
     @Override
     public void pushInputsToExternalInventory(
             KeyCounter[] inputHolder, PatternInputSink inputSink) {
+        if (!matchesCurrentRecipe(levelReference.get())) {
+            return;
+        }
         delegate.pushInputsToExternalInventory(inputHolder,
                 (key, amount) -> {
                     if (key instanceof AEItemKey itemKey) {

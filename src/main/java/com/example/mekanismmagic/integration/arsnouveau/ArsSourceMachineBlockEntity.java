@@ -69,6 +69,7 @@ public abstract class ArsSourceMachineBlockEntity
     private final SourceDisplaySnapshot sourceDisplay =
             new SourceDisplaySnapshot();
     private long nextNearbySourcePullGameTime = Long.MIN_VALUE;
+    private int unsuccessfulSourcePullAttempts;
 
     protected ArsSourceMachineBlockEntity(Holder<Block> block, BlockPos pos,
                                           BlockState state) {
@@ -191,6 +192,7 @@ public abstract class ArsSourceMachineBlockEntity
     protected final boolean autoPullNearbySource() {
         if (hasCreativeSourceUpgrade()) {
             nextNearbySourcePullGameTime = Long.MIN_VALUE;
+            unsuccessfulSourcePullAttempts = 0;
             return false;
         }
         if (!hasInternalSourceBuffer() || !supportsAutomaticSourcePull()
@@ -207,14 +209,35 @@ public abstract class ArsSourceMachineBlockEntity
                 getMaxSource() - getSource());
         int moved = sourceLinks.pullInto(this, level, request);
         if (moved < request) {
+            moved += ArsSourceInteraction.pullConnectedNetworkSource(
+                    this, level, worldPosition, request - moved);
+        }
+        if (moved < request) {
             moved += ArsSourceInteraction.pullNearbySource(this, level,
                     worldPosition, sourceInteractionRadius(),
                     request - moved);
         }
-        nextNearbySourcePullGameTime = gameTime + (moved > 0
-                ? ArsNouveauMachineConfig.NEARBY_SOURCE_PULL_INTERVAL
-                : unsuccessfulSourcePullInterval());
+        if (moved > 0) {
+            unsuccessfulSourcePullAttempts = 0;
+            nextNearbySourcePullGameTime = gameTime
+                    + ArsNouveauMachineConfig.NEARBY_SOURCE_PULL_INTERVAL;
+        } else {
+            nextNearbySourcePullGameTime = gameTime
+                    + unsuccessfulSourcePullDelay();
+        }
         return moved > 0;
+    }
+
+    private int unsuccessfulSourcePullDelay() {
+        int base = Math.max(1, unsuccessfulSourcePullInterval());
+        int shift = Math.min(4, unsuccessfulSourcePullAttempts);
+        if (unsuccessfulSourcePullAttempts < 4) {
+            unsuccessfulSourcePullAttempts++;
+        }
+        long delayed = (long) base << shift;
+        // Keep newly placed or newly filled jars discoverable without making
+        // rows of idle machines rescan a radius-ten cube every second.
+        return (int) Math.min(100L, delayed);
     }
 
     /** Idle consumers may back off expensive world scans after a miss. */
@@ -238,15 +261,14 @@ public abstract class ArsSourceMachineBlockEntity
     public final boolean mekanismMagicLinkSourceJar(BlockPos sourceJar) {
         if (!hasInternalSourceBuffer() || !supportsAutomaticSourcePull()
                 || level == null
-                || !(level.getBlockEntity(sourceJar)
-                instanceof com.hollingsworth.arsnouveau.common.block.tile
-                        .SourceJarTile)) {
+                || !SourceLinkState.isSourceEndpoint(level, sourceJar)) {
             return false;
         }
         boolean linked = sourceLinks.link(level.dimension().location(),
                 worldPosition, sourceJar);
         if (linked) {
             nextNearbySourcePullGameTime = Long.MIN_VALUE;
+            unsuccessfulSourcePullAttempts = 0;
             setChanged();
         }
         return linked;
@@ -270,6 +292,7 @@ public abstract class ArsSourceMachineBlockEntity
         sourceLinks.replace(links, level == null ? null
                 : level.dimension().location());
         nextNearbySourcePullGameTime = Long.MIN_VALUE;
+        unsuccessfulSourcePullAttempts = 0;
     }
 
     @Override
@@ -487,6 +510,7 @@ public abstract class ArsSourceMachineBlockEntity
         }
         sourceLinks.load(tag);
         nextNearbySourcePullGameTime = Long.MIN_VALUE;
+        unsuccessfulSourcePullAttempts = 0;
         loadArsMachineData(tag, registries);
     }
 

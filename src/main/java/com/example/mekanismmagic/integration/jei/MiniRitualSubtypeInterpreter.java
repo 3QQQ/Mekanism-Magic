@@ -7,6 +7,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
+import com.example.mekanismmagic.integration.occultism
+        .MiniPentacleDeployment;
 
 /**
  * Makes JEI distinguish every bound ritual and every pentacle selector.
@@ -39,21 +41,24 @@ final class MiniRitualSubtypeInterpreter
         }
         CompoundTag tag = data.copyTag();
         return new Subtype(tag.getString("ritual"),
-                tag.getString("pentacle"));
+                tag.getString("pentacle"),
+                MiniPentacleDeployment.isDeployed(stack));
     }
 
-    private record Subtype(String ritual, String pentacle) {
-        private static final Subtype EMPTY = new Subtype("", "");
+    private record Subtype(String ritual, String pentacle,
+                           boolean deployed) {
+        private static final Subtype EMPTY = new Subtype("", "", false);
 
         private boolean isEmpty() {
-            return ritual.isBlank() && pentacle.isBlank();
+            return ritual.isBlank() && pentacle.isBlank() && !deployed;
         }
 
         private String serialized() {
             if (isEmpty()) {
                 return "";
             }
-            return "ritual=" + ritual + "|pentacle=" + pentacle;
+            return "ritual=" + ritual + "|pentacle=" + pentacle
+                    + "|deployed=" + deployed;
         }
     }
 }

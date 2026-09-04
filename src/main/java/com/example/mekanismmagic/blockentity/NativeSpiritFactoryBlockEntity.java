@@ -1,13 +1,16 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
+import com.example.mekanismmagic.api.IMekanismMagicAutomation.PatternStack;
 import com.example.mekanismmagic.api.IRecipeEntityDisplay;
 import com.example.mekanismmagic.api.IRecipeItemDisplay;
 import com.example.mekanismmagic.api.RecipeEntityDisplayState;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.OccultismSpiritPatternValidator;
 import com.example.mekanismmagic.integration.occultism.SpiritFactoryRecipe;
+import mekanism.api.AutomationType;
 import mekanism.api.Upgrade;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.recipes.cache.CachedRecipe;
@@ -27,6 +30,7 @@ import mekanism.common.tile.factory.TileEntityFactory;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.upgrade.IUpgradeData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -46,8 +50,13 @@ public final class NativeSpiritFactoryBlockEntity
         extends TileEntityItemToItemFactory<SpiritFactoryRecipe>
         implements IMekanismMagicAutomation, IRecipeEntityDisplay,
         IRecipeItemDisplay {
+    private static final String TRADE_NONCES = "spirit_trade_nonces";
+    private static final String TRADE_SALT = "spirit_trade_salt";
     private BasicInventorySlot spiritSlot;
     private int[] processRequiredTicks;
+    private long[] spiritTradeNonces;
+    private long spiritTradeSalt;
+    private long observedSpiritProcessingRevision = Long.MIN_VALUE;
     private final RecipeEntityDisplayState recipeEntityDisplay =
             new RecipeEntityDisplayState();
     private final RecipeItemDisplayState recipeItemDisplay =
@@ -80,10 +89,20 @@ public final class NativeSpiritFactoryBlockEntity
                             mekanism.api.IContentsListener listener,
                             mekanism.api.IContentsListener recipeCacheListener) {
         super.addSlots(helper, listener, recipeCacheListener);
-        spiritSlot = BasicInventorySlot.at(OccultismRecipeBridge::isSpiritSource,
-                recipeCacheListener, 7, 57);
+        mekanism.api.IContentsListener spiritListener = () -> {
+            recipeCacheListener.onContentsChanged();
+            com.example.mekanismmagic.integration.common.network
+                    .PatternAutomationRefreshHooks.request(this);
+        };
+        spiritSlot = BasicInventorySlot.at(
+                (stack, automation) -> automation == AutomationType.MANUAL
+                        && canRemoveSpiritSource(),
+                (stack, automation) -> true,
+                OccultismRecipeBridge::isSpiritSource,
+                spiritListener, 7, 57);
         helper.addSlot(spiritSlot);
         processRequiredTicks = new int[tier.processes];
+        ensureTradeNonceCapacity(tier.processes - 1);
     }
 
     @Override
@@ -121,10 +140,16 @@ public final class NativeSpiritFactoryBlockEntity
         inventory.setStackInSlot(0, input.copy());
         inventory.setStackInSlot(NativeMagicMachineBlockEntity.CONTAINMENT_SLOT,
                 extra.getStack().copy());
-        return OccultismRecipeBridge.findSpiritRecipe(level, inventory,
-                        extra.getStack())
-                .filter(result -> !result.output().isEmpty())
-                .map(result -> new SpiritFactoryRecipe(input, extra.getStack(), result))
+        long nonce = spiritTradeNonce(process);
+        return OccultismRecipeBridge.findSpiritMachineRecipe(level, inventory,
+                        extra.getStack(), spiritSelectionSeed(process, nonce))
+                .filter(result -> !result.recipe().output().isEmpty())
+                .map(result -> new SpiritFactoryRecipe(input,
+                        extra.getStack(), result.recipe(), nonce,
+                        result.randomTrade(),
+                        () -> spiritSlot == null ? ItemStack.EMPTY
+                                : spiritSlot.getStack(),
+                        () -> spiritTradeNonce(process)))
                 .orElse(null);
     }
 
@@ -169,6 +194,7 @@ public final class NativeSpiritFactoryBlockEntity
             return false;
         }
         return cached.getRecipe().test(input)
+                && cached.getRecipe().sameInput(input)
                 && spiritSlot != null
                 && cached.getRecipe().sameSource(spiritSlot.getStack());
     }
@@ -231,7 +257,11 @@ public final class NativeSpiritFactoryBlockEntity
                         inputHandlers[process], outputHandlers[process])
                 .setCanHolderFunction(() -> spiritSlot != null
                         && OccultismRecipeBridge.isSpiritSource(
-                                spiritSlot.getStack()))
+                                spiritSlot.getStack())
+                        && recipe.sameSource(spiritSlot.getStack())
+                        && recipe.sameSelectionNonce(
+                        spiritTradeNonce(process))
+                        && recipe.sameProcessingRevision())
                 .setActive(active -> setActiveState(active, process))
                 .setEnergyRequirements(
                         () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this, 400),
@@ -239,26 +269,36 @@ public final class NativeSpiritFactoryBlockEntity
                 .setRequiredTicks(
                         () -> mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()))
                 .setOperatingTicksChanged(value -> progress[process] = value)
-                .setBaselineMaxOperations(this::getOperationsPerTick);
+                .setOnFinish(() -> finishSpiritRecipe(process, recipe))
+                .setBaselineMaxOperations(recipe.randomTrade()
+                        ? () -> 1 : this::getOperationsPerTick);
         return cached;
     }
 
     @Override
     protected boolean onUpdateServer() {
+        boolean revisionChanged = refreshSpiritProcessingRevision();
         boolean changed = super.onUpdateServer();
         boolean displayChanged = hasAnyFactoryWarningContext()
                 ? recipeEntityDisplay.update(spiritSlot.getStack())
                 : recipeEntityDisplay.clear();
         boolean itemDisplayChanged = hasAnyFactoryWarningContext()
                 ? recipeItemDisplay.updateFactory(inputSlots,
-                spiritSlot.getStack(), process -> {
+                spiritSlot.getStack(),
+                OccultismRecipeBridge.spiritProcessingRevision(),
+                process -> progress != null && process >= 0
+                        && process < progress.length
+                        && progress[process] > 0,
+                process -> {
                     SpiritFactoryRecipe recipe = getRecipe(process);
                     return recipe == null
+                            || recipe.randomTrade()
                             || recipe.getOutputDefinition().isEmpty()
                             ? ItemStack.EMPTY
                             : recipe.getOutputDefinition().getFirst();
                 }) : recipeItemDisplay.clear();
-        return itemDisplayChanged || displayChanged || changed;
+        return revisionChanged || itemDisplayChanged
+                || displayChanged || changed;
     }
 
     @Override
@@ -291,6 +331,32 @@ public final class NativeSpiritFactoryBlockEntity
     }
 
     @Override
+    public void saveAdditional(net.minecraft.nbt.CompoundTag tag,
+                               net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putLongArray(TRADE_NONCES,
+                spiritTradeNonces == null ? new long[0]
+                        : spiritTradeNonces);
+        tag.putLong(TRADE_SALT, spiritTradeSalt);
+    }
+
+    @Override
+    public void loadAdditional(net.minecraft.nbt.CompoundTag tag,
+                               net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ensureTradeNonceCapacity(tier.processes - 1);
+        Arrays.fill(spiritTradeNonces, 0L);
+        long[] saved = tag.getLongArray(TRADE_NONCES);
+        System.arraycopy(saved, 0, spiritTradeNonces, 0,
+                Math.min(saved.length, spiritTradeNonces.length));
+        if (saved.length == 0 && tag.contains("spirit_trade_nonce")) {
+            Arrays.fill(spiritTradeNonces,
+                    tag.getLong("spirit_trade_nonce"));
+        }
+        spiritTradeSalt = tag.getLong(TRADE_SALT);
+    }
+
+    @Override
     public double getScaledProgress(int scale, int process) {
         if (process < 0 || process >= progress.length) {
             return 0;
@@ -309,6 +375,117 @@ public final class NativeSpiritFactoryBlockEntity
         }
     }
 
+    private long spiritSelectionSeed(int process, long nonce) {
+        return ensureSpiritTradeSalt()
+                ^ Long.rotateLeft(nonce, 29)
+                ^ (long) process * 0x9E3779B97F4A7C15L;
+    }
+
+    private long ensureSpiritTradeSalt() {
+        if (spiritTradeSalt != 0L) {
+            return spiritTradeSalt;
+        }
+        spiritTradeSalt = OccultismRecipeBridge.createSpiritTradeSalt();
+        setChanged();
+        return spiritTradeSalt;
+    }
+
+    private void finishSpiritRecipe(int process,
+                                    SpiritFactoryRecipe recipe) {
+        if (!recipe.randomTrade()) {
+            return;
+        }
+        ensureTradeNonceCapacity(process);
+        spiritTradeNonces[process] = spiritTradeNonces[process]
+                == Long.MAX_VALUE ? 0L : spiritTradeNonces[process] + 1L;
+        if (recipeCacheLookupMonitors != null && process >= 0
+                && process < recipeCacheLookupMonitors.length
+                && recipeCacheLookupMonitors[process] != null) {
+            recipeCacheLookupMonitors[process].onChange();
+        }
+        setChanged();
+    }
+
+    private void ensureTradeNonceCapacity(int process) {
+        int requiredLength = Math.max(tier.processes, process + 1);
+        if (spiritTradeNonces == null) {
+            spiritTradeNonces = new long[requiredLength];
+        } else if (spiritTradeNonces.length < requiredLength) {
+            spiritTradeNonces = Arrays.copyOf(
+                    spiritTradeNonces, requiredLength);
+        }
+    }
+
+    private long spiritTradeNonce(int process) {
+        ensureTradeNonceCapacity(process);
+        return process < 0 || process >= spiritTradeNonces.length
+                ? 0L : spiritTradeNonces[process];
+    }
+
+    private boolean refreshSpiritProcessingRevision() {
+        long revision = OccultismRecipeBridge.spiritProcessingRevision();
+        if (observedSpiritProcessingRevision == revision) {
+            return false;
+        }
+        boolean initialObservation = observedSpiritProcessingRevision
+                == Long.MIN_VALUE;
+        observedSpiritProcessingRevision = revision;
+        if (progress != null) {
+            if (initialObservation) {
+                for (int process = 0; process < progress.length; process++) {
+                    if (progress[process] > 0 && getRecipe(process) == null) {
+                        progress[process] = 0;
+                        if (processRequiredTicks != null
+                                && process < processRequiredTicks.length) {
+                            processRequiredTicks[process] = 0;
+                        }
+                    }
+                }
+            } else {
+                Arrays.fill(progress, 0);
+            }
+        }
+        if (!initialObservation && processRequiredTicks != null) {
+            Arrays.fill(processRequiredTicks, 0);
+        }
+        if (recipeCacheLookupMonitors != null) {
+            for (var monitor : recipeCacheLookupMonitors) {
+                if (monitor != null) {
+                    monitor.onChange();
+                }
+            }
+        }
+        com.example.mekanismmagic.integration.common.network
+                .PatternAutomationRefreshHooks.request(this);
+        return true;
+    }
+
+    private boolean canRemoveSpiritSource() {
+        if (progress != null) {
+            for (int value : progress) {
+                if (value > 0) {
+                    return false;
+                }
+            }
+        }
+        return (inputSlots == null || inputSlots.stream()
+                .allMatch(slot -> slot.getStack().isEmpty()))
+                && !com.example.mekanismmagic.integration.common.network
+                .PatternAutomationRefreshHooks.hasPendingPatternWork(this);
+    }
+
+    @Override
+    public void setStackInSlot(int slot, ItemStack stack, Direction side) {
+        IInventorySlot target = getInventorySlot(slot, side);
+        if (target == null || target == spiritSlot
+                && !PersistentInputMutationGuard.permits(target, stack)) {
+            return;
+        }
+        // Preserve Mekanism's default behavior for every non-context slot;
+        // internal GUI/NBT/upgrade paths write the slot directly.
+        target.setStack(stack);
+    }
+
     @Override
     public SpiritMachineUpgradeData getUpgradeData(
             net.minecraft.core.HolderLookup.Provider registries) {
@@ -324,7 +501,10 @@ public final class NativeSpiritFactoryBlockEntity
                 isSorting(), getComponents(),
                 spiritSlot == null ? ItemStack.EMPTY : spiritSlot.getStack(),
                 processRequiredTicks == null
-                        ? new int[0] : processRequiredTicks);
+                        ? new int[0] : processRequiredTicks,
+                java.util.Map.of(), spiritTradeNonces == null
+                        ? new long[0] : spiritTradeNonces,
+                spiritTradeSalt);
     }
 
     @Override
@@ -337,6 +517,13 @@ public final class NativeSpiritFactoryBlockEntity
             }
             processRequiredTicks = Arrays.copyOf(
                     spiritUpgrade.requiredTicks, tier.processes);
+            ensureTradeNonceCapacity(tier.processes - 1);
+            Arrays.fill(spiritTradeNonces, 0L);
+            System.arraycopy(spiritUpgrade.spiritTradeNonces, 0,
+                    spiritTradeNonces, 0, Math.min(
+                            spiritUpgrade.spiritTradeNonces.length,
+                            spiritTradeNonces.length));
+            spiritTradeSalt = spiritUpgrade.spiritTradeSalt;
         }
     }
 
@@ -364,6 +551,34 @@ public final class NativeSpiritFactoryBlockEntity
     @Override
     public List<IInventorySlot> mekanismMagicPersistentInputs() {
         return spiritSlot == null ? List.of() : List.of(spiritSlot);
+    }
+
+    @Override
+    public boolean mekanismMagicGroupParallelItemInputs() {
+        return true;
+    }
+
+    @Override
+    public boolean mekanismMagicSupportsPatternAutomation() {
+        return true;
+    }
+
+    @Override
+    public boolean mekanismMagicCanAdvertisePatterns() {
+        return spiritSlot != null && !spiritSlot.getStack().isEmpty();
+    }
+
+    @Override
+    public boolean mekanismMagicUsesContextualPatternValidation() {
+        return true;
+    }
+
+    @Override
+    public boolean mekanismMagicMatchesPattern(
+            List<PatternStack> inputs, List<PatternStack> outputs) {
+        return spiritSlot != null
+                && OccultismSpiritPatternValidator.matches(level,
+                spiritSlot.getStack(), inputs, outputs);
     }
 
     @Override

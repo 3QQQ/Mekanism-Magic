@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
 import com.hollingsworth.arsnouveau.api.item.IWandable;
-import com.hollingsworth.arsnouveau.common.block.tile.SourceJarTile;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import com.hollingsworth.arsnouveau.setup.registry.SoundRegistry;
 import mekanism.common.lib.security.BlockSecurityUtils;
@@ -195,8 +194,8 @@ public final class SourceLinkToolItem extends Item {
                                       Player player) {
         SourceLinkHost firstHost = findSourceLinkHost(level, first);
         SourceLinkHost secondHost = findSourceLinkHost(level, second);
-        boolean firstJar = isSourceJar(level, first);
-        boolean secondJar = isSourceJar(level, second);
+        boolean firstJar = isSourceEndpoint(level, first);
+        boolean secondJar = isSourceEndpoint(level, second);
         if (firstHost != null && secondJar) {
             if (!canAccessHost(player, level, first)) {
                 return LinkResult.REJECTED;
@@ -238,8 +237,9 @@ public final class SourceLinkToolItem extends Item {
         return blockEntity instanceof SourceLinkHost host ? host : null;
     }
 
-    private static boolean isSourceJar(Level level, BlockPos position) {
-        return level.getBlockEntity(position) instanceof SourceJarTile;
+    private static boolean isSourceEndpoint(Level level, BlockPos position) {
+        return !(level.getBlockEntity(position) instanceof SourceLinkHost)
+                && SourceLinkState.isSourceEndpoint(level, position);
     }
 
     private static boolean canAccessHost(Player player, Level level,

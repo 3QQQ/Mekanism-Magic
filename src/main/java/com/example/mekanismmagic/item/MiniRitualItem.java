@@ -1,17 +1,22 @@
 package com.example.mekanismmagic.item;
 
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.MiniPentacleDeployment;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -31,7 +36,15 @@ public final class MiniRitualItem extends Item {
         ItemStack reference = player.getItemInHand(
                 hand == InteractionHand.MAIN_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 
-        if (OccultismRecipeBridge.isRitualSelector(reference)) {
+        if (OccultismRecipeBridge.isRitualProjectionItem(reference)) {
+            if (MiniPentacleDeployment.isDeployed(miniature)) {
+                if (!level.isClientSide()) {
+                    player.displayClientMessage(Component.translatable(
+                            MiniPentacleDeployment.Status.ALREADY_DEPLOYED
+                                    .translationKey()), true);
+                }
+                return InteractionResultHolder.fail(miniature);
+            }
             if (!level.isClientSide()) {
                 OccultismRecipeBridge.findProjection(level, reference).ifPresent(projection -> {
                     OccultismRecipeBridge.bindMiniRitual(miniature, projection);
@@ -64,6 +77,49 @@ public final class MiniRitualItem extends Item {
     }
 
     @Override
+    public InteractionResult useOn(UseOnContext context) {
+        Player player = context.getPlayer();
+        ItemStack miniature = context.getItemInHand();
+        if (player == null) {
+            return InteractionResult.PASS;
+        }
+        if (context.getLevel().isClientSide()) {
+            return isConfigured(miniature)
+                    || MiniPentacleDeployment.isDeployed(miniature)
+                    ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        }
+        if (!(context.getLevel() instanceof ServerLevel level)
+                || !(player instanceof ServerPlayer serverPlayer)) {
+            return InteractionResult.PASS;
+        }
+        MiniPentacleDeployment.Result result;
+        if (player.isShiftKeyDown()) {
+            result = MiniPentacleDeployment.recover(level, serverPlayer,
+                    miniature, context.getClickedPos());
+        } else if (context.getClickedFace()
+                != net.minecraft.core.Direction.UP) {
+            result = new MiniPentacleDeployment.Result(
+                    MiniPentacleDeployment.Status.TOP_FACE_REQUIRED, 0);
+        } else {
+            result = MiniPentacleDeployment.deploy(level, serverPlayer,
+                    miniature,
+                    context.getClickedPos().relative(
+                            context.getClickedFace()),
+                    MiniPentacleDeployment.rotationFor(
+                            player.getDirection()));
+        }
+        Component message = result.success()
+                ? Component.translatable(
+                result.status().translationKey(),
+                result.changedBlocks())
+                : Component.translatable(
+                result.status().translationKey());
+        player.displayClientMessage(message, true);
+        return result.success()
+                ? InteractionResult.CONSUME : InteractionResult.FAIL;
+    }
+
+    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
@@ -82,7 +138,24 @@ public final class MiniRitualItem extends Item {
                         OccultismRecipeBridge.pentacleDisplayName(
                                 pentacleId(stack))));
             }
-            tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.project"));
+            if (MiniPentacleDeployment.isDeployed(stack)) {
+                tooltip.add(Component.translatable(
+                        "item.mekanism_magic.mini_ritual.deployed"));
+                MiniPentacleDeployment.location(stack).ifPresent(location ->
+                        tooltip.add(Component.translatable(
+                                "item.mekanism_magic.mini_ritual.deployed_at",
+                                location.dimension(),
+                                location.anchor().getX(),
+                                location.anchor().getY(),
+                                location.anchor().getZ())));
+                tooltip.add(Component.translatable(
+                        "item.mekanism_magic.mini_ritual.recover"));
+            } else {
+                tooltip.add(Component.translatable(
+                        "item.mekanism_magic.mini_ritual.project"));
+                tooltip.add(Component.translatable(
+                        "item.mekanism_magic.mini_ritual.place"));
+            }
         } else {
             tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.unconfigured"));
             tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.bind"));
@@ -95,6 +168,10 @@ public final class MiniRitualItem extends Item {
             return null;
         }
         return ResourceLocation.tryParse(data.getUnsafe().getString("ritual"));
+    }
+
+    private static boolean isConfigured(ItemStack stack) {
+        return ritualId(stack) != null || pentacleId(stack) != null;
     }
 
     private static ResourceLocation pentacleId(ItemStack stack) {

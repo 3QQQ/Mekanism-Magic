@@ -121,10 +121,34 @@ jobs:
           done
           if [[ "$TARGET_LOADER" == "neoforge" ]]; then
             required=(
+              "META-INF/mekanism_magic_features.properties"
+              "com/example/mekanismmagic/integration/occultism/OccultismRitualMachineMode.class"
+              "com/example/mekanismmagic/integration/occultism/OccultismSpiritJobPolicy.class"
+              "com/example/mekanismmagic/integration/occultism/OccultismSpiritPatternValidator.class"
+              "com/example/mekanismmagic/integration/occultism/MiniPentacleDeployment.class"
+              "com/example/mekanismmagic/integration/common/network/PatternAutomationRefreshHooks.class"
+              "com/example/mekanismmagic/integration/pipez/PipezCompatMixinPlugin.class"
+              "com/example/mekanismmagic/integration/pipez/mixin/ItemPipeTypeMixin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/ArsSourceProductionMixinPlugin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/mixin/SourcelinkEventProductionMixin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/mixin/VolcanicProductionMixin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/mixin/MycelialProductionMixin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/mixin/VitalicProductionMixin.class"
+              "com/example/mekanismmagic/integration/arsnouveau/mixin/AlchemicalProductionMixin.class"
               "com/example/mekanismmagic/integration/mekextras/MekanismExtrasSpiritFactories.class"
               "com/example/mekanismmagic/integration/mekextras/MekanismExtrasImbuementFactories.class"
               "com/example/mekanismmagic/integration/ae2/Ae2ArsCompat.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2CompatMixinPlugin.class"
               "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompat.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompatMixinPlugin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/OccultismRitualMeRouter.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsPendingPatternContext.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsPendingRefund.class"
+              "com/example/mekanismmagic/integration/mekenergistics/SpiritPatternMeRouter.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsPendingPatternContextMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsTierInstallerStateMixin.class"
+              "pipez_compat.mixins.json"
+              "ars_source_production.mixins.json"
               "ae2_compat.mixins.json"
               "mekenergistics_compat.mixins.json"
             )
@@ -150,3 +174,15 @@ jobs:
           version: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
           name: Mekanism Magic ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
           changelog: ${{ github.event.release.body || 'Automated CurseForge publication.' }}
+          curseforge-dependencies: |
+            mekanism(required)
+            occultism(optional)
+            ars-nouveau(optional)
+            jei(optional)
+            applied-energistics-2(optional)
+            mekanism-extras(optional)
+            mekanism-more-machine(optional)
+            mek-energistics(optional)
+            905641(optional)
+            extendedae(optional)
+            pipez(optional)

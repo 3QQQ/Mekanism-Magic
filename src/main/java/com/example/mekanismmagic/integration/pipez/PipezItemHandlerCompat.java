@@ -15,7 +15,9 @@ import java.util.function.Supplier;
  * normal stack would otherwise be limited to 64 items per transfer pass.
  * This view keeps the real slot count and marks Pipez' simulated/committed
  * extraction call as bulk-aware. Mekanism Magic can then atomically shrink
- * the requested amount instead of manufacturing thousands of virtual slots.
+ * the requested amount from either a legacy oversized slot or the machines'
+ * persistent long-output buffer instead of manufacturing thousands of
+ * virtual slots.
  * Pipez' configured rate and destination acceptance remain authoritative.</p>
  */
 public final class PipezItemHandlerCompat {
@@ -45,22 +47,28 @@ public final class PipezItemHandlerCompat {
             return source;
         }
 
-        boolean needsBulkView = false;
-        for (int slot = 0; slot < sourceSlots; slot++) {
-            ItemStack stored = source.getStackInSlot(slot);
-            if (stored.isEmpty()) {
-                continue;
-            }
-            boolean extractable = !source.extractItem(slot, 1, true).isEmpty();
-            needsBulkView |= requiresBulkExtraction(stored.getCount(),
-                    stored.getMaxStackSize(), extractable);
-        }
-        return needsBulkView ? new BulkExtractionView(source) : source;
+        // Always provide the scoped view. Current long-buffer machines keep
+        // their visible slots at the legal item stack size, so inspecting
+        // getStackInSlot cannot reveal that additional output is available.
+        // Do not probe every source slot here: Pipez is already going to
+        // simulate the slots it needs, and a redundant scan was costly for
+        // machines with many output slots. For every other handler the
+        // ThreadLocal is inert and extraction delegates unchanged.
+        return new BulkExtractionView(source);
     }
 
-    static boolean requiresBulkExtraction(int storedCount, int normalLimit,
-                                          boolean extractable) {
+    public static boolean requiresBulkExtraction(
+            int storedCount, int normalLimit, boolean extractable) {
         return extractable && storedCount > Math.max(1, normalLimit);
+    }
+
+    /** Integer-safe amount shared by simulation and commit implementations. */
+    public static int boundedExtractionAmount(int requested, long available) {
+        if (requested <= 0 || available <= 0) {
+            return 0;
+        }
+        return (int) Math.min((long) requested,
+                Math.min((long) Integer.MAX_VALUE, available));
     }
 
     /** Called only by the shared machine inventory while Pipez is extracting. */

@@ -29,10 +29,19 @@ public final class SpiritJeiCategory extends MagicJeiCategory<
         JeiSlotMarker.mark(
                         input(builder.addInputSlot(48, 27)),
                         JeiSlotMarker.Kind.INPUT, "input")
-                .addItemStack(recipe.input());
-        JeiSlotMarker.mark(
+                .addIngredients(recipe.input());
+        var output = JeiSlotMarker.mark(
                         output(builder.addOutputSlot(148, 27)),
-                        JeiSlotMarker.Kind.OUTPUT, "output")
-                .addItemStack(recipe.output());
+                        JeiSlotMarker.Kind.OUTPUT, "output");
+        output.addItemStack(recipe.output());
+        if (recipe.weight() > 0) {
+            output.addRichTooltipCallback((view, tooltip) -> tooltip.add(
+                    Component.translatable(
+                            "jei.mekanism_magic.trade_weight",
+                            recipe.weight())));
+            output.addRichTooltipCallback((view, tooltip) -> tooltip.add(
+                    Component.translatable(
+                            "jei.mekanism_magic.random_trade_no_pattern")));
+        }
     }
 }

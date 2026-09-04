@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.recipe;
 
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.integration.occultism.MiniPentacleDeployment;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
@@ -41,7 +42,8 @@ public record SpecificPentacleIngredient(String pentacle)
     @Override
     public boolean test(ItemStack stack) {
         if (stack.isEmpty()
-                || stack.getItem() != MekanismMagic.MINI_RITUAL.get()) {
+                || stack.getItem() != MekanismMagic.MINI_RITUAL.get()
+                || MiniPentacleDeployment.isDeployed(stack)) {
             return false;
         }
         net.minecraft.world.item.component.CustomData data =

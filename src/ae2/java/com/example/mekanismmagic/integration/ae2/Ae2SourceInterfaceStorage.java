@@ -68,7 +68,7 @@ final class Ae2SourceInterfaceStorage implements ISourceCap {
         return fallback;
     }
 
-    private static AEKey sourceKey() {
+    static AEKey sourceKey() {
         if (!sourceKeyResolved) {
             synchronized (Ae2SourceInterfaceStorage.class) {
                 if (!sourceKeyResolved) {

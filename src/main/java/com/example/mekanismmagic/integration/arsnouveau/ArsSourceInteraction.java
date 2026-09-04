@@ -53,6 +53,17 @@ public final class ArsSourceInteraction {
         return before - Math.max(0, local.getSource()) >= amount;
     }
 
+    /** Pulls Source from an optional storage network attached to the machine. */
+    public static int pullConnectedNetworkSource(
+            ISourceTile local, @Nullable Level level, BlockPos pos,
+            int maxAmount) {
+        if (level == null || level.isClientSide() || maxAmount <= 0) {
+            return 0;
+        }
+        return ArsSourceNetworkAccess.pullInto(
+                level.getBlockEntity(pos), local, maxAmount);
+    }
+
     /**
      * Pulls Source from ordinary Ars jars and registered special providers.
      * The transfer is server-only, skips the machine itself, deduplicates

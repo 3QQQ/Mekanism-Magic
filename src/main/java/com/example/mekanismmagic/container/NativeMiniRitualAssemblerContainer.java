@@ -23,18 +23,4 @@ public final class NativeMiniRitualAssemblerContainer
     protected int getInventoryYOffset() {
         return 126;
     }
-
-    @Override
-    public boolean clickMenuButton(net.minecraft.world.entity.player.Player player,
-                                   int buttonId) {
-        if (buttonId == 99) {
-            getTileEntity().clearPentaclePreference();
-            return true;
-        }
-        if (buttonId >= 100) {
-            getTileEntity().lockPentacle(buttonId - 100);
-            return true;
-        }
-        return super.clickMenuButton(player, buttonId);
-    }
 }

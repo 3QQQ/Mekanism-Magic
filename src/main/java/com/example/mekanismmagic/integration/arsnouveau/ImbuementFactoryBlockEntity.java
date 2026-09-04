@@ -4,9 +4,11 @@ import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.api.IRecipeItemDisplay;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.blockentity.DefaultMachineSideConfig;
+import com.example.mekanismmagic.blockentity.PersistentInputMutationGuard;
 import com.example.mekanismmagic.inventory.CreativeMagicUpgradeSlot;
 import com.example.mekanismmagic.upgrade.CreativeMagicUpgradeMigration;
 import com.example.mekanismmagic.upgrade.MagicUpgrades;
+import com.example.mekanismmagic.integration.common.network.PatternAutomationRefreshHooks;
 import mekanism.api.IContentsListener;
 import com.hollingsworth.arsnouveau.api.source.ISourceTile;
 import com.hollingsworth.arsnouveau.api.source.ISourceCap;
@@ -16,13 +18,14 @@ import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
+import mekanism.common.attachments.containers.item.AttachedItems;
 import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableInt;
+import mekanism.common.inventory.container.sync.SyncableItemStack;
 import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.container.slot.ContainerSlotType;
-import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.recipe.IMekanismRecipeTypeProvider;
 import mekanism.common.recipe.MekanismRecipeType;
@@ -52,7 +55,10 @@ public final class ImbuementFactoryBlockEntity
         SourceLinkHost, SourceDisplayHost {
     private BasicInventorySlot lockSlot;
     private BasicInventorySlot legacyCreativeMagicUpgradeSlot;
-    private List<BasicInventorySlot> catalystLibrarySlots;
+    private CatalystLibraryStorage catalystLibrary;
+    private List<CatalystLibraryWindowSlot> catalystLibrarySlots;
+    private ItemStack syncedPhysicalCatalyst = ItemStack.EMPTY;
+    private int syncedCatalystVisibleSlotCount = 1;
     private boolean catalystLibraryOpen;
     private int selectedCatalystIndex = -1;
     private int catalystPage;
@@ -63,6 +69,7 @@ public final class ImbuementFactoryBlockEntity
     private String cachedVirtualCatalystId = "";
     private int cachedVirtualCatalystIndex = Integer.MIN_VALUE;
     private long cachedCatalystCatalogVersion = Long.MIN_VALUE;
+    private long observedRecipeCatalogVersion = Long.MIN_VALUE;
     private int[] requiredTicks;
     private SourceStorage sourceStorage;
     private SourceProvider sourceProvider;
@@ -113,23 +120,26 @@ public final class ImbuementFactoryBlockEntity
                 ImbuementFactoryLayout.LOCK_SLOT_X,
                 ImbuementFactoryLayout.LOCK_SLOT_Y);
         lockSlot.setSlotType(ContainerSlotType.EXTRA);
-        catalystLibrarySlots = new ArrayList<>();
-        IContentsListener libraryListener = () -> {
+        catalystLibrary = new CatalystLibraryStorage(() -> {
+            clampCatalystPage();
             refreshRecipeLock();
             recipeListener.onContentsChanged();
             setChanged();
-        };
+        });
+        CatalystLibraryStorage.PageWindow window = catalystLibrary.pageWindow(
+                this::catalystPage, this::windowRecipeCount);
         int imageWidth = factoryImageWidth();
-        int slotCount = com.example.mekanismmagic.blockentity
-                .NativeMagicMachineBlockEntity.CATALYST_LIBRARY_SLOT_COUNT;
-        for (int index = 0; index < slotCount; index++) {
-            int pageSlot = index % CatalystLibraryLayout.PAGE_SIZE;
-            BasicInventorySlot slot = new CatalystLibrarySlot(
-                    this, index / CatalystLibraryLayout.PAGE_SIZE,
-                    libraryListener,
-                    CatalystLibraryLayout.slotX(imageWidth, pageSlot),
-                    CatalystLibraryLayout.slotY(pageSlot));
-            catalystLibrarySlots.add(slot);
+        catalystLibrarySlots = CatalystLibraryWindowSlot.createManualWindow(
+                window,
+                () -> level != null && level.isClientSide(),
+                () -> level == null || !level.isClientSide()
+                        || catalystLibraryOpen,
+                stack -> stack.is(
+                        ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get()),
+                pageSlot -> CatalystLibraryLayout.slotX(
+                        imageWidth, pageSlot),
+                CatalystLibraryLayout::slotY);
+        for (CatalystLibraryWindowSlot slot : catalystLibrarySlots) {
             helper.addSlot(slot);
         }
         requiredTicks = new int[tier.processes];
@@ -153,18 +163,37 @@ public final class ImbuementFactoryBlockEntity
         }
         ResourceLocation patternRecipe =
                 ArsNouveauRecipeBridge.patternRecipe(input);
+        if (patternRecipe != null
+                && (!canAdoptMarkedPatternRecipe(patternRecipe)
+                || !selectCatalystIdentifierForRecipe(patternRecipe))) {
+            return null;
+        }
         if (patternRecipe != null) {
-            selectCatalystIdentifierForRecipe(patternRecipe);
+            input = ArsNouveauRecipeBridge.recipeInputView(input);
+            if (process >= 0 && process < inputSlots.size()
+                    && !ItemStack.matches(
+                    inputSlots.get(process).getStack(), input)) {
+                inputSlots.get(process).setStack(input.copy());
+            }
         }
         ItemStack identifier = selectedCatalystIdentifier();
         ItemStackHandler inventory = new ItemStackHandler(23);
         inventory.setStackInSlot(0, input.copy());
         return ArsNouveauRecipeBridge.findImbuementByIdentifier(
                         level, inventory, 0, identifier)
-                .map(result -> new ImbuementFactoryRecipe(
-                        input, identifier, result,
-                        ArsNouveauRecipeBridge.requiresCatalystIdentifier(
-                                level, result.id())))
+                .map(result -> {
+                    var holder = level == null ? null
+                            : ArsNouveauRecipeScanner.find(
+                            level.getRecipeManager(), result.id());
+                    return holder == null ? null
+                            : new ImbuementFactoryRecipe(
+                            holder, identifier, result,
+                            ArsNouveauRecipeBridge
+                                    .requiresCatalystIdentifier(
+                                            level, result.id()),
+                            ArsNouveauRecipeScanner.version(
+                                    level.getRecipeManager()));
+                })
                 .orElse(null);
     }
 
@@ -217,6 +246,10 @@ public final class ImbuementFactoryBlockEntity
                 getMaxSource() - getSource());
         int moved = sourceLinks.pullInto(this, level, request);
         if (moved < request) {
+            moved += ArsSourceInteraction.pullConnectedNetworkSource(
+                    this, level, worldPosition, request - moved);
+        }
+        if (moved < request) {
             moved += ArsSourceInteraction.pullNearbySource(this, level,
                     worldPosition, ArsNouveauMachineConfig
                             .IMBUEMENT_SOURCE_INTERACTION_RADIUS,
@@ -227,9 +260,8 @@ public final class ImbuementFactoryBlockEntity
 
     @Override
     public boolean mekanismMagicLinkSourceJar(BlockPos sourceJar) {
-        if (level == null || !(level.getBlockEntity(sourceJar)
-                instanceof com.hollingsworth.arsnouveau.common.block.tile
-                        .SourceJarTile)) {
+        if (level == null
+                || !SourceLinkState.isSourceEndpoint(level, sourceJar)) {
             return false;
         }
         boolean linked = sourceLinks.link(level.dimension().location(),
@@ -288,17 +320,19 @@ public final class ImbuementFactoryBlockEntity
         super.onLoad();
         CreativeMagicUpgradeMigration.migrate(
                 this, legacyCreativeMagicUpgradeSlot);
-        if (level != null && !level.isClientSide() && sourceProvider == null) {
-            sourceProvider = new SourceProvider(this, worldPosition) {
-                @Override
-                public boolean isValid() {
-                    return !ImbuementFactoryBlockEntity.this.isRemoved()
-                            && ImbuementFactoryBlockEntity.this.level != null
-                            && ImbuementFactoryBlockEntity.this.level
-                            .getBlockEntity(worldPosition)
-                            == ImbuementFactoryBlockEntity.this;
-                }
-            };
+        if (level != null && !level.isClientSide()) {
+            if (sourceProvider == null) {
+                sourceProvider = new SourceProvider(this, worldPosition) {
+                    @Override
+                    public boolean isValid() {
+                        return !ImbuementFactoryBlockEntity.this.isRemoved()
+                                && ImbuementFactoryBlockEntity.this.level != null
+                                && ImbuementFactoryBlockEntity.this.level
+                                .getBlockEntity(worldPosition)
+                                == ImbuementFactoryBlockEntity.this;
+                    }
+                };
+            }
             SourceManager.INSTANCE.addInterface(level, sourceProvider);
         }
     }
@@ -332,6 +366,7 @@ public final class ImbuementFactoryBlockEntity
             CachedRecipe<ImbuementFactoryRecipe> cached, ItemStack input) {
         return cached != null && cached.getRecipe() != null
                 && cached.getRecipe().test(input)
+                && cached.getRecipe().matchesCurrentRecipe(level)
                 && lockSlot != null
                 && hasMatchingIdentifier(cached.getRecipe());
     }
@@ -369,6 +404,7 @@ public final class ImbuementFactoryBlockEntity
                                         || consumeSourceForRecipe(
                                         recipe.sourceCost()))
                         .setCanHolderFunction(() -> lockSlot != null
+                                && recipe.matchesCurrentRecipe(level)
                                 && hasMatchingIdentifier(recipe)
                                 && (hasCreativeUpgrade()
                                 || hasSourceForRecipe(
@@ -396,6 +432,7 @@ public final class ImbuementFactoryBlockEntity
 
     @Override
     protected boolean onUpdateServer() {
+        boolean revisionChanged = refreshRecipeCatalogVersion();
         boolean sourceChanged = autoPullNearbySource();
         boolean changed = super.onUpdateServer();
         boolean hasInput = inputSlots != null && inputSlots.stream()
@@ -409,7 +446,7 @@ public final class ImbuementFactoryBlockEntity
                             ? ItemStack.EMPTY
                             : recipe.getOutputDefinition().getFirst();
                 }) : recipeItemDisplay.clear();
-        return sourceChanged || displayChanged || changed;
+        return revisionChanged || sourceChanged || displayChanged || changed;
     }
 
     @Override
@@ -434,6 +471,9 @@ public final class ImbuementFactoryBlockEntity
     }
 
     private boolean hasMatchingIdentifier(ImbuementFactoryRecipe recipe) {
+        if (!recipe.matchesCurrentRecipe(level)) {
+            return false;
+        }
         if (!recipe.requiresIdentifier()) {
             return true;
         }
@@ -444,6 +484,35 @@ public final class ImbuementFactoryBlockEntity
                 level, identifier, recipe.imbuementId());
     }
 
+    private boolean refreshRecipeCatalogVersion() {
+        long revision = level == null ? 0L
+                : ArsNouveauRecipeScanner.version(level.getRecipeManager());
+        if (observedRecipeCatalogVersion == revision) {
+            return false;
+        }
+        boolean initial = observedRecipeCatalogVersion == Long.MIN_VALUE;
+        observedRecipeCatalogVersion = revision;
+        cachedCatalystCatalogVersion = Long.MIN_VALUE;
+        cachedVirtualCatalyst = ItemStack.EMPTY;
+        catalystPage = Math.max(0, Math.min(
+                catalystPageCount() - 1, catalystPage));
+        if (!initial) {
+            Arrays.fill(progress, 0);
+            Arrays.fill(requiredTicks, 0);
+        }
+        if (recipeCacheLookupMonitors != null) {
+            for (var monitor : recipeCacheLookupMonitors) {
+                if (monitor != null) {
+                    monitor.onChange();
+                }
+            }
+        }
+        refreshRecipeLock();
+        PatternAutomationRefreshHooks.request(this);
+        return true;
+    }
+
+    @Override
     public ItemStack selectedCatalystIdentifier() {
         if (virtualCatalystSelected && level != null) {
             long version = ArsNouveauRecipeScanner.version(
@@ -463,12 +532,12 @@ public final class ImbuementFactoryBlockEntity
             }
             return cachedVirtualCatalyst;
         }
-        if (catalystLibrarySlots == null
-                || selectedCatalystIndex < 0
-                || selectedCatalystIndex >= catalystLibrarySlots.size()) {
-            return ItemStack.EMPTY;
+        if (level != null && level.isClientSide()) {
+            return syncedPhysicalCatalyst;
         }
-        return catalystLibrarySlots.get(selectedCatalystIndex).getStack();
+        return catalystLibrary == null || selectedCatalystIndex < 0
+                ? ItemStack.EMPTY
+                : catalystLibrary.get(selectedCatalystIndex);
     }
 
     public int catalystPage() {
@@ -476,10 +545,17 @@ public final class ImbuementFactoryBlockEntity
     }
 
     public int catalystPageCount() {
-        int slotCount = com.example.mekanismmagic.blockentity
-                .NativeMagicMachineBlockEntity.CATALYST_LIBRARY_SLOT_COUNT;
-        return Math.max(1, Math.ceilDiv(
-                slotCount, CatalystLibraryLayout.PAGE_SIZE));
+        return catalystLibrary == null ? 1 : catalystLibrary.pageCount(
+                windowRecipeCount());
+    }
+
+    public int catalystVisibleSlotCount() {
+        if (level != null && level.isClientSide()) {
+            return Math.max(1, syncedCatalystVisibleSlotCount);
+        }
+        return catalystLibrary == null ? 1
+                : catalystLibrary.visibleSlotCount(
+                catalystIdentifierRecipeCount());
     }
 
     public void cycleCatalystPage(int delta) {
@@ -488,10 +564,22 @@ public final class ImbuementFactoryBlockEntity
         setChanged();
     }
 
+    private int windowRecipeCount() {
+        return level != null && level.isClientSide()
+                ? Math.max(1, syncedCatalystVisibleSlotCount)
+                : catalystIdentifierRecipeCount();
+    }
+
+    private void clampCatalystPage() {
+        catalystPage = catalystLibrary == null ? 0
+                : catalystLibrary.clampPage(
+                catalystPage, windowRecipeCount());
+    }
+
     public void selectCatalystIdentifier(int index) {
-        if (catalystLibrarySlots == null || index < 0
-                || index >= catalystLibrarySlots.size()
-                || catalystLibrarySlots.get(index).getStack().isEmpty()) {
+        if (catalystLibrary == null || index < 0
+                || index >= catalystVisibleSlotCount()
+                || catalystLibrary.get(index).isEmpty()) {
             return;
         }
         selectedCatalystIndex = index;
@@ -527,6 +615,65 @@ public final class ImbuementFactoryBlockEntity
         return true;
     }
 
+    @Override
+    public boolean canSelectCatalystIdentifierId(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        ItemStack selected = selectedCatalystIdentifier();
+        if (!selected.isEmpty() && id.equals(
+                CatalystIdentifierItem.catalystId(selected).toString())) {
+            return true;
+        }
+        if (inputSlots != null && inputSlots.stream()
+                .anyMatch(slot -> !slot.getStack().isEmpty())) {
+            return false;
+        }
+        if (progress != null && Arrays.stream(progress)
+                .anyMatch(value -> value > 0)) {
+            return false;
+        }
+        return !com.example.mekanismmagic.integration.common.network
+                .PatternAutomationRefreshHooks.hasPendingPatternWork(this);
+    }
+
+    private boolean canAdoptMarkedPatternRecipe(
+            ResourceLocation recipeId) {
+        String desired = catalystIdentifierIdForRecipe(recipeId);
+        if (desired.isEmpty()) {
+            return false;
+        }
+        ItemStack selected = selectedCatalystIdentifier();
+        if (!selected.isEmpty() && desired.equals(
+                CatalystIdentifierItem.catalystId(selected).toString())) {
+            return true;
+        }
+        if (progress != null && Arrays.stream(progress)
+                .anyMatch(value -> value > 0)
+                || com.example.mekanismmagic.integration.common.network
+                .PatternAutomationRefreshHooks.hasPendingPatternWork(this)) {
+            return false;
+        }
+        return inputSlots != null && inputSlots.stream()
+                .anyMatch(slot -> !slot.getStack().isEmpty())
+                && inputSlots.stream().filter(
+                        slot -> !slot.getStack().isEmpty())
+                .allMatch(slot -> recipeId.equals(
+                        ArsNouveauRecipeBridge.patternRecipe(
+                                slot.getStack())));
+    }
+
+    @Override
+    public void setStackInSlot(int slot, ItemStack stack, Direction side) {
+        IInventorySlot target = getInventorySlot(slot, side);
+        if (target != null && catalystLibrarySlots != null
+                && catalystLibrarySlots.contains(target)
+                && !PersistentInputMutationGuard.permits(target, stack)) {
+            return;
+        }
+        super.setStackInSlot(slot, stack, side);
+    }
+
     public void selectCatalystIdentifierRecipe(int index) {
         ItemStack identifier = ArsNouveauRecipeBridge
                 .catalystIdentifierJeiStack(level, index);
@@ -550,6 +697,29 @@ public final class ImbuementFactoryBlockEntity
     public int catalystIdentifierRecipeCount() {
         return level == null ? 0 : ArsNouveauRecipeBridge
                 .catalystIdentifierJeiRecipes(level).size();
+    }
+
+    private int catalystLibraryIndex(String catalystId) {
+        if (catalystLibrary == null || catalystId == null
+                || catalystId.isBlank()) {
+            return -1;
+        }
+        for (int index = 0;
+             index < catalystLibrary.retainedSlotCount(); index++) {
+            ItemStack stack = catalystLibrary.get(index);
+            if (!stack.isEmpty() && catalystId.equals(
+                    CatalystIdentifierItem.catalystId(
+                            stack).toString())) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private ItemStack physicalSelectedCatalyst() {
+        return catalystLibrary == null || selectedCatalystIndex < 0
+                ? ItemStack.EMPTY
+                : catalystLibrary.get(selectedCatalystIndex);
     }
 
     /**
@@ -585,11 +755,9 @@ public final class ImbuementFactoryBlockEntity
                     ? virtualCatalystIndex >= 0
                     : !virtualCatalystId.isBlank());
         }
-        return catalystLibrarySlots != null
+        return catalystLibrary != null
                 && selectedCatalystIndex >= 0
-                && selectedCatalystIndex < catalystLibrarySlots.size()
-                && !catalystLibrarySlots.get(selectedCatalystIndex)
-                .getStack().isEmpty();
+                && !catalystLibrary.get(selectedCatalystIndex).isEmpty();
     }
 
     @Override
@@ -609,8 +777,31 @@ public final class ImbuementFactoryBlockEntity
         catalystLibraryOpen = open;
     }
 
-    public boolean isCatalystLibrarySlotActive() {
-        return level == null || !level.isClientSide() || catalystLibraryOpen;
+    @Override
+    public void applyInventorySlots(
+            net.minecraft.world.level.block.entity.BlockEntity.DataComponentInput input,
+            List<IInventorySlot> slots, AttachedItems attached) {
+        int firstWindow = catalystLibrarySlots == null
+                || catalystLibrarySlots.isEmpty() ? -1
+                : slots.indexOf(catalystLibrarySlots.getFirst());
+        if (firstWindow >= 0 && CatalystLibraryMigration
+                .isLegacyAttachment(attached, slots.size())) {
+            List<ItemStack> legacy = CatalystLibraryMigration
+                    .copyAttachedRange(attached, firstWindow,
+                            com.example.mekanismmagic.blockentity
+                                    .NativeMagicMachineBlockEntity
+                                    .LEGACY_CATALYST_LIBRARY_SLOT_COUNT);
+            super.applyInventorySlots(input, slots,
+                    CatalystLibraryMigration.remapLegacyAttachment(
+                            attached, slots.size(), firstWindow));
+            catalystLibrary.replace(legacy);
+            validateSelectedCatalystIndex();
+            refreshRecipeLock();
+            return;
+        }
+        super.applyInventorySlots(input, slots, attached);
+        validateSelectedCatalystIndex();
+        refreshRecipeLock();
     }
 
     private String catalystIdAtVirtualIndex() {
@@ -662,11 +853,8 @@ public final class ImbuementFactoryBlockEntity
                 break;
             }
         }
-        List<ItemStack> catalysts = catalystLibrarySlots == null
-                ? List.of() : catalystLibrarySlots.stream()
-                .map(IInventorySlot::getStack)
-                .map(ItemStack::copy)
-                .toList();
+        List<ItemStack> catalysts = catalystLibrary == null
+                ? List.of() : catalystLibrary.snapshot();
         return new ImbuementFactoryUpgradeData(registries, redstone,
                 getControlType(), energyContainer, progress,
                 currentEnergySlot, inputSlots, outputSlots, isSorting(),
@@ -687,22 +875,18 @@ public final class ImbuementFactoryBlockEntity
         if (!(data instanceof ImbuementFactoryUpgradeData imbuement)) {
             return;
         }
-        if (catalystLibrarySlots != null) {
-            for (int index = 0; index < catalystLibrarySlots.size(); index++) {
-                ItemStack stack = index < imbuement.catalystLibrary.size()
-                        ? imbuement.catalystLibrary.get(index).copy()
-                        : ItemStack.EMPTY;
-                catalystLibrarySlots.get(index).setStack(stack);
-            }
+        if (catalystLibrary != null) {
+            catalystLibrary.replace(imbuement.catalystLibrary);
         }
         setSource(imbuement.source);
         if (lockSlot != null) {
             lockSlot.setStack(imbuement.recipeLock.copy());
         }
-        int librarySize = catalystLibrarySlots == null
-                ? 0 : catalystLibrarySlots.size();
-        selectedCatalystIndex = Math.max(-1, Math.min(
-                librarySize - 1, imbuement.selectedCatalystIndex));
+        selectedCatalystIndex = catalystLibrary == null
+                || imbuement.selectedCatalystIndex < 0
+                || catalystLibrary.get(
+                imbuement.selectedCatalystIndex).isEmpty()
+                ? -1 : imbuement.selectedCatalystIndex;
         virtualCatalystSelected = imbuement.virtualCatalystSelected;
         virtualCatalystId = imbuement.virtualCatalystId;
         catalystLibraryOpen = imbuement.catalystLibraryOpen;
@@ -744,6 +928,11 @@ public final class ImbuementFactoryBlockEntity
     public List<IInventorySlot> mekanismMagicPersistentInputs() {
         return catalystLibrarySlots == null
                 ? List.of() : List.copyOf(catalystLibrarySlots);
+    }
+
+    @Override
+    public boolean mekanismMagicGroupParallelItemInputs() {
+        return true;
     }
 
     @Override
@@ -863,6 +1052,14 @@ public final class ImbuementFactoryBlockEntity
                 () -> selectedCatalystIndex,
                 value -> selectedCatalystIndex = Math.max(-1, value)));
         container.track(SyncableInt.create(
+                this::catalystVisibleSlotCount,
+                value -> syncedCatalystVisibleSlotCount = Math.max(1,
+                        value)));
+        container.track(SyncableItemStack.create(
+                this::physicalSelectedCatalyst,
+                value -> syncedPhysicalCatalyst = value == null
+                        ? ItemStack.EMPTY : value.copy()));
+        container.track(SyncableInt.create(
                 () -> catalystPage,
                 value -> catalystPage = Math.max(0, Math.min(
                         catalystPageCount() - 1, value))));
@@ -890,12 +1087,38 @@ public final class ImbuementFactoryBlockEntity
         tag.putBoolean("virtual_catalyst_selected",
                 virtualCatalystSelected);
         tag.putString("virtual_catalyst_id", virtualCatalystId);
+        if (catalystLibrary != null) {
+            catalystLibrary.save(tag, CatalystLibraryMigration.STORAGE_NBT,
+                    registries);
+            ItemStack selected = catalystLibrary.get(
+                    selectedCatalystIndex);
+            if (!selected.isEmpty()) {
+                tag.putString("catalyst_selected_id",
+                        CatalystIdentifierItem.catalystId(
+                                selected).toString());
+            }
+        }
     }
 
     @Override
     public void loadAdditional(CompoundTag tag,
                                net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        boolean loadedDynamicLibrary = catalystLibrary != null
+                && catalystLibrary.load(tag,
+                CatalystLibraryMigration.STORAGE_NBT, registries);
+        if (!loadedDynamicLibrary && catalystLibrary != null
+                && catalystLibrarySlots != null
+                && !catalystLibrarySlots.isEmpty()) {
+            List<IInventorySlot> allSlots = getInventorySlots(null);
+            int firstWindow = allSlots.indexOf(
+                    catalystLibrarySlots.getFirst());
+            if (firstWindow >= 0) {
+                catalystLibrary.replace(CatalystLibraryMigration
+                        .migrateLegacyWorldInventory(tag, registries,
+                                allSlots, firstWindow));
+            }
+        }
         setSource(tag.getInt("ars_source"));
         CompoundTag modes = tag.getCompound("ars_source_modes");
         for (Direction direction : Direction.values()) {
@@ -911,17 +1134,31 @@ public final class ImbuementFactoryBlockEntity
         nextNearbySourcePullGameTime = Long.MIN_VALUE;
         selectedCatalystIndex = tag.contains("catalyst_selected_index")
                 ? Math.max(-1, tag.getInt("catalyst_selected_index")) : -1;
+        String selectedCatalystId = tag.getString(
+                "catalyst_selected_id");
+        if (!selectedCatalystId.isBlank()) {
+            int resolvedIndex = catalystLibraryIndex(selectedCatalystId);
+            if (resolvedIndex >= 0) {
+                selectedCatalystIndex = resolvedIndex;
+            }
+        }
         if (!tag.contains("catalyst_selected_index")
-                && catalystLibrarySlots != null) {
-            for (int index = 0; index < catalystLibrarySlots.size(); index++) {
-                if (!catalystLibrarySlots.get(index).getStack().isEmpty()) {
+                && selectedCatalystId.isBlank()
+                && catalystLibrary != null) {
+            for (int index = 0;
+                 index < catalystLibrary.retainedSlotCount(); index++) {
+                if (!catalystLibrary.get(index).isEmpty()) {
                     selectedCatalystIndex = index;
                     break;
                 }
             }
         }
-        catalystPage = Math.max(0, Math.min(
-                catalystPageCount() - 1, tag.getInt("catalyst_page")));
+        if (loadedDynamicLibrary || catalystLibrary != null
+                && catalystLibrary.retainedSlotCount() > 0) {
+            validateSelectedCatalystIndex();
+        }
+        catalystPage = Math.max(0, tag.getInt("catalyst_page"));
+        clampCatalystPage();
         virtualCatalystSelected = tag.getBoolean(
                 "virtual_catalyst_selected");
         virtualCatalystId = tag.getString("virtual_catalyst_id");
@@ -934,6 +1171,14 @@ public final class ImbuementFactoryBlockEntity
         refreshRecipeLock();
     }
 
+    private void validateSelectedCatalystIndex() {
+        if (selectedCatalystIndex >= 0
+                && (catalystLibrary == null
+                || catalystLibrary.get(selectedCatalystIndex).isEmpty())) {
+            selectedCatalystIndex = -1;
+        }
+    }
+
     private static final class RecipeLockSlot extends BasicInventorySlot {
         private RecipeLockSlot(IContentsListener listener, int x, int y) {
             super((stack, automation) -> false,
@@ -944,38 +1189,4 @@ public final class ImbuementFactoryBlockEntity
         }
     }
 
-    private static final class CatalystLibrarySlot extends BasicInventorySlot {
-        private final ImbuementFactoryBlockEntity tile;
-        private final int page;
-        private final int x;
-        private final int y;
-
-        private CatalystLibrarySlot(ImbuementFactoryBlockEntity tile,
-                                    int page, IContentsListener listener,
-                                    int x, int y) {
-            super((stack, automation) -> true,
-                    (stack, automation) -> true,
-                    stack -> stack.is(
-                            ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get()),
-                    listener, x, y);
-            this.tile = tile;
-            this.page = page;
-            this.x = x;
-            this.y = y;
-            setSlotType(ContainerSlotType.INPUT);
-        }
-
-        @Override
-        public InventoryContainerSlot createContainerSlot() {
-            return new InventoryContainerSlot(this, x, y, getSlotType(),
-                    getSlotOverlay(), warning -> {
-                    }, this::setStackUnchecked) {
-                @Override
-                public boolean isActive() {
-                    return tile.isCatalystLibrarySlotActive()
-                            && tile.catalystPage() == page;
-                }
-            };
-        }
-    }
 }

@@ -50,8 +50,16 @@ public final class IntegrationBootstrap {
         if (modules.isEmpty()) {
             return;
         }
-        com.example.mekanismmagic.MekanismMagic.PLUGIN_ITEMS.register(modBus);
-        com.example.mekanismmagic.MekanismMagic.CREATIVE_TABS.register(modBus);
+        if (modules.stream().anyMatch(
+                ContentIntegrationModule::registersPluginItems)) {
+            com.example.mekanismmagic.MekanismMagic.PLUGIN_ITEMS
+                    .register(modBus);
+        }
+        if (modules.stream().anyMatch(
+                ContentIntegrationModule::registersGameContent)) {
+            com.example.mekanismmagic.MekanismMagic.CREATIVE_TABS
+                    .register(modBus);
+        }
         modules.forEach(module -> module.register(modBus));
     }
 
@@ -63,8 +71,15 @@ public final class IntegrationBootstrap {
             Field instance = moduleClass.getField("INSTANCE");
             return java.util.Optional.of(
                     (ContentIntegrationModule) instance.get(null));
-        } catch (ReflectiveOperationException | LinkageError ignored) {
-            return java.util.Optional.empty();
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            // The caller has already established that the target mod is
+            // loaded. Silently returning here leaves registries absent while
+            // client/JEI hooks still see the dependency, producing a much
+            // harder-to-diagnose half-registered game. Fail at startup with
+            // the actual compatibility error instead.
+            throw new IllegalStateException(
+                    "Failed to load optional content module " + className,
+                    failure);
         }
     }
 }

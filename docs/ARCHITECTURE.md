@@ -36,6 +36,10 @@ Mekanism Extras 或其他附属模组的实现类。
   通用机器实体只依赖这些类型，不再依赖某个魔法模组的配方桥接类。
 - `common/entity/`：可复用实体容器注册表。不同模组只需提供
   `EntityContainerAdapter`，即可统一向仪式献祭、魔灵识别及后续机器暴露实体数据。
+- `common/network/MachineDirectOutputHooks`：只负责可选存储网络的状态、直接写入和
+  输出 tick，不承载节点生命周期。
+- `common/network/MachineNetworkLifecycleHooks`：只负责可选网络节点的加载、保存、
+  卸载、复活和最终拆除；处理器必须在适配包内过滤自身支持的机器。
 
 新增适配时禁止把第三方模组类型重新引入 `blockentity/`。需要特殊完成行为时，
 通过 `MachineRecipeResult` 的完成回调和特殊输入处理器提供。
@@ -45,6 +49,11 @@ Mekanism Extras 或其他附属模组的实现类。
 Occultism 专用逻辑集中在此处：
 
 - `OccultismRecipeBridge`：运行时配方、五芒星、魔灵、仪式、献祭和投影解析。
+- `OccultismRitualMachineMode`：集中声明 11 类原版仪式的机器动态结果语义，供机器与
+  JEI 共用，工作魔灵在实体落地时执行原版职业初始化。
+- `OccultismSpiritJobPolicy`：集中声明 26 个职业的实体等级、工作类型、旧 ID 迁移和
+  JEI/机器共同门控，禁止各机器各自猜测职业能力。
+- `MiniPentacleDeployment`：微缩法阵的原子展开/回收、权限事件、结构守卫与防复制状态。
 - `OccultismEntityContainerAdapter`：读取并清空使用 `ENTITY_DATA` 的灵魂容器。
 - `OccultismSpiritJobConfig`：魔灵等级和职业配置读取。
 - `SpiritFactoryRecipe`：Occultism 配方转换为 Mekanism 工厂缓存配方。
@@ -118,8 +127,25 @@ JEI 分类和配方展示集中在此处。JEI 显示数据应通过适配层获
 具体配方类型统计与推荐实现顺序见
 [`ARS_NOUVEAU_ADAPTATION.md`](ARS_NOUVEAU_ADAPTATION.md)。
 
-### Ars 开发资源
+## Ars 开发资源
 
 Ars Nouveau 机器数据放在 `src/arsDev/resources/`，默认加入普通构建，并在
 `META-INF/mekanism_magic_features.properties` 中写入启用状态。保持机器内容默认
 启用可确保方块、物品和方块实体注册 ID 在重启后不发生缺失映射。
+
+## Forbidden & Arcanus 后续适配入口
+
+1. 所有 Forbidden & Arcanus 类型引用限制在 `integration/forbiddenarcanus/`；通用
+   机器、GUI 以及其他魔法模组适配包不得直接引用其 `common.*` 实现类。
+2. `2.6.1` 没有独立公开 API 包，配方、动态注册表、能力与数据组件访问必须集中在
+   可替换的精确版本桥接中；升级依赖前先做 ABI diff，不允许实现类泄漏到通用层。
+3. Aureal、Souls、Blood 与 Experience 是四个独立精华通道，不得合并成单一魔力、
+   流体、Ars Source 或其他模组资源。
+4. Clibano 配方从 `RecipeManager` 读取；赫菲斯托斯仪式、增强物、物品修饰、法阵和
+   残渣类型从对应动态注册表读取。数据包重载只刷新适配缓存，不在机器 tick 或 GUI
+   中反复全表扫描。
+5. Forbidden & Arcanus 未加载时不得注册对应内容或解析实现类；Valhelsia Core 仅是
+   该模组加载后的传递依赖，不应变成本模组在无适配内容时的强制依赖。
+
+目标版本、分阶段范围和验收矩阵见
+[`FORBIDDEN_ARCANUS_ADAPTATION.md`](FORBIDDEN_ARCANUS_ADAPTATION.md)。

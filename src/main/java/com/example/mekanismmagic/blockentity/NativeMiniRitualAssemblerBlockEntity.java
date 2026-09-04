@@ -9,21 +9,15 @@ import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.inventory.slot.InputInventorySlot;
-import mekanism.common.inventory.container.MekanismContainer;
-import mekanism.common.inventory.container.sync.SyncableBoolean;
-import mekanism.common.inventory.container.sync.SyncableInt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * Creates one of Occultism's eighteen miniature pentacle selectors from the
@@ -34,16 +28,9 @@ public final class NativeMiniRitualAssemblerBlockEntity
     private static final int INPUT_SETTLE_TICKS = 5;
     private List<mekanism.api.inventory.IInventorySlot> chalkSlots;
     private boolean chalkModuleOpen;
-    private int previewIndex;
-    private boolean craftRequested;
     private int inputSettleTicks;
-    private String requestedPentacle = "";
     private List<MachineRecipeResult> cachedPreviewCandidates;
-    private RecipeManager cachedPreviewRecipeManager;
-    private Object cachedPreviewRecipeState;
-    private List<ResourceLocation> cachedPreviewTargets = List.of();
-    private ResourceLocation cachedLockedPentacleTarget;
-    private ItemStack cachedLockedPentacleStack = ItemStack.EMPTY;
+    private long cachedPreviewRevision = Long.MIN_VALUE;
 
     public NativeMiniRitualAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_BLOCK.get()
@@ -72,7 +59,6 @@ public final class NativeMiniRitualAssemblerBlockEntity
             }
         }
         chalkSlots = new ArrayList<>();
-        List<String> chalkColors = OccultismRecipeBridge.ritualChalkColors();
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 int index = row * 4 + column;
@@ -108,26 +94,21 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 return running;
             }
         }
-        return candidates.stream()
-                .min(Comparator
-                        .comparingInt((MachineRecipeResult candidate) ->
-                                unmatchedItemCount(candidate, inventory))
-                        .thenComparingInt(candidate ->
-                                unmatchedSlotCount(candidate, inventory))
-                        .thenComparingInt(candidate ->
-                                requestedPentacle.equals(
-                                        candidatePentacle(candidate)) ? 0 : 1)
-                        .thenComparing(candidate ->
-                                candidate.id().toString()));
+        // Every generated recipe now has a unique dye-set signature. A valid
+        // batch must therefore resolve to exactly one pentacle; fail closed
+        // instead of selecting an arbitrary candidate if a malformed input
+        // deliberately contains multiple marker combinations.
+        return candidates.size() == 1
+                ? Optional.of(candidates.getFirst()) : Optional.empty();
     }
 
-    /**
-     * A complete material set may start automatically. Pentacle locking is an
-     * optional preference for ambiguous inputs, not a requirement to process
-     * manually inserted materials.
-     */
+    /** A complete material-and-dye signature starts automatically. */
     @Override
     protected boolean hasAnyRecipeInput() {
+        return hasMaterialInput();
+    }
+
+    private boolean hasMaterialInput() {
         for (int index = 0; index < INPUT_SLOTS; index++) {
             mekanism.api.inventory.IInventorySlot slot =
                     logicalSlots().get(index);
@@ -138,21 +119,10 @@ public final class NativeMiniRitualAssemblerBlockEntity
         return false;
     }
 
-    public void lockPentacle(int targetIndex) {
-        List<ResourceLocation> targets = previewTargets();
-        if (targets.isEmpty()) {
-            return;
-        }
-        previewIndex = Math.floorMod(targetIndex, targets.size());
-        requestedPentacle = targets.get(previewIndex).toString();
-        craftRequested = true;
-        setChanged();
-    }
-
-    public void clearPentaclePreference() {
-        requestedPentacle = "";
-        craftRequested = false;
-        setChanged();
+    @Override
+    public boolean mekanismMagicIsBusy() {
+        return super.mekanismMagicIsBusy() || hasMaterialInput()
+                || outputSlot != null && !outputSlot.getStack().isEmpty();
     }
 
     private List<MachineRecipeResult> previewCandidates(
@@ -160,174 +130,25 @@ public final class NativeMiniRitualAssemblerBlockEntity
         if (level == null) {
             return List.of();
         }
-        if (cachedPreviewCandidates == null) {
+        long revision = OccultismRecipeBridge.recipeRevision();
+        if (cachedPreviewCandidates == null
+                || cachedPreviewRevision != revision) {
             cachedPreviewCandidates =
                     OccultismRecipeBridge.findMiniRitualCandidates(
                             level, inventory);
+            cachedPreviewRevision = revision;
         }
         return cachedPreviewCandidates;
-    }
-
-    private List<ResourceLocation> previewTargets() {
-        if (level == null) {
-            return List.of();
-        }
-        RecipeManager recipeManager = level.getRecipeManager();
-        // RecipeManager replaces its backing recipe map on every reload. Its
-        // values view therefore gives us an allocation-free reload token while
-        // the GUI is rendering, instead of fingerprinting every ritual recipe
-        // once per frame.
-        Object recipeState = recipeManager.getRecipes();
-        if (recipeManager != cachedPreviewRecipeManager
-                || recipeState != cachedPreviewRecipeState) {
-            cachedPreviewTargets = OccultismRecipeBridge
-                    .miniRitualPentacleIds(level);
-            cachedPreviewRecipeManager = recipeManager;
-            cachedPreviewRecipeState = recipeState;
-            if (cachedLockedPentacleTarget != null
-                    && !cachedPreviewTargets.contains(
-                            cachedLockedPentacleTarget)) {
-                clearLockedPentaclePreview();
-            }
-        }
-        return cachedPreviewTargets;
-    }
-
-    public int getPreviewIndex() {
-        return previewIndex;
-    }
-
-    public ItemStack getLockedPentacleStack() {
-        if (level == null || !craftRequested) {
-            return ItemStack.EMPTY;
-        }
-        ResourceLocation target = level.isClientSide()
-                ? previewTarget()
-                : requestedPentacle.isEmpty()
-                ? previewTarget()
-                : ResourceLocation.tryParse(requestedPentacle);
-        if (target == null) {
-            clearLockedPentaclePreview();
-            return ItemStack.EMPTY;
-        }
-        if (!target.equals(cachedLockedPentacleTarget)) {
-            cachedLockedPentacleTarget = target;
-            cachedLockedPentacleStack = OccultismRecipeBridge
-                    .createPentacleMiniRitual(target);
-        }
-        return cachedLockedPentacleStack;
-    }
-
-    private void clearLockedPentaclePreview() {
-        cachedLockedPentacleTarget = null;
-        cachedLockedPentacleStack = ItemStack.EMPTY;
-    }
-
-    private void clearPentacleCatalogCache() {
-        cachedPreviewRecipeManager = null;
-        cachedPreviewRecipeState = null;
-        cachedPreviewTargets = List.of();
-        clearLockedPentaclePreview();
-    }
-
-    private ResourceLocation previewTarget() {
-        List<ResourceLocation> targets = previewTargets();
-        return targets.isEmpty() ? null
-                : targets.get(Math.floorMod(previewIndex, targets.size()));
-    }
-
-    @Override
-    public void addContainerTrackers(MekanismContainer container) {
-        super.addContainerTrackers(container);
-        container.track(SyncableInt.create(() -> previewIndex,
-                this::setPreviewIndex));
-        container.track(SyncableBoolean.create(() -> craftRequested,
-                value -> craftRequested = value));
-    }
-
-    private void setPreviewIndex(int value) {
-        int normalized = Math.max(0, value);
-        if (previewIndex != normalized) {
-            previewIndex = normalized;
-        }
-    }
-
-    private static String candidatePentacle(
-            MachineRecipeResult candidate) {
-        net.minecraft.world.item.component.CustomData data =
-                candidate.output().get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        return data == null ? "" : data.getUnsafe().getString("pentacle");
-    }
-
-    private static int unmatchedItemCount(MachineRecipeResult candidate,
-                                          ItemStackHandler inventory) {
-        int total = 0;
-        for (int slot = 0; slot < INPUT_SLOTS; slot++) {
-            total += inventory.getStackInSlot(slot).getCount();
-        }
-        int matched = candidate.inputs().stream()
-                .mapToInt(com.example.mekanismmagic.integration.common.recipe
-                        .InputUse::count)
-                .sum();
-        return Math.max(0, total - matched);
-    }
-
-    private static int unmatchedSlotCount(MachineRecipeResult candidate,
-                                          ItemStackHandler inventory) {
-        int[] matched = new int[INPUT_SLOTS];
-        candidate.inputs().forEach(input -> {
-            if (input.slot() >= 0 && input.slot() < matched.length) {
-                matched[input.slot()] += input.count();
-            }
-        });
-        int remainingSlots = 0;
-        for (int slot = 0; slot < INPUT_SLOTS; slot++) {
-            if (inventory.getStackInSlot(slot).getCount() > matched[slot]) {
-                remainingSlots++;
-            }
-        }
-        return remainingSlots;
-    }
-
-    @Override
-    protected void onNativeUpgradeChanged(mekanism.api.Upgrade upgrade) {
-        previewIndex = 0;
-    }
-
-    @Override
-    protected void onRecipeFinished(MachineRecipeResult recipe) {
-        // Keep the selected target armed so the next supplied batch starts
-        // automatically without another GUI interaction.
-    }
-
-    @Override
-    protected void saveNativeMachineData(
-            net.minecraft.nbt.CompoundTag tag,
-            net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveNativeMachineData(tag, registries);
-        tag.putInt("mini_ritual_preview", previewIndex);
-        tag.putBoolean("mini_ritual_craft_requested", craftRequested);
-        tag.putString("mini_ritual_requested_pentacle", requestedPentacle);
-    }
-
-    @Override
-    protected void loadNativeMachineData(
-            net.minecraft.nbt.CompoundTag tag,
-            net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadNativeMachineData(tag, registries);
-        previewIndex = Math.max(0, tag.getInt("mini_ritual_preview"));
-        craftRequested = tag.getBoolean("mini_ritual_craft_requested");
-        requestedPentacle = tag.getString("mini_ritual_requested_pentacle");
-        if (!requestedPentacle.isEmpty()) {
-            craftRequested = true;
-        }
-        cachedPreviewCandidates = null;
-        clearPentacleCatalogCache();
     }
 
     @Override
     protected int baseEnergyPerTick() {
         return 300;
+    }
+
+    @Override
+    protected long recipeLookupRevision() {
+        return OccultismRecipeBridge.recipeRevision();
     }
 
     @Override
