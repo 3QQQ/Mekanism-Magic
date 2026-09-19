@@ -32,6 +32,7 @@ public final class ImbuementFactoryRecipe
     private final int sourceCost;
     private final long catalogVersion;
     private final String semanticSignature;
+    private final boolean exactPatternReceipt;
 
     public ImbuementFactoryRecipe(
                                   RecipeHolder<ImbuementRecipe> sourceRecipe,
@@ -40,6 +41,12 @@ public final class ImbuementFactoryRecipe
                                           .MachineRecipeResult result,
                                   boolean requiresIdentifier,
                                   long catalogVersion) {
+        this(sourceRecipe, identifier, result, requiresIdentifier, catalogVersion, false);
+    }
+
+    public ImbuementFactoryRecipe(RecipeHolder<ImbuementRecipe> sourceRecipe, ItemStack identifier,
+                                  com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult result,
+                                  boolean requiresIdentifier, long catalogVersion, boolean exactPatternReceipt) {
         super(ItemStackIngredient.of(new SizedIngredient(
                         sourceRecipe.value().getInput(), 1)),
                 result.output(), TYPE);
@@ -52,6 +59,7 @@ public final class ImbuementFactoryRecipe
         this.catalogVersion = catalogVersion;
         this.semanticSignature = ArsNouveauRecipeScanner
                 .recipeSemanticSignature(sourceRecipe.value());
+        this.exactPatternReceipt = exactPatternReceipt;
     }
 
     public ResourceLocation imbuementId() {
@@ -72,6 +80,19 @@ public final class ImbuementFactoryRecipe
 
     public boolean requiresIdentifier() {
         return requiresIdentifier;
+    }
+
+    @Override
+    public boolean test(ItemStack stack) {
+        boolean marked = ArsNouveauRecipeBridge.hasPatternRecipeMarker(stack);
+        if (exactPatternReceipt && !marked) return false;
+        if (marked) {
+            if (!id.equals(ArsNouveauRecipeBridge.patternRecipe(stack))) return false;
+            if (ArsNouveauRecipeBridge.hasPatternRecipeSignature(stack)
+                    && !semanticSignature.equals(ArsNouveauRecipeBridge.patternRecipeSignature(stack))) return false;
+        }
+        // A processing receipt is metadata, not part of an Ingredient's component predicate.
+        return super.test(ArsNouveauRecipeBridge.recipeInputView(stack));
     }
 
     public boolean sameIdentifier(ItemStack stack) {

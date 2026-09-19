@@ -1,6 +1,8 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.container.DockedPanelLayout;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
@@ -65,8 +67,8 @@ public final class NativeMiniRitualAssemblerBlockEntity
                 chalkSlots.add(registerLogicalSlot(helper, CHALK_SLOT_START + index,
                         new ChalkInventorySlot(this,
                                 OccultismRecipeBridge::isAnyChalk,
-                                previewListener, 240 + column * 18,
-                                104 + row * 18)));
+                                previewListener, DockedPanelLayout.CHALK.slotX(index, 16),
+                                DockedPanelLayout.CHALK.slotY(index, 16))));
             }
         }
         outputSlot = registerLogicalSlot(helper, OUTPUT_SLOT,
@@ -75,12 +77,25 @@ public final class NativeMiniRitualAssemblerBlockEntity
     }
 
     @Override
+    protected boolean onUpdateServer() {
+        // This is a server-tick debounce, not a recipe-lookup counter. The
+        // shared negative-lookup backoff must not stretch it or let periodic
+        // hopper top-ups repeatedly postpone an otherwise complete recipe.
+        if (inputSettleTicks > 0) {
+            inputSettleTicks--;
+        }
+        return super.onUpdateServer();
+    }
+
+    @Override
+    protected boolean shouldAttemptRecipeLookup(ItemStackHandler inventory) {
+        return (inputSettleTicks == 0 || progress > 0)
+                && super.shouldAttemptRecipeLookup(inventory);
+    }
+
+    @Override
     protected Optional<MachineRecipeResult> findRecipe(
             ItemStackHandler inventory) {
-        if (inputSettleTicks > 0 && progress == 0) {
-            inputSettleTicks--;
-            return Optional.empty();
-        }
         List<MachineRecipeResult> candidates = previewCandidates(inventory);
         if (candidates.isEmpty()) {
             return Optional.empty();
@@ -143,7 +158,7 @@ public final class NativeMiniRitualAssemblerBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 300;
+        return MagicMachineEnergyProfiles.ASSEMBLY;
     }
 
     @Override

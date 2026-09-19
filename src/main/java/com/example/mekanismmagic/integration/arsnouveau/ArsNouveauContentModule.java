@@ -28,6 +28,23 @@ public final class ArsNouveauContentModule
 
     @Override
     public void register(IEventBus modBus) {
+        // NeoForge provides the actual minecraft:milk fluid and milk-bucket
+        // capability. Enable it during construction, before registries bind.
+        net.neoforged.neoforge.common.NeoForgeMod.enableMilkFluid();
+        NeoForge.EVENT_BUS.addListener(
+                (net.neoforged.neoforge.event.AddReloadListenerEvent event) ->
+                        event.addListener(DrygmyHarvestCatalog.INSTANCE));
+        ArsSourcePipeAdapter.install();
+        com.example.mekanismmagic.integration.common.network
+                .MagicPipeRegistries.setFactory(ArsSourcePipeAdapter::createPipe);
+        modBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) -> {
+            for (var type : com.example.mekanismmagic.integration.common.network
+                    .MagicPipeRegistries.allTiles()) {
+                event.registerBlockEntity(
+                        com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry.SOURCE_CAPABILITY,
+                        type.get(), (tile, side) -> ArsSourcePipeAdapter.wrap(tile.getSourceStorage(side)));
+            }
+        });
         ArsNouveauRegistries.register(modBus);
         NeoForge.EVENT_BUS.addListener(
                 SourceLinkToolItem::onRightClickBlock);

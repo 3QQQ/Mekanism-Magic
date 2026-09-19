@@ -2,6 +2,7 @@ package com.example.mekanismmagic.integration.common.network;
 
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -71,6 +72,56 @@ public final class MachineDirectOutputHooks {
         return new DirectInsertResult(inserted, status, attempted, retryAt);
     }
 
+    /** Inserts fluid directly into an available network, in millibuckets. */
+    public static DirectInsertResult insertFluidDetailed(
+            NativeMagicMachineBlockEntity tile,
+            FluidStack template, long amountMb) {
+        long remaining = Math.max(0L, amountMb);
+        long inserted = 0L;
+        boolean attempted = false;
+        long retryAt = Long.MAX_VALUE;
+        DirectNetworkStatus status = DirectNetworkStatus.UNAVAILABLE;
+        for (Handler handler : HANDLERS) {
+            if (remaining <= 0) {
+                break;
+            }
+            DirectInsertResult result = handler.insertFluidDetailed(
+                    tile, template, remaining);
+            long accepted = Math.min(remaining,
+                    Math.max(0L, result.accepted()));
+            inserted += accepted;
+            remaining -= accepted;
+            attempted |= result.attempted();
+            retryAt = Math.min(retryAt, result.retryAtGameTime());
+            if (result.status().ordinal() > status.ordinal()) {
+                status = result.status();
+            }
+        }
+        return new DirectInsertResult(inserted, status, attempted, retryAt);
+    }
+
+    /**
+     * Checks current powered fluid acceptance without inserting or reserving
+     * capacity. A later insertion must still honor its actual accepted amount.
+     */
+    public static long simulateFluidAcceptance(
+            NativeMagicMachineBlockEntity tile,
+            FluidStack template, long amountMb) {
+        long remaining = Math.max(0L, amountMb);
+        long accepted = 0L;
+        for (Handler handler : HANDLERS) {
+            if (remaining <= 0) {
+                break;
+            }
+            long candidate = Math.min(remaining, Math.max(0L,
+                    handler.simulateFluidAcceptance(
+                            tile, template, remaining)));
+            accepted += candidate;
+            remaining -= candidate;
+        }
+        return accepted;
+    }
+
     public static DirectNetworkStatus status(
             NativeMagicMachineBlockEntity tile) {
         DirectNetworkStatus result = DirectNetworkStatus.UNAVAILABLE;
@@ -103,6 +154,20 @@ public final class MachineDirectOutputHooks {
         default DirectNetworkStatus status(
                 NativeMagicMachineBlockEntity tile) {
             return DirectNetworkStatus.UNAVAILABLE;
+        }
+
+        default DirectInsertResult insertFluidDetailed(
+                NativeMagicMachineBlockEntity tile,
+                FluidStack template, long amountMb) {
+            return new DirectInsertResult(0L,
+                    DirectNetworkStatus.UNAVAILABLE,
+                    false, Long.MAX_VALUE);
+        }
+
+        default long simulateFluidAcceptance(
+                NativeMagicMachineBlockEntity tile,
+                FluidStack template, long amountMb) {
+            return 0L;
         }
     }
 

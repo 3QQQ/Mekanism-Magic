@@ -1,20 +1,28 @@
 package com.example.mekanismmagic.integration.jei;
 
-import com.example.mekanismmagic.MekanismMagic;
-import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.SpiritRecipeGroup;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 
 public final class SpiritJeiCategory extends MagicJeiCategory<
         OccultismRecipeBridge.SpiritJeiData> {
+    private final SpiritRecipeGroup group;
+
     public SpiritJeiCategory(IGuiHelper guiHelper) {
-        super(guiHelper, MekanismMagicJeiPlugin.SPIRIT_TYPE,
-                Component.translatable("jei.mekanism_magic.spirit"),
-                guiHelper.createDrawableItemLike(NativeMekanismRegistries.SPIRIT_BLOCK.asItem()),
+        this(guiHelper, SpiritRecipeGroup.SPIRIT_FIRE);
+    }
+
+    public SpiritJeiCategory(IGuiHelper guiHelper, SpiritRecipeGroup group) {
+        super(guiHelper, SpiritJeiRecipeTypes.type(group),
+                Component.translatable(group.titleKey()),
+                guiHelper.createDrawableItemLike(BuiltInRegistries.ITEM.get(group.iconId())),
                 176, 70);
+        this.group = group;
     }
 
     @Override
@@ -43,5 +51,15 @@ public final class SpiritJeiCategory extends MagicJeiCategory<
                     Component.translatable(
                             "jei.mekanism_magic.random_trade_no_pattern")));
         }
+    }
+
+    @Override
+    public boolean isHandled(OccultismRecipeBridge.SpiritJeiData recipe) {
+        return SpiritRecipeGroup.classify(recipe) == group;
+    }
+
+    @Override
+    public ResourceLocation getRegistryName(OccultismRecipeBridge.SpiritJeiData recipe) {
+        return SpiritRecipeGroup.displayId(recipe);
     }
 }

@@ -88,6 +88,12 @@ final class Ae2ImbuementPattern implements IPatternDetails {
         return requiresCatalystIdentifier;
     }
 
+    /** Native providers need the same exact free-recipe receipt as encoded AE patterns. */
+    ItemStack markCatalystFreeInput(ItemStack input) {
+        return requiresCatalystIdentifier ? input
+                : ArsNouveauRecipeBridge.markPatternInput(input, recipeId, semanticSignature);
+    }
+
     boolean isUsable() {
         return getDefinition() != null && inputs.length == 1
                 && output != null && output.amount() > 0;
@@ -122,7 +128,7 @@ final class Ae2ImbuementPattern implements IPatternDetails {
             Level level, TooltipFlag flag) {
         PatternDetailsTooltip tooltip =
                 IPatternDetails.super.getTooltip(level, flag);
-        tooltip.addProperty(Component.translatable(
+        if (requiresCatalystIdentifier) tooltip.addProperty(Component.translatable(
                         "ae2.mekanism_magic.virtual_catalyst"),
                 definition.getHoverName());
         return tooltip;

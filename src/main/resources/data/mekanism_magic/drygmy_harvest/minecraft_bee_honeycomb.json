@@ -1,0 +1,9 @@
+{
+  "entities": [
+    "minecraft:bee"
+  ],
+  "kind": "item",
+  "item": "minecraft:honeycomb",
+  "count": 3,
+  "adult": true
+}

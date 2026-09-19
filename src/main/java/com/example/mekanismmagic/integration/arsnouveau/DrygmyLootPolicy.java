@@ -27,6 +27,9 @@ final class DrygmyLootPolicy {
     private static final int MAX_FIXED_DROP_COUNT = 1 << 8;
     private static final List<SpecialLootRule> SPECIAL_LOOT = List.of(
             special("nether_star", "minecraft", "nether_star"),
+            special("echo_shard", "minecraft", "echo_shard"),
+            special("turtle_scute", "minecraft", "turtle_scute"),
+            special("armadillo_scute", "minecraft", "armadillo_scute"),
             special("wilden_tribute", "ars_nouveau",
                     "wilden_tribute"));
 
@@ -42,8 +45,8 @@ final class DrygmyLootPolicy {
     }
 
     /**
-     * Promotes custom-death drops that are absent from loot tables into fixed
-     * outputs. Removing matching candidates first prevents a data pack or
+     * Supplies loot-table-external or addon-defined rewards as fixed outputs.
+     * Removing matching candidates first prevents a data pack or
      * global loot modifier from making the same item both fixed and randomly
      * selectable.
      */

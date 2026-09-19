@@ -53,6 +53,13 @@ jobs:
             echo "Release tag does not contain a mod version" >&2
             exit 1
           fi
+          # Four-part versions are local development revisions, not releases.
+          # Explicit maintenance releases use their checked-in fix suffix.
+          if [[ "$RELEASE_TAG" == *-neoforge-1.21.1 && ! "$mod_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$mod_version" != "1.0.5fix" && "$mod_version" != "1.0.6fix" ]]; then
+            echo "Cannot publish development version: $mod_version" >&2
+            echo "Advance the release version and remove its development revision first." >&2
+            exit 1
+          fi
           echo "mod_version=$mod_version" >> "$GITHUB_OUTPUT"
           if [[ "$RELEASE_TAG" == *-forge-1.20.1 ]]; then
             echo "expected_jar=mekanism_magic-${mod_version}-forge-1.20.1.jar" \
@@ -99,6 +106,10 @@ jobs:
             exit 1
           fi
           unzip -Z1 "$jar" > build/release-entries.txt
+          if [[ "$EXPECTED_MOD_VERSION" == "1.0.6fix" ]] && grep -Eq 'integration/(naturesaura|forbiddenarcanus|ae2/storage)/|NatureAltar|Ae2Nature|MekEnergisticsNature|Ae2MagicInterfaceCompat' build/release-entries.txt; then
+            echo "Maintenance release contains excluded development content" >&2
+            exit 1
+          fi
           if [[ "$TARGET_LOADER" == "neoforge" ]]; then
             metadata_entry="META-INF/neoforge.mods.toml"
           else
@@ -122,9 +133,22 @@ jobs:
           if [[ "$TARGET_LOADER" == "neoforge" ]]; then
             required=(
               "META-INF/mekanism_magic_features.properties"
+              "com/example/mekanismmagic/upgrade/UpgradeSerialization.class"
+              "com/example/mekanismmagic/container/MachineSidebarLayout.class"
+              "com/example/mekanismmagic/client/MachineSidebarEvents.class"
+              "com/example/mekanismmagic/integration/arsnouveau/SourceAwareImbuementCachedRecipe.class"
               "com/example/mekanismmagic/integration/occultism/OccultismRitualMachineMode.class"
               "com/example/mekanismmagic/integration/occultism/OccultismSpiritJobPolicy.class"
               "com/example/mekanismmagic/integration/occultism/OccultismSpiritPatternValidator.class"
+              "com/example/mekanismmagic/integration/occultism/OccultismMachineItemIdentity.class"
+              "com/example/mekanismmagic/integration/occultism/MiniPentacleCapture.class"
+              "data/mekanism_magic/recipe/mini_ritual_blank.json"
+              "com/example/mekanismmagic/integration/occultism/MiniPentacleClaims.class"
+              "com/example/mekanismmagic/integration/arsnouveau/ArsApparatusRecipeViews.class"
+              "com/example/mekanismmagic/integration/arsnouveau/client/ArsApparatusJeiReagents.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2ExactMachineJeiTransfer.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2RitualJeiTransfer.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2ArsApparatusJeiTransfer.class"
               "com/example/mekanismmagic/integration/occultism/MiniPentacleDeployment.class"
               "com/example/mekanismmagic/integration/common/network/PatternAutomationRefreshHooks.class"
               "com/example/mekanismmagic/integration/pipez/PipezCompatMixinPlugin.class"
@@ -147,6 +171,7 @@ jobs:
               "com/example/mekanismmagic/integration/mekenergistics/SpiritPatternMeRouter.class"
               "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsPendingPatternContextMixin.class"
               "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsTierInstallerStateMixin.class"
+              "com/example/mekanismmagic/integration/common/network/MagicPipeRegistries.class"
               "pipez_compat.mixins.json"
               "ars_source_production.mixins.json"
               "ae2_compat.mixins.json"

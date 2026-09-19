@@ -1,7 +1,8 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
-import com.hollingsworth.arsnouveau.api.source.ISourceCap;
-import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
+import com.example.mekanismmagic.integration.common.network.PipeSourceStorage;
+import com.example.mekanismmagic.integration.common.network.BasicPipeSourceStorage;
+import com.example.mekanismmagic.integration.common.network.MagicPipeResourceHooks;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import mekanism.common.MekanismLang;
@@ -28,10 +29,11 @@ import java.util.function.LongSupplier;
  * Mekanism DynamicBufferedNetwork implementation for Ars Nouveau Source.
  */
 public final class MagicSourceNetwork extends DynamicBufferedNetwork<
-        ISourceCap, MagicSourceNetwork, SourceStorage,
+        PipeSourceStorage, MagicSourceNetwork, PipeSourceStorage,
         MagicSourceTransmitter> {
-    public final SourceStorage sourceStorage;
+    public final PipeSourceStorage sourceStorage;
     private final NetworkSourceStorage networkSourceStorage;
+    private final MagicPipeResourceHooks.NetworkExtension extension;
     public int lastTransferAmount;
     public int lastSource;
 
@@ -44,6 +46,7 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
                 () -> Math.max(1L, MagicSourceNetwork.this.getCapacity()),
                 MagicSourceNetwork.this::markDirty);
         sourceStorage = networkSourceStorage;
+        extension = MagicPipeResourceHooks.createNetwork(this);
     }
 
     public MagicSourceNetwork(
@@ -62,13 +65,17 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
     }
 
     @Override
-    public SourceStorage getBuffer() {
+    public PipeSourceStorage getBuffer() {
         return sourceStorage;
+    }
+
+    public MagicPipeResourceHooks.NetworkExtension extension() {
+        return extension;
     }
 
     @Override
     public void absorbBuffer(MagicSourceTransmitter transmitter) {
-        SourceStorage share = transmitter.releaseShare();
+        PipeSourceStorage share = transmitter.releaseShare();
         int amount = share.getSource();
         if (amount > 0) {
             long accepted = networkSourceStorage.receiveSource(
@@ -86,11 +93,13 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
                 }
             }
         }
+        extension.absorbBuffer(transmitter);
     }
 
     @Override
     public void clampBuffer() {
         networkSourceStorage.clampToCapacity();
+        extension.clampBuffer();
     }
 
     @Override
@@ -98,12 +107,14 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
             MagicSourceTransmitter transmitter) {
         super.updateCapacity(transmitter);
         networkSourceStorage.clampToCapacity();
+        extension.updateCapacity();
     }
 
     @Override
     public synchronized void updateCapacity() {
         super.updateCapacity();
         networkSourceStorage.clampToCapacity();
+        extension.updateCapacity();
     }
 
     @Override
@@ -115,6 +126,9 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
     @Override
     public java.util.List<MagicSourceTransmitter>
     adoptTransmittersAndAcceptorsFrom(MagicSourceNetwork other) {
+        if (!extension.isCompatibleWith(other)) {
+            throw new IllegalArgumentException("Incompatible magic pipe resources");
+        }
         long ownSource = networkSourceStorage.getStoredSource();
         long otherSource = other.networkSourceStorage.getStoredSource();
         long mergedSource = addExactOrReject(ownSource, otherSource);
@@ -127,6 +141,8 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
         java.util.List<MagicSourceTransmitter> updated =
                 super.adoptTransmittersAndAcceptorsFrom(other);
         networkSourceStorage.setStoredSourceExact(mergedSource);
+        other.networkSourceStorage.setStoredSourceExact(0);
+        extension.adoptFrom(other);
         return updated;
     }
 
@@ -134,7 +150,8 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
     public boolean isCompatibleWith(MagicSourceNetwork other) {
         return super.isCompatibleWith(other)
                 && canAdd(networkSourceStorage.getStoredSource(),
-                other.networkSourceStorage.getStoredSource());
+                other.networkSourceStorage.getStoredSource())
+                && extension.isCompatibleWith(other);
     }
 
     @Override
@@ -152,6 +169,9 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
                     this, new PacketNetworkScale(this));
         }
         needsUpdate = false;
+        if (!isRemote()) {
+            extension.tickServer();
+        }
         int amount = sourceStorage.getSource();
         if (amount <= 0) {
             lastTransferAmount = 0;
@@ -159,12 +179,12 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
             return;
         }
         SourceTarget target = null;
-        ObjectIterator<Long2ObjectMap.Entry<Map<Direction, ISourceCap>>>
+        ObjectIterator<Long2ObjectMap.Entry<Map<Direction, PipeSourceStorage>>>
                 iterator = acceptorCache.getAcceptorFastIterator();
         while (iterator.hasNext()) {
-            Long2ObjectMap.Entry<Map<Direction, ISourceCap>> entry =
+            Long2ObjectMap.Entry<Map<Direction, PipeSourceStorage>> entry =
                     iterator.next();
-            for (ISourceCap acceptor : entry.getValue().values()) {
+            for (PipeSourceStorage acceptor : entry.getValue().values()) {
                 if (target == null) {
                     target = new SourceTarget();
                 }
@@ -197,11 +217,17 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
         long remaining = networkSourceStorage.getStoredSource();
         for (MagicSourceTransmitter transmitter
                 : getTransmitters()) {
+            if (transmitter.getShare().getSource() > 0) {
+                // A departing pipe may already own its local share while it
+                // is still present in the old network's transmitter map.
+                continue;
+            }
             int share = (int) Math.min(
                     transmitter.getCapacity(), remaining);
             transmitter.setSaveShare(share);
             remaining -= share;
         }
+        extension.updateSaveShares();
     }
 
     @Override
@@ -245,6 +271,12 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
                 return false;
             }
             total += network.networkSourceStorage.getStoredSource();
+            for (MagicSourceNetwork other : networks) {
+                if (other == null || other != network
+                        && !network.extension.isCompatibleWith(other)) {
+                    return false;
+                }
+            }
         }
         return true;
     }
@@ -291,7 +323,7 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
         }
     }
 
-    private record SourceEndpoint(ISourceCap acceptor) {
+    private record SourceEndpoint(PipeSourceStorage acceptor) {
         private int receive(long requested, boolean simulate) {
             int amount = (int) Math.min(Integer.MAX_VALUE, requested);
             return acceptor.receiveSource(amount, simulate);
@@ -305,7 +337,7 @@ public final class MagicSourceNetwork extends DynamicBufferedNetwork<
  * exceed {@link Integer#MAX_VALUE}. Keep the authoritative amount as a long;
  * individual capability operations still transfer int-sized chunks.
  */
-final class NetworkSourceStorage extends SourceStorage {
+final class NetworkSourceStorage extends BasicPipeSourceStorage {
     private final LongSupplier capacitySupplier;
     private final Runnable listener;
     private long storedSource;

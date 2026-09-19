@@ -1,0 +1,7 @@
+{
+  "entities": [
+    "minecraft:ender_dragon"
+  ],
+  "kind": "item",
+  "item": "minecraft:dragon_breath"
+}

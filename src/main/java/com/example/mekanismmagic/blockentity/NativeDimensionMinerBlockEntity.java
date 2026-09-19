@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
@@ -52,6 +53,7 @@ public final class NativeDimensionMinerBlockEntity
     private ItemStack pendingInput = ItemStack.EMPTY;
     private int pendingOperationMultiplier = 1;
     private long pendingEnergyPerTick;
+    private boolean pendingEnergyNeedsRefresh;
     private int ejectCooldown;
     private boolean ejectRetryPending;
     private boolean outputTransferDirty;
@@ -115,7 +117,7 @@ public final class NativeDimensionMinerBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 800;
+        return MagicMachineEnergyProfiles.RESOURCE_GATHERING;
     }
 
     @Override
@@ -236,6 +238,19 @@ public final class NativeDimensionMinerBlockEntity
         boolean bufferedReady = attemptOutputTransfer();
         boolean changed = nativeBaseUpdate();
         if (level == null) {
+            return finishServerUpdate(changed, false);
+        }
+        if (pendingEnergyNeedsRefresh) {
+            // Item placement restores upgrade components after custom NBT.
+            // Reprice only the remaining work once those components exist.
+            pendingEnergyPerTick = pendingOutputs.isEmpty() ? 0L
+                    : stackScaledEnergyUsage(pendingOperationMultiplier);
+            pendingEnergyNeedsRefresh = false;
+            changed = true;
+        }
+        if (!canFunction()) {
+            // Already-paid output may drain above, but a disabled miner must
+            // preserve its prepared roll and progress without paying or rerolling.
             return finishServerUpdate(changed, false);
         }
         ItemStack input = inputSlot == null ? ItemStack.EMPTY : inputSlot.getStack();
@@ -697,10 +712,10 @@ public final class NativeDimensionMinerBlockEntity
                 PENDING_MULTIPLIER_NBT, net.minecraft.nbt.Tag.TAG_INT)
                 ? Math.max(1, tag.getInt(PENDING_MULTIPLIER_NBT))
                 : stackOperationMultiplier();
-        pendingEnergyPerTick = tag.contains(
-                PENDING_ENERGY_NBT, net.minecraft.nbt.Tag.TAG_LONG)
-                ? Math.max(1L, tag.getLong(PENDING_ENERGY_NBT))
-                : stackScaledEnergyUsage(pendingOperationMultiplier);
+        // A serialized fee is not a permanent tariff. Keep the prepared
+        // random result/batch/progress, but apply the current power profile.
+        pendingEnergyPerTick = stackScaledEnergyUsage(pendingOperationMultiplier);
+        pendingEnergyNeedsRefresh = true;
         // Treat incomplete/corrupt pending state as absent. Keeping only the
         // rolled output or only its input signature would either duplicate a
         // result or bind it to a different miner tool on the next tick.
@@ -709,6 +724,7 @@ public final class NativeDimensionMinerBlockEntity
             pendingInput = ItemStack.EMPTY;
             pendingOperationMultiplier = 1;
             pendingEnergyPerTick = 0L;
+            pendingEnergyNeedsRefresh = false;
             progress = 0;
         }
         normalizeVisibleOutputSlots();

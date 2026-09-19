@@ -119,7 +119,8 @@ final class Ae2SourceInterfaceStorage implements ISourceCap {
         long capacity = 0L;
         for (int slot = 0; slot < inventory.size(); slot++) {
             AEKey existing = inventory.getKey(slot);
-            if (existing == null || existing == key) {
+            if ((existing == null || key.equals(existing))
+                    && inventory.isAllowedIn(slot, key)) {
                 capacity = saturatingAdd(capacity,
                         inventory.getMaxAmount(key));
             }

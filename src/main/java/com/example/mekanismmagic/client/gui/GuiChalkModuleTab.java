@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.client.gui;
 
 import com.example.mekanismmagic.blockentity.NativeMiniRitualAssemblerBlockEntity;
+import com.example.mekanismmagic.container.MachineSidebarLayout;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.tab.GuiInsetToggleElement;
 import mekanism.client.render.MekanismRenderer;
@@ -28,7 +29,7 @@ public final class GuiChalkModuleTab
     public GuiChalkModuleTab(IGuiWrapper gui,
                              NativeMiniRitualAssemblerBlockEntity tile,
                              BooleanSupplier open, Runnable toggle) {
-        super(gui, tile, gui.getXSize(), 80, 26, 18, false,
+        super(gui, tile, gui.getXSize(), MachineSidebarLayout.moduleY(false), 26, 18, false,
                 CLOSED_ICON, OPEN_ICON, open);
         this.toggle = toggle;
         setTooltip(Tooltip.create(Component.translatable(

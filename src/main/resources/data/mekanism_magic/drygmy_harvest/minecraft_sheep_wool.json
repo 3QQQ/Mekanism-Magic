@@ -1,0 +1,10 @@
+{
+  "entities": [
+    "minecraft:sheep"
+  ],
+  "kind": "colored_wool",
+  "adult": true,
+  "nbt": {
+    "Sheared": false
+  }
+}

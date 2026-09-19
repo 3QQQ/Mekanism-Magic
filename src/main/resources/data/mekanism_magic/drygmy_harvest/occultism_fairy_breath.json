@@ -1,0 +1,13 @@
+{
+  "required_mods": [
+    "occultism"
+  ],
+  "entities": [
+    "occultism:fairy_familiar"
+  ],
+  "kind": "item",
+  "item": "minecraft:dragon_breath",
+  "nbt": {
+    "hasBlacksmithUpgrade": true
+  }
+}

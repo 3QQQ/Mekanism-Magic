@@ -27,13 +27,10 @@ public final class Ae2DirectOutputCompat {
         MachineNetworkLifecycleHooks.register(
                 Ae2DirectOutputProvider.LIFECYCLE_HOOK);
         MachineDirectOutputHooks.register(Ae2DirectOutputProvider.HOOK);
-        if (ModCompatibility.loaded(
-                ModCompatibility.ARS_ENERGISTIQUE)) {
-            MagicSourceExternalEndpointHooks.register(
-                    (level, pos, side) -> level.getCapability(
-                            AECapabilities.GENERIC_INTERNAL_INV,
-                            pos, side) != null);
-        }
+        MagicSourceExternalEndpointHooks.register(
+                (level, pos, side) -> level.getCapability(
+                        AECapabilities.GENERIC_INTERNAL_INV,
+                        pos, side) != null);
         modBus.addListener(Ae2DirectOutputCompat::registerCapabilities);
     }
 

@@ -1,0 +1,22 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "minecraft:pig",
+    "earthmobsmod:teacup_pig"
+  ],
+  "kind": "colored_dye",
+  "count": {
+    "min": 1,
+    "max": 3
+  },
+  "adult": true,
+  "nbt": {
+    "Muddy": true,
+    "Sheared": false
+  },
+  "variant_keys": [
+    "Color"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "entities": [
+    "minecraft:bee"
+  ],
+  "kind": "fluid",
+  "fluid_container": "minecraft:honey_bottle",
+  "fluid_tag": "c:honey",
+  "amount": 250,
+  "adult": true
+}

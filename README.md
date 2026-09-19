@@ -1,112 +1,47 @@
 # Mekanism Magic
 
-Mekanism Magic 是面向 Mekanism 与魔法模组的自动化附属，为神秘学和 Ars Nouveau
-提供 Mekanism 风格的机器、升级和自动化。
+Minecraft 1.21.1 / NeoForge 的 Mekanism 魔法适配模组，提供神秘学与新生魔艺机器、
+工厂、魔源传输，以及 AE2、Mek Energistics 等可选自动化兼容。
 
-## 双版本支持
+## 1.0.6fix 维护发布
 
-| Minecraft | Mod Loader | 分支 | 核心依赖 |
-| --- | --- | --- | --- |
-| 1.21.1 | NeoForge | `main` | NeoForge 21.1.x、Mekanism 10.7.x、Occultism 1.22x |
-| 1.20.1 | Forge | `codex/1.20.1` | Forge 47.4.x、Mekanism 10.4.16.80、Occultism 1.158.0 |
+本分支从正式版 `v1.0.6-neoforge-1.21.1` 整理后续修复，保留原有 34 个设备 ID。
+修复范围与安装说明见 [1.0.6fix 发布说明](docs/RELEASE_NOTES_1.0.6fix.md)。
 
-两个版本共用相同的功能目标，但注册、配方、NBT、GUI 和 Mekanism API 分别使用对应加载器与游戏版本的实现，不能混用构建产物或依赖 JAR。
+- 保留灌注连续加工、配方切换、微缩制作启动、机器状态保存、仪式蛋显示和侧栏布局等修复。
+- 按用户确认保留空白微缩仪式捕获法阵，以及展开／回收和防重复收取检查。
+- 不包含未完成的自然灵气、禁忌适配及其专属设备、配方、JEI／AE 适配。
+- 不包含新魔法资源存储元件和接口；原有 Ars Énergistique 魔源网络兼容保留。
 
-## 主要功能
+这不是开发版 `1.0.6.x` 的完整替代品。已经放置未发布机器或存入新资源元件的开发存档，
+不要直接换成此包，以免失去对应内容。更新前备份存档；联机客户端和服务端应使用同一版本。
 
-- 魔灵处理器：按原版魔灵职业处理灵火、粉碎、结晶、熔炼和交易配方。
-- 魔灵工厂：基础、高级、精英、终极工厂；安装 Mekanism Extras 时支持绝对、至尊、宇宙、无限工厂。
-- 仪式引擎：16 个无序材料槽，完整映射 Occultism 158 条仪式，并保留激活、献祭、
-  动态物品组件、实体复活和随机召唤语义。
-- 微缩仪式制作机：根据真实五芒星成型材料制作可展开的微缩五芒星；右键顶面展开，
-  潜行右键原结构回收，放置状态锁定以防材料复制。
-- 终极微缩仪式：使用四个最高等级 Marid 五芒星制作，可作为通用仪式选择器。
-- 维度矿工处理机：单个不消耗矿工输入，三行九槽输出，支持附魔和自动输出。
-- 安装 Mekanism Extras 时，维度矿机支持最高 256 倍并行的堆叠升级。
-- Ars 机器提供“创造魔力升级”，使用 Mekanism Extras 时可放入原版升级界面。
-- Ars 机器在 FE 不足时可依靠足量 Source 缓慢工作，供电恢复后自动恢复正常速度。
-- Ars 机器 GUI 提供独立的“魔力配置”界面，可分别设置六个方向的 Source 输入/输出。
-- 魔源转换机可消耗 FE 直接生成 Source，并输出到 Ars Source 网络。
-- 催化剂标识制作机可将 3 个灌注材料合成为一个不消耗的催化剂标识；
-  灌注处理机使用可展开标识库，并支持从 JEI 拖拽标识锁定配方。
-- 安装 AE2 后，灌注处理机支持带 `recipe_id/catalyst_id` 虚拟上下文的 AE 自动化。
-- 魔法灌注工厂包含 Mekanism 四级工厂；安装 Mekanism Extras 时扩展至
-  绝对、至尊、宇宙、无限等级（最高 17 个并行进程）。
-- 安装 AE2 后，维度矿机与德格米模拟器可直接连接 AE 线缆，
-  无需 ME 工厂升级即可把全部输出写入网络；在线时按 20 tick 聚合相同
-  物品后整批写入，并在 GUI 显示在线、离线或存储受阻状态。
-- Mekanism 风格 GUI、能量槽、侧面配置、速度/能量升级和 JEI 配方分类。
-- Ars Nouveau 收容罐、Occultism 灵魂容器、刷怪蛋和魔灵职业数据兼容。
-- Ars Nouveau 收容罐兼容；FE魔源增强器、灌注处理机、附魔装置处理机和
-  德格米生态模拟器在完成全部适配验证前不在发布版中启用。
-- 开发构建提供基础、高级、精英、终极四级魔力管道；支持 Mekanism 合金
-  原地升级，并按相邻输出端的管道等级限制 Ars Source 传输速率。
+## 依赖
 
-## 1.21.1 NeoForge
+- Minecraft 1.21.1，Java 21，NeoForge 21.1.228+。
+- 必需：Mekanism 10.7.19+。
+- 魔法内容按需加载：Occultism 1.222.0+、Ars Nouveau 5.11.0+。
+- 可选：JEI、AE2、Mek Energistics 3.0.6+、Mekanism Extras、
+  Mekanism: More Machine、Ars Énergistique、ExtendedAE、Pipez。
 
-默认分支为 `main`。
+没有安装对应魔法模组时，不注册该组机器。发布包不重新分发第三方模组。
 
-推荐环境：
+## 构建与验证
 
-- Minecraft 1.21.1
-- NeoForge 21.1.228 或更高
-- Mekanism 10.7.19 或更高
-- Occultism 1.222.0 或更高
-- Java 21
-
-IDEA 中以 Gradle 项目打开根目录，刷新 Gradle 后运行 `client` 或 `server`。
-
-项目还提供两个 IDEA 专用 Ars Nouveau 测试配置：
-
-- `Ars Compatibility Client`：启动带 Ars Nouveau 运行时和开发机器内容的客户端；
-- `Ars Compatibility Server`：启动同样开关的专用服务器。
-
-这些配置会为 IDEA 启动加入 Ars Nouveau 运行时；Ars 机器内容现已默认进入普通
-`build` 和发布包，以保证方块注册 ID 在重启及重新进入存档后保持稳定。
-
-## 1.20.1 Forge
-
-切换到 `codex/1.20.1` 分支。
-
-推荐环境：
-
-- Minecraft 1.20.1
-- Forge 47.4.22
-- Mekanism 10.4.16.80
-- Occultism 1.158.0
-- JEI 15.49.0.190
-- Java 17
-
-Forge 版本位于 `codex/1.20.1` 分支，可通过独立 worktree 或 checkout 使用：
-
-```text
-git switch codex/1.20.1
-```
-
-构建和启动：
+版本唯一来源是 `gradle.properties` 的 `mod_version`，本次显式使用 `1.0.6fix`。
+完整可选桥接依赖使用本地 `libs/` 和 `run/mods/` 中的参考 JAR；这些第三方文件不提交、不打入发布包。
 
 ```powershell
-.\gradlew.bat idea build
-.\gradlew.bat runClient
+.\gradlew.bat check assemble validatePackagedIntegrations validateFixRelease "-Pmekanism_magic.require_full_integrations=true" --no-daemon
+.\gradlew.bat runSpiritGameTestServer "-Pmekanism_magic.ars_runtime=true" "-Pmekanism_magic.arseng_runtime=true" --no-daemon
 ```
 
-Forge 分支已验证 Mekanism Generators、Mekanism Extras 1.5.0、MoreMachine 1.2.1、Ars Nouveau 4.12.7、Occultism 和 JEI 的联合加载。
+额外的排除边界测试可设置 `-Pmekanism_magic.verify_excluded_mods=true`，仅在测试运行时加载
+自然灵气、禁忌及依赖，确认它们不会重新启用本发布包中已排除的适配；这不会将依赖装入 JAR。
 
-## 依赖与文档
+`validateFixRelease` 校验原有设备集合、经确认保留的配方集合、版本元数据及排除内容。
+GitHub Release 的附件经同样的发布约束检查后，由既有工作流同步到 CurseForge。
 
-第三方模组 JAR 不提交到仓库，需要根据目标版本放入本地 `libs/`，具体文件名和版本以对应分支的 `build.gradle`、`gradle.properties` 及文档为准。
+## License
 
-兼容性记录：
-
-- [Forge 1.20.1 移植状态](docs/FORGE_1201_PORT.md)
-- [附属模组兼容性](docs/COMPATIBILITY.md)
-- [Ars Nouveau 适配说明](docs/ARS_NOUVEAU_ADAPTATION.md)
-- [Forbidden & Arcanus 适配计划](docs/FORBIDDEN_ARCANUS_ADAPTATION.md)
-
-构建产物位于：
-
-```text
-build/libs/mekanism_magic-1.0.6-neoforge-1.21.1.jar
-```
-
-请使用与 Minecraft/加载器版本匹配的分支和 JAR；不要将 NeoForge 1.21.1 构建产物放入 Forge 1.20.1。
+MIT。第三方模组、名称与美术资源遵循各自许可。

@@ -9,6 +9,13 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(value = GuiUtils.class, remap = false)
 abstract class GuiUtilsMixin {
+    // Buttons call this helper directly, bypassing GuiTexturedElement.
+    @ModifyVariable(method = "blitNineSlicedSized", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private static ResourceLocation mekanismMagic$themeSlicedTexture(ResourceLocation original) {
+        return com.example.mekanismmagic.client.gui.MagicGuiStyle.isTerminal()
+                ? MagicGuiTextures.resolve(original) : original;
+    }
+
     @ModifyVariable(method = "renderExtendedTexture", at = @At("HEAD"),
             argsOnly = true, ordinal = 0)
     private static ResourceLocation mekanismMagic$themeExtendedTexture(

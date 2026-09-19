@@ -1,7 +1,7 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
-import com.hollingsworth.arsnouveau.api.source.ISourceCap;
-import com.hollingsworth.arsnouveau.api.source.ISourceTile;
+import com.example.mekanismmagic.integration.common.network.PipeSourceStorage;
+import com.example.mekanismmagic.integration.common.network.MagicPipeRegistries;
 import mekanism.common.block.states.TransmitterType;
 import mekanism.api.tier.BaseTier;
 import mekanism.common.block.states.BlockStateHelper;
@@ -21,8 +21,7 @@ import org.jetbrains.annotations.NotNull;
  * Real Mekanism transmitter tile. Connection masks, configuration,
  * transmitter networks and lifecycle are provided by TileEntityTransmitter.
  */
-public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
-        implements ISourceTile {
+public class MagicSourcePipeBlockEntity extends TileEntityTransmitter {
     public MagicSourcePipeBlockEntity(
             Holder<Block> blockProvider, BlockPos pos, BlockState state) {
         super(blockProvider, pos, state);
@@ -42,6 +41,7 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
     @Override
     protected void onUpdateServer() {
         getTransmitter().pullFromAcceptors();
+        getTransmitter().extension().tickServer();
         super.onUpdateServer();
     }
 
@@ -55,12 +55,12 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
     protected BlockState upgradeResult(@NotNull BlockState current,
                                        @NotNull BaseTier tier) {
         BlockRegistryObject<?, ?> target = switch (tier) {
-            case BASIC -> ArsNouveauRegistries.MAGIC_SOURCE_PIPE_BLOCK;
+            case BASIC -> MagicPipeRegistries.MAGIC_SOURCE_PIPE_BLOCK;
             case ADVANCED ->
-                    ArsNouveauRegistries.ADVANCED_MAGIC_SOURCE_PIPE_BLOCK;
-            case ELITE -> ArsNouveauRegistries.ELITE_MAGIC_SOURCE_PIPE_BLOCK;
+                    MagicPipeRegistries.ADVANCED_MAGIC_SOURCE_PIPE_BLOCK;
+            case ELITE -> MagicPipeRegistries.ELITE_MAGIC_SOURCE_PIPE_BLOCK;
             case ULTIMATE ->
-                    ArsNouveauRegistries.ULTIMATE_MAGIC_SOURCE_PIPE_BLOCK;
+                    MagicPipeRegistries.ULTIMATE_MAGIC_SOURCE_PIPE_BLOCK;
             default -> null;
         };
         return target == null ? current
@@ -98,6 +98,7 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
             tag.putFloat("scale", capacity <= 0
                     ? 0 : stored / (float) capacity);
         }
+        getTransmitter().extension().writeUpdateTag(tag);
         return tag;
     }
 
@@ -111,80 +112,79 @@ public final class MagicSourcePipeBlockEntity extends TileEntityTransmitter
         // cached NORMAL/PUSH/PULL sided view is immutable, so invalidating
         // only NONE transitions leaves third-party machines with stale
         // receive/extract rights after a configurator change.
-        invalidateCapability(
-                com.hollingsworth.arsnouveau.setup.registry
-                        .CapabilityRegistry.SOURCE_CAPABILITY,
-                side);
+        invalidateCapabilities();
+        getTransmitter().extension().sideChanged(side);
     }
 
-    public @Nullable ISourceCap getSourceStorage(
+    @Override
+    public void redstoneChanged(boolean powered) {
+        super.redstoneChanged(powered);
+        invalidateCapabilities();
+        getTransmitter().extension().redstoneChanged(powered);
+    }
+
+    public @Nullable PipeSourceStorage getSourceStorage(
             @Nullable Direction side) {
         return getTransmitter().getSourceCapability(side);
     }
 
-    public ISourceCap getSourceStorage() {
+    public PipeSourceStorage getSourceStorage() {
         return getTransmitter().getSourceCapability(null);
     }
 
-    @Override
     public int getTransferRate() {
         return getTransmitter().getTransferRate();
     }
 
-    @Override
     public boolean canAcceptSource() {
-        return getSource() < getMaxSource();
+        PipeSourceStorage storage = getSourceStorage();
+        return storage != null && storage.canAcceptSource(1);
     }
 
-    @Override
     public boolean canProvideSource() {
-        return getSource() > 0;
+        PipeSourceStorage storage = getSourceStorage();
+        return storage != null && storage.canProvideSource(1);
     }
 
-    @Override
     public int getSource() {
         return getTransmitter().getBufferWithFallback().getSource();
     }
 
-    @Override
     public int getMaxSource() {
         return getTransmitter().getSourceCapacity();
     }
 
-    @Override
     public int setSource(int amount) {
-        getTransmitter().getBufferWithFallback().setSource(amount);
+        if (getSourceStorage() != null) {
+            getTransmitter().getBufferWithFallback().setSource(amount);
+        }
         return getSource();
     }
 
-    @Override
     public int addSource(int amount) {
-        ISourceCap storage = getSourceStorage();
+        PipeSourceStorage storage = getSourceStorage();
         if (storage != null) {
             storage.receiveSource(amount, false);
         }
         return getSource();
     }
 
-    @Override
     public int addSource(int amount, boolean simulate) {
-        ISourceCap storage = getSourceStorage();
+        PipeSourceStorage storage = getSourceStorage();
         return storage == null ? 0
                 : storage.receiveSource(amount, simulate);
     }
 
-    @Override
     public int removeSource(int amount) {
-        ISourceCap storage = getSourceStorage();
+        PipeSourceStorage storage = getSourceStorage();
         if (storage != null) {
             storage.extractSource(amount, false);
         }
         return getSource();
     }
 
-    @Override
     public int removeSource(int amount, boolean simulate) {
-        ISourceCap storage = getSourceStorage();
+        PipeSourceStorage storage = getSourceStorage();
         return storage == null ? 0
                 : storage.extractSource(amount, simulate);
     }

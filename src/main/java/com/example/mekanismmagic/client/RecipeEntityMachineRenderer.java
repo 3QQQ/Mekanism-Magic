@@ -72,8 +72,7 @@ final class RecipeEntityMachineRenderer {
         float height = Math.max(0.1F, entity.getBbHeight());
         float scale = Math.min(placement.maxWidth / width,
                 placement.maxHeight / height);
-        scale = Mth.clamp(scale, placement.minScale,
-                placement.maxScale);
+        scale = Mth.clamp(scale, placement.minScale, placement.maxScale);
         float bob = Mth.sin(renderTime * 0.095F) * placement.bob;
         float yaw = 180F + Mth.sin(renderTime * 0.028F) * 9F;
         setYaw(entity, yaw);

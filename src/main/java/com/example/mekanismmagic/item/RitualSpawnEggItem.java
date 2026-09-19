@@ -34,6 +34,8 @@ import java.util.List;
  */
 public final class RitualSpawnEggItem extends Item {
     public static final String ENTITY_TAG = "ritual_entity_tag";
+    private static final String DEFERRED_ENTITY_DATA =
+            "mekanism_magic:deferred_entity_data";
     private static final String LEGACY_ASSIGN_OWNER =
             "ritual_assign_owner";
     private static final String OWNER_MODE = "ritual_owner_mode";
@@ -52,6 +54,14 @@ public final class RitualSpawnEggItem extends Item {
 
     public RitualSpawnEggItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public Component getName(ItemStack stack) {
+        // Nature's Aura uses this spawn implementation for a different item; keep that item's display contract unchanged.
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(this);
+        return itemId != null && itemId.getNamespace().equals("mekanism_magic") && itemId.getPath().equals("ritual_spawn_egg")
+                ? RitualSpawnEggIdentity.name(stack) : super.getName(stack);
     }
 
     public static ItemStack forEntity(EntityType<?> entity, CompoundTag data) {
@@ -123,8 +133,11 @@ public final class RitualSpawnEggItem extends Item {
     public static ItemStack forTag(TagKey<EntityType<?>> entityTag, CompoundTag data) {
         ItemStack stack = new ItemStack(com.example.mekanismmagic.MekanismMagic.RITUAL_SPAWN_EGG.get());
         CompoundTag tag = data == null ? new CompoundTag() : data.copy();
+        // A tag identifies a pool, not a concrete entity. ENTITY_DATA's codec
+        // requires an id even before spawning (inventory/chunk/player saves).
+        tag.remove("id");
         tag.putString(ENTITY_TAG, entityTag.location().toString());
-        stack.set(DataComponents.ENTITY_DATA, CustomData.of(tag));
+        setEntityData(stack, tag);
         return stack;
     }
 
@@ -138,17 +151,39 @@ public final class RitualSpawnEggItem extends Item {
 
     public static ResourceLocation entityId(ItemStack stack) {
         CompoundTag data = data(stack);
-        return ResourceLocation.tryParse(data.getString("id"));
+        String id = data.getString("id");
+        return id.isBlank() ? null : ResourceLocation.tryParse(id);
     }
 
     public static ResourceLocation entityTag(ItemStack stack) {
         CompoundTag data = data(stack);
-        return ResourceLocation.tryParse(data.getString(ENTITY_TAG));
+        String id = data.getString(ENTITY_TAG);
+        return id.isBlank() ? null : ResourceLocation.tryParse(id);
     }
 
-    private static CompoundTag data(ItemStack stack) {
+    /** Returns a copy of fixed or deferred entity data, including legacy eggs. */
+    public static CompoundTag data(ItemStack stack) {
+        CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
+        if (custom != null && custom.contains(DEFERRED_ENTITY_DATA)) {
+            CompoundTag tag = custom.copyTag();
+            if (tag.contains(DEFERRED_ENTITY_DATA, Tag.TAG_COMPOUND)) {
+                return tag.getCompound(DEFERRED_ENTITY_DATA).copy();
+            }
+        }
+        // Continue reading legacy eggs and fixed-entity eggs.
         CustomData data = stack.get(DataComponents.ENTITY_DATA);
         return data == null || data.isEmpty() ? new CompoundTag() : data.copyTag();
+    }
+
+    private static void setEntityData(ItemStack stack, CompoundTag tag) {
+        if (tag.contains(ENTITY_TAG, Tag.TAG_STRING)) {
+            tag.remove("id");
+            CustomData.update(DataComponents.CUSTOM_DATA, stack,
+                    custom -> custom.put(DEFERRED_ENTITY_DATA, tag.copy()));
+            stack.remove(DataComponents.ENTITY_DATA);
+        } else {
+            stack.set(DataComponents.ENTITY_DATA, CustomData.of(tag));
+        }
     }
 
     @Override
@@ -171,20 +206,22 @@ public final class RitualSpawnEggItem extends Item {
         if (tag != null) {
             tooltip.add(Component.translatable(
                     "tooltip.mekanism_magic.ritual_spawn_egg.entity_tag",
-                    Component.literal("#" + tag))
+                    RitualSpawnEggIdentity.targetName(stack))
                     .withStyle(ChatFormatting.GRAY));
+            if (flag.isAdvanced()) tooltip.add(Component.literal("#" + tag).withStyle(ChatFormatting.DARK_GRAY));
         }
         CompoundTag entityData = data(stack);
-        ResourceLocation job = ResourceLocation.tryParse(
-                entityData.getString(INITIALIZE_SPIRIT_JOB));
+        ResourceLocation job = RitualSpawnEggIdentity.job(stack);
         if (job != null) {
-            Component jobName = "occultism".equals(job.getNamespace())
-                    ? Component.translatable(
-                    "job.occultism." + job.getPath())
-                    : Component.literal(job.toString());
             tooltip.add(Component.translatable(
                     "tooltip.mekanism_magic.ritual_spawn_egg.job",
-                    jobName).withStyle(ChatFormatting.LIGHT_PURPLE));
+                    RitualSpawnEggIdentity.jobName(job)).withStyle(ChatFormatting.LIGHT_PURPLE));
+            if (flag.isAdvanced()) tooltip.add(Component.literal(job.toString()).withStyle(ChatFormatting.DARK_GRAY));
+        }
+        int chance = RitualSpawnEggIdentity.chanceDenominator(stack);
+        if (chance > 1) {
+            tooltip.add(Component.translatable("tooltip.mekanism_magic.ritual_spawn_egg.chance", chance)
+                    .withStyle(ChatFormatting.YELLOW));
         }
         int ownerMode = entityData.contains(OWNER_MODE)
                 ? entityData.getInt(OWNER_MODE)
@@ -334,7 +371,7 @@ public final class RitualSpawnEggItem extends Item {
             java.util.function.Consumer<CompoundTag> update) {
         CompoundTag tag = data(stack);
         update.accept(tag);
-        stack.set(DataComponents.ENTITY_DATA, CustomData.of(tag));
+        setEntityData(stack, tag);
     }
 
     private static void assignOwner(

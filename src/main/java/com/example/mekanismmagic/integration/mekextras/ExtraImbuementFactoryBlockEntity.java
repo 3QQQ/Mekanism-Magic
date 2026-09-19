@@ -186,8 +186,21 @@ public final class ExtraImbuementFactoryBlockEntity
         if (input.isEmpty()) {
             return null;
         }
-        ResourceLocation patternRecipe =
-                ArsNouveauRecipeBridge.patternRecipe(input);
+        boolean marked = ArsNouveauRecipeBridge.hasPatternRecipeMarker(input);
+        ResourceLocation patternRecipe = marked ? ArsNouveauRecipeBridge.patternRecipe(input) : null;
+        if (marked && patternRecipe == null) {
+            return null;
+        }
+        if (patternRecipe != null && !ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, patternRecipe)) {
+            ItemStackHandler inventory = new ItemStackHandler(1);
+            inventory.setStackInSlot(0, input.copy());
+            return ArsNouveauRecipeBridge.findCatalystFreeImbuementByRecipe(level, inventory, 0, patternRecipe)
+                    .map(result -> {
+                        var holder = ArsNouveauRecipeScanner.find(level.getRecipeManager(), result.id());
+                        return holder == null ? null : new ImbuementFactoryRecipe(holder, ItemStack.EMPTY, result, false,
+                                ArsNouveauRecipeScanner.version(level.getRecipeManager()), true);
+                    }).orElse(null);
+        }
         if (patternRecipe != null
                 && (!canAdoptMarkedPatternRecipe(patternRecipe)
                 || !selectCatalystIdentifierForRecipe(patternRecipe))) {
@@ -279,16 +292,13 @@ public final class ExtraImbuementFactoryBlockEntity
                 (CachedRecipe) new SourceAwareImbuementCachedRecipe(recipe,
                                 () -> true, inputHandlers[process],
                                 outputHandlers[process],
+                                () -> lockSlot != null && hasMatchingIdentifier(recipe),
+                                () -> hasCreativeUpgrade()
+                                        || hasSourceForRecipe(recipe.sourceCost()),
                                 () -> hasCreativeUpgrade()
                                         || recipe.sourceCost() <= 0
                                         || consumeSourceForRecipe(
                                         recipe.sourceCost()))
-                        .setCanHolderFunction(() -> lockSlot != null
-                                && recipe.matchesCurrentRecipe(level)
-                                && hasMatchingIdentifier(recipe)
-                                && (hasCreativeUpgrade()
-                                || hasSourceForRecipe(
-                                recipe.sourceCost())))
                         .setActive(active -> setActiveState(active, process))
                         .setEnergyRequirements(
                                 () -> ArsFactoryEnergyFallback
@@ -762,7 +772,7 @@ public final class ExtraImbuementFactoryBlockEntity
 
     private long recipeEnergyUsage() {
         return mekanism.common.util.MekanismUtils.getEnergyPerTick(
-                this, ArsNouveauMachineConfig.IMBUEMENT_FACTORY_FE_PER_TICK);
+                this, ArsNouveauMachineConfig.IMBUEMENT_FACTORY_JOULES_PER_TICK);
     }
 
     @Override

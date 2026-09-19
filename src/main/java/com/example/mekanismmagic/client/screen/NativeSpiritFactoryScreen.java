@@ -7,6 +7,7 @@ import com.example.mekanismmagic.client.gui.MagicGuiTheme;
 import com.example.mekanismmagic.client.gui.MagicGuiTheme.MachineStatus;
 import com.example.mekanismmagic.client.gui.MagicLeftControlLayout;
 import com.example.mekanismmagic.client.gui.MagicThemedScreen;
+import com.example.mekanismmagic.client.gui.RetainedItemModule;
 import com.example.mekanismmagic.client.gui.GuiThemeToggleTab;
 import mekanism.api.recipes.cache.CachedRecipe.OperationTracker.RecipeError;
 import mekanism.client.gui.GuiConfigurableTile;
@@ -15,7 +16,6 @@ import mekanism.client.gui.element.progress.GuiProgress;
 import mekanism.client.gui.element.progress.ProgressType;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
 import mekanism.client.gui.element.tab.GuiSortingTab;
-import mekanism.client.render.IFancyFontRenderer.TextAlignment;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.inventory.warning.WarningTracker.WarningType;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,12 +29,13 @@ import net.minecraft.world.entity.player.Inventory;
 public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
         NativeSpiritFactoryBlockEntity, NativeSpiritFactoryContainer>
         implements MagicThemedScreen {
+    private RetainedItemModule retainedModule;
 
     public NativeSpiritFactoryScreen(NativeSpiritFactoryContainer container,
                                      Inventory inventory, Component title) {
         super(container, inventory, title);
         inventoryLabelY = 75;
-        titleLabelY = 4;
+        titleLabelY = MagicGuiTheme.MACHINE_TITLE_Y;
         dynamicSlots = true;
         if (getTileEntity().tier == FactoryTier.ULTIMATE) {
             imageWidth += 34;
@@ -48,6 +49,7 @@ public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         MagicGuiTheme.renderMachineFrame(graphics, leftPos, topPos,
                 imageWidth, imageHeight, inventoryLabelY);
+        if (retainedModule != null) retainedModule.renderBackground(graphics, leftPos, topPos, getWindows());
     }
 
     @Override
@@ -57,7 +59,9 @@ public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
 
     @Override
     protected void addGuiElements() {
+        retainedModule = RetainedItemModule.prepare(retainedModule, this, menu, imageWidth, () -> { });
         super.addGuiElements();
+        if (retainedModule != null) addRenderableWidget(retainedModule.tab());
         addRenderableWidget(new GuiThemeToggleTab<>(this, getTileEntity()));
         addRenderableWidget(new GuiSortingTab(this, getTileEntity()));
         addRenderableWidget(new GuiVerticalPowerBar(this,
@@ -88,7 +92,7 @@ public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
                     ProgressType.DOWN, this,
                     4 + firstX + process * spacing, 33)
                     .recipeViewerCategories(
-                            OccultismRecipeViewerTypes.SPIRIT)
+                            OccultismRecipeViewerTypes.spiritCategories())
                     .warning(WarningType.INPUT_DOESNT_PRODUCE_OUTPUT,
                             getTileEntity().getWarningCheck(
                                     RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT,
@@ -100,13 +104,27 @@ public final class NativeSpiritFactoryScreen extends GuiConfigurableTile<
     protected void drawForegroundText(GuiGraphics gui, int mouseX, int mouseY) {
         MachineStatus status = getTileEntity().getActive()
                 ? MachineStatus.RUNNING : MachineStatus.IDLE;
-        drawScrollingString(gui, title, 10, titleLabelY,
-                TextAlignment.LEFT, MagicGuiTheme.textPrimary(),
-                MagicGuiTheme.availableTitleWidth(font, status, imageWidth),
-                0, false);
-        MagicGuiTheme.renderStatus(gui, font, status, imageWidth,
-                titleLabelY);
+        drawMachineHeader(gui, title, status, imageWidth);
         renderInventoryText(gui);
+        if (retainedModule != null) retainedModule.renderCaption(gui, font);
         super.drawForegroundText(gui, mouseX, mouseY);
+    }
+
+    @Override
+    protected void addSlots() {
+        super.addSlots();
+        if (retainedModule != null) retainedModule.captureOverlays(children());
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double x, double y, int left, int top, int button) {
+        return !(retainedModule != null && retainedModule.contains(x, y, leftPos, topPos))
+                && super.hasClickedOutside(x, y, left, top, button);
+    }
+
+    @Override
+    public void removed() {
+        if (retainedModule != null) retainedModule.dispose();
+        super.removed();
     }
 }

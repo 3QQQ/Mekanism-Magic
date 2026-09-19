@@ -2,6 +2,7 @@ package com.example.mekanismmagic;
 
 import com.example.mekanismmagic.client.MagicClientConfigScreen;
 import com.example.mekanismmagic.item.MiniRitualItem;
+import com.example.mekanismmagic.item.MachineItemContainers;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.item.CreativeMagicUpgradeItem;
@@ -45,7 +46,6 @@ public final class MekanismMagic {
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, MOD_ID);
     public static final DeferredRegister<IngredientType<?>> INGREDIENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.INGREDIENT_TYPES, MOD_ID);
-
     public static final DeferredHolder<Item, MiniRitualItem> MINI_RITUAL =
             ITEMS.register("mini_ritual",
                     () -> new MiniRitualItem(new Item.Properties().stacksTo(1)));
@@ -113,6 +113,9 @@ public final class MekanismMagic {
                         acceptOptional(output, "infinite_spirit_factory");
                         acceptOptional(output, "ritual_engine");
                         acceptOptional(output, "mini_ritual_assembler");
+                        if (ModCompatibility.occultismLoaded()) {
+                            acceptOptional(output, "mini_ritual");
+                        }
                         acceptOptional(output, "ultimate_mini_ritual");
                         acceptOptional(output, "ritual_spawn_egg");
                     }).build());
@@ -126,9 +129,11 @@ public final class MekanismMagic {
         IntegrationBootstrap.initialize();
         IntegrationBootstrap.registerContent(modBus);
         NeoForge.EVENT_BUS.addListener(MachineDropPreserver::onBlockDrops);
+        modBus.addListener(MachineItemContainers::onCommonSetup);
         registerAe2DirectOutput(modBus);
         registerMekEnergistics();
     }
+
 
     private static void registerAe2DirectOutput(IEventBus modBus) {
         if (!ModCompatibility.loaded("ae2")) {

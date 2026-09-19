@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
@@ -95,8 +96,18 @@ public final class ImbuementProcessorBlockEntity
     @Override
     protected Optional<MachineRecipeResult> findRecipe(
             ItemStackHandler inventory) {
-        ResourceLocation patternRecipe = ArsNouveauRecipeBridge
-                .patternRecipe(inventory.getStackInSlot(REAGENT_SLOT));
+        ItemStack reagent = inventory.getStackInSlot(REAGENT_SLOT);
+        boolean marked = ArsNouveauRecipeBridge.hasPatternRecipeMarker(reagent);
+        ResourceLocation patternRecipe = marked ? ArsNouveauRecipeBridge.patternRecipe(reagent) : null;
+        if (marked && patternRecipe == null) {
+            return Optional.empty();
+        }
+        if (patternRecipe != null && !ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, patternRecipe)) {
+            // Exact no-catalyst work owns the marker on its physical remaining stack.
+            // Do not select a shared catalyst or strip the receipt from the snapshot.
+            return ArsNouveauRecipeBridge.findCatalystFreeImbuementByRecipe(
+                    level, inventory, REAGENT_SLOT, patternRecipe);
+        }
         if (patternRecipe != null
                 && (!canAdoptMarkedPatternRecipe(patternRecipe)
                 || !selectCatalystIdentifierForRecipe(patternRecipe))) {
@@ -114,6 +125,13 @@ public final class ImbuementProcessorBlockEntity
 
     @Override
     protected long recipeLookupRevision() {
+        // A virtual/physical library selection can change without changing any
+        // reagent slot. It must invalidate both active and negative lookups.
+        return 31L * recipeCatalogVersion()
+                + ItemStack.hashItemAndComponents(selectedCatalystIdentifier());
+    }
+
+    private long recipeCatalogVersion() {
         return level == null ? 0L : ArsNouveauRecipeScanner.version(
                 level.getRecipeManager());
     }
@@ -125,7 +143,7 @@ public final class ImbuementProcessorBlockEntity
     }
 
     private boolean refreshRecipeCatalogVersion() {
-        long revision = recipeLookupRevision();
+        long revision = recipeCatalogVersion();
         if (observedRecipeCatalogVersion == revision) {
             return false;
         }
@@ -144,7 +162,7 @@ public final class ImbuementProcessorBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 600;
+        return MagicMachineEnergyProfiles.MATERIAL_PROCESSING;
     }
 
     @Override

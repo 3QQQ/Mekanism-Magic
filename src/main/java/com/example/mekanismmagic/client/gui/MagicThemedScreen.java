@@ -1,12 +1,23 @@
 package com.example.mekanismmagic.client.gui;
 
 import mekanism.client.render.IFancyFontRenderer;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /**
  * Opts a screen into the complete Mekanism Magic GUI skin, including text
  * rendered directly by the screen rather than by a child {@code GuiElement}.
  */
 public interface MagicThemedScreen extends IFancyFontRenderer {
+    /** Shared by ordinary machines and all factory tiers; never replaces the server's/custom title. */
+    default void drawMachineHeader(GuiGraphics graphics, Component title,
+                                   MagicGuiTheme.MachineStatus status, int imageWidth) {
+        drawScrollingString(graphics, title, MagicGuiTheme.MACHINE_TITLE_X, MagicGuiTheme.MACHINE_TITLE_Y,
+                TextAlignment.LEFT, MagicGuiTheme.textPrimary(),
+                MagicGuiTheme.availableTitleWidth(font(), status, imageWidth), 0, false);
+        MagicGuiTheme.renderStatus(graphics, font(), status, imageWidth, MagicGuiTheme.MACHINE_TITLE_Y);
+    }
+
     @Override
     default int titleTextColor() {
         return MagicGuiTheme.textPrimary();

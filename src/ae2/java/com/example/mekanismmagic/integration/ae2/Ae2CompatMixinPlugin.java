@@ -26,6 +26,11 @@ public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
                         + "ImbuementRecipe.class");
     }
 
+    private static boolean naturesAuraPresent() {
+        return resourcePresent(
+                "de/ellpeck/naturesaura/recipes/AltarRecipe.class");
+    }
+
     private static boolean resourcePresent(String path) {
         try (InputStream stream = MixinService.getService()
                 .getResourceAsStream(path)) {
@@ -42,7 +47,11 @@ public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
         if (!aePresent()) {
             return false;
         }
-        return arsPresent();
+        if (mixinClassName.endsWith("Ae2MagicMarkerStorageGuardMixin")) {
+            return true;
+        }
+        return mixinClassName.contains("Ae2NaturePattern")
+                ? naturesAuraPresent() : arsPresent();
     }
     @Override public void acceptTargets(
             Set<String> myTargets, Set<String> otherTargets) { }

@@ -1,0 +1,18 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:umbra_cow"
+  ],
+  "kind": "item",
+  "item": "minecraft:black_wool",
+  "count": {
+    "min": 1,
+    "max": 3
+  },
+  "adult": true,
+  "nbt": {
+    "Sheared": false
+  }
+}

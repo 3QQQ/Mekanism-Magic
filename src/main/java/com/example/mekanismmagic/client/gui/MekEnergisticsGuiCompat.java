@@ -24,7 +24,11 @@ public final class MekEnergisticsGuiCompat {
     /** Keeps a machine slot out of the ME pattern window's render/input layer. */
     public static boolean updateMachineSlot(Iterable<?> windows,
                                             GuiSlot slot) {
-        boolean available = !isPatternWindowOpen(windows);
+        return updateMachineSlot(windows, slot, true);
+    }
+
+    public static boolean updateMachineSlot(Iterable<?> windows, GuiSlot slot, boolean moduleOpen) {
+        boolean available = moduleOpen && !isPatternWindowOpen(windows);
         if (slot != null) {
             slot.visible = available;
             slot.active = available;

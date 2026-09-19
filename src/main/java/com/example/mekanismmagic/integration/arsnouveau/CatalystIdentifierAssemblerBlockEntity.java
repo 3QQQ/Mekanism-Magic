@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
@@ -57,7 +58,7 @@ public final class CatalystIdentifierAssemblerBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 300;
+        return MagicMachineEnergyProfiles.ASSEMBLY;
     }
 
     @Override

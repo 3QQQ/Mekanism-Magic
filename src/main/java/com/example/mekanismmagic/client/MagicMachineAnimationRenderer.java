@@ -129,6 +129,7 @@ public final class MagicMachineAnimationRenderer<
             blockTexture("animation/core_orb");
     private static final ResourceLocation ENERGY_RIBBON =
             blockTexture("animation/energy_ribbon");
+
     public MagicMachineAnimationRenderer(
             BlockEntityRendererProvider.Context context, Kind kind) {
         this.kind = kind;
@@ -210,6 +211,7 @@ public final class MagicMachineAnimationRenderer<
             case SCRIBING -> renderScribing(tile, time, poseStack,
                     buffer, mechanismBuffer, texture, glow,
                     packedOverlay, camera);
+
         }
         if (cameraDistanceSquared <= ITEM_VIEW_DISTANCE_SQUARED) {
             recipeItemRenderer.render(tile, kind, partialTick, poseStack,
@@ -319,6 +321,11 @@ public final class MagicMachineAnimationRenderer<
                 color(kind.secondary,
                         135 + Math.round(crownPulse * 90F)));
     }
+
+
+
+
+
 
     private void renderConverter(TILE tile, float time,
                                  PoseStack poseStack,

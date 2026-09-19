@@ -15,15 +15,33 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.BooleanSupplier;
 
-/** Selects the encoded catalyst context without routing its item to a slot. */
+/**
+ * Selects an encoded catalyst context without routing its item to a slot.
+ * Recipes without pedestal catalysts route by their marked recipe ID without
+ * changing the factory's shared catalyst selector.
+ */
 @Mixin(value = AbstractMeAeSupport.class, remap = false)
 public abstract class MekEnergisticsImbuementPatternMixin {
     @Shadow @Final protected TileEntityMekanism ownerTile;
     @Unique private String mekanismMagic$pendingCatalystId;
+
+    @ModifyVariable(method = "pushPatternWithAdapter", at = @At("HEAD"), index = 2, argsOnly = true)
+    private KeyCounter[] mekanismMagic$signFreeRecipeRoute(KeyCounter[] inputItems,
+                                                           IPatternDetails pattern, KeyCounter[] originalInputs) {
+        if (!(pattern instanceof Ae2IdentifierImbuementPattern imbuement)
+                || imbuement.requiresCatalystIdentifier()) return inputItems;
+        if (!(ownerTile instanceof CatalystIdentifierSelectionHost)
+                || !imbuement.matchesCurrentRecipe(ownerTile.getLevel())) return null;
+        // The upstream preflight compares pattern definitions, not these
+        // material keys. Its route lambda captures this replacement array;
+        // the caller's raw KeyCounters remain unchanged on failure or success.
+        return imbuement.copySignedCatalystFreeInputs(inputItems, ownerTile.getLevel());
+    }
 
     @Inject(method = "pushPatternWithAdapter", at = @At("HEAD"),
             cancellable = true)
@@ -37,6 +55,9 @@ public abstract class MekEnergisticsImbuementPatternMixin {
         if (!(ownerTile instanceof CatalystIdentifierSelectionHost host)
                 || !imbuement.matchesCurrentRecipe(ownerTile.getLevel())) {
             cir.setReturnValue(false);
+            return;
+        }
+        if (!imbuement.requiresCatalystIdentifier()) {
             return;
         }
         String catalystId = host.catalystIdentifierIdForRecipe(

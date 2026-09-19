@@ -1,0 +1,8 @@
+{
+  "entities": [
+    "minecraft:panda"
+  ],
+  "kind": "loot_table",
+  "loot_table": "minecraft:gameplay/panda_sneeze",
+  "baby": true
+}

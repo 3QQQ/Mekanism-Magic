@@ -7,6 +7,9 @@ import com.example.mekanismmagic.client.gui.MagicItemCountRenderer;
 import com.example.mekanismmagic.client.gui.MagicLeftControlLayout;
 import com.example.mekanismmagic.client.gui.MagicThemedScreen;
 import com.example.mekanismmagic.client.gui.GuiThemeToggleTab;
+import com.example.mekanismmagic.client.gui.RetainedItemModule;
+import mekanism.api.inventory.IInventorySlot;
+import mekanism.client.gui.element.slot.GuiSlot;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks.DirectNetworkStatus;
 import mekanism.client.gui.GuiConfigurableTile;
@@ -16,7 +19,6 @@ import mekanism.client.gui.element.progress.GuiProgress;
 import mekanism.client.gui.element.progress.ProgressType;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
 import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
-import mekanism.client.render.IFancyFontRenderer.TextAlignment;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import mekanism.common.inventory.warning.WarningTracker.WarningType;
 import net.minecraft.client.gui.GuiGraphics;
@@ -35,22 +37,53 @@ public abstract class NativeMagicMachineScreen<
         extends GuiConfigurableTile<TILE, CONTAINER>
         implements MagicThemedScreen {
 
+    private RetainedItemModule retainedModule;
+
     protected NativeMagicMachineScreen(CONTAINER container,
                                        Inventory inventory, Component title,
                                        int imageHeight) {
         super(container, inventory, title);
         imageWidth = 176;
         this.imageHeight = imageHeight;
+        titleLabelY = MagicGuiTheme.MACHINE_TITLE_Y;
         inventoryLabelY = imageHeight - 94;
         dynamicSlots = true;
     }
 
     @Override
     protected final void addGuiElements() {
+        retainedModule = RetainedItemModule.prepare(retainedModule, this, menu, imageWidth, this::onRetainedModuleOpened);
         super.addGuiElements();
         addRenderableWidget(new GuiThemeToggleTab<>(this, getTileEntity()));
+        if (retainedModule != null) addRenderableWidget(retainedModule.tab());
         addWorkGuiElements();
         addMachineGuiElements();
+    }
+
+    @Override
+    protected void addSlots() {
+        super.addSlots();
+        if (retainedModule != null) retainedModule.captureOverlays(children());
+    }
+
+    protected void onRetainedModuleOpened() { }
+    protected final void closeRetainedModule() { if (retainedModule != null) retainedModule.close(); }
+    protected final boolean isRetainedGuiSlot(GuiSlot slot) { return retainedModule != null && retainedModule.isVisualSlot(slot); }
+    protected final boolean isGuiSlotForInventory(GuiSlot visual, IInventorySlot inventory) {
+        return menu.getInventoryContainerSlots().stream().anyMatch(slot -> slot.getInventorySlot() == inventory
+                && visual.getRelativeX() + 1 == slot.x && visual.getRelativeY() + 1 == slot.y);
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+        return !(retainedModule != null && retainedModule.contains(mouseX, mouseY, leftPos, topPos))
+                && super.hasClickedOutside(mouseX, mouseY, left, top, button);
+    }
+
+    @Override
+    public void removed() {
+        if (retainedModule != null) retainedModule.dispose();
+        super.removed();
     }
 
     /**
@@ -81,7 +114,7 @@ public abstract class NativeMagicMachineScreen<
             addRenderableWidget(MagicLeftControlLayout.alignEnergyTab(this,
                     new GuiEnergyTab(this,
                     getTileEntity().getNativeEnergyContainer(),
-                    getTileEntity()::getActive)));
+                    getTileEntity()::getLastProcessingEnergyUsed)));
         }
         if (showProgress()) {
             GuiProgress progress = new GuiProgress(
@@ -176,6 +209,7 @@ public abstract class NativeMagicMachineScreen<
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         MagicGuiTheme.renderMachineFrame(graphics, leftPos, topPos,
                 imageWidth, imageHeight, inventoryLabelY);
+        if (retainedModule != null) retainedModule.renderBackground(graphics, leftPos, topPos, getWindows());
     }
 
     @Override
@@ -201,14 +235,10 @@ public abstract class NativeMagicMachineScreen<
     protected void drawForegroundText(net.minecraft.client.gui.GuiGraphics gui,
                                       int mouseX, int mouseY) {
         MachineStatus status = machineStatus();
-        drawScrollingString(gui, title, 10, titleLabelY,
-                TextAlignment.LEFT, MagicGuiTheme.textPrimary(),
-                MagicGuiTheme.availableTitleWidth(font, status, imageWidth),
-                0, false);
-        MagicGuiTheme.renderStatus(gui, font, status, imageWidth,
-                titleLabelY);
+        drawMachineHeader(gui, title, status, imageWidth);
         renderDirectNetworkStatus(gui);
         renderInventoryText(gui);
+        if (retainedModule != null) retainedModule.renderCaption(gui, font);
     }
 
     private void renderDirectNetworkStatus(GuiGraphics graphics) {
@@ -230,6 +260,9 @@ public abstract class NativeMagicMachineScreen<
             case UNAVAILABLE -> MagicGuiTheme.textMuted();
         };
         Component label = Component.translatable(key);
+        if (com.example.mekanismmagic.client.gui.MagicGuiStyle.isTerminal() && MagicGuiTheme.isLight()) {
+            color = com.example.mekanismmagic.client.gui.GuiMachineReadout.textAccent(color, true);
+        }
         graphics.drawString(font, label,
                 imageWidth - 26 - font.width(label),
                 inventoryLabelY - 11, color, false);

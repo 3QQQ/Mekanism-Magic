@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.client.gui;
 
 import com.example.mekanismmagic.config.MagicClientConfig;
+import com.example.mekanismmagic.container.DockedPanelLayout;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -13,6 +14,8 @@ import net.minecraft.network.chat.Component;
  * GUI-relative; background helpers use absolute screen coordinates.</p>
  */
 public final class MagicGuiTheme {
+    public static final int MACHINE_TITLE_X = 10;
+    public static final int MACHINE_TITLE_Y = 4;
     private static final int DARK_SOURCE_DUST = 0xFF3F8291;
     private static final int DARK_RITUAL_DUST = 0xFF6D58A0;
     private static final int DARK_MAGIC_SPARK = 0xFFAFC8DB;
@@ -51,6 +54,20 @@ public final class MagicGuiTheme {
         return palette().textScreen();
     }
 
+    public static int readoutTrack() { return palette().frame(); }
+
+    public static void renderReadoutFrame(GuiGraphics graphics, int x, int y, int width, int height) {
+        if (MagicGuiStyle.isTerminal()) {
+            graphics.fill(x, y, x + width, y + height, palette().frameDetail());
+            graphics.fill(x, y, x + width - 1, y + height - 1, palette().frameDetailSoft());
+            graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, palette().header());
+            return;
+        }
+        graphics.fill(x, y, x + width, y + height, palette().frameDetailSoft());
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1,
+                isLight() ? 0xFFF7F9FD : 0xFF101722);
+    }
+
     public static int accentSource() {
         return palette().accentSource();
     }
@@ -61,16 +78,19 @@ public final class MagicGuiTheme {
 
     /** Text drawn on the normal enabled button state. */
     public static int activeButtonText() {
+        if (MagicGuiStyle.isTerminal()) return textPrimary();
         return isLight() ? textPrimary() : 0xFFF7FAFF;
     }
 
     public static int inactiveButtonText() {
+        if (MagicGuiStyle.isTerminal()) return isLight() ? 0xFFE4E4EC : 0xFFB0B0BD;
         // The disabled strip is deliberately darker in both texture sets.
         return isLight() ? 0xFFF0F4FA : textMuted();
     }
 
     /** Both texture sets use a bright cyan hover strip. */
     public static int hoveredButtonText() {
+        if (MagicGuiStyle.isTerminal()) return 0xFF292932;
         return isLight() ? 0xFF0B1D2D : 0xFF071821;
     }
 
@@ -90,6 +110,7 @@ public final class MagicGuiTheme {
         Palette palette = palette();
         graphics.fill(left + 4, top + 4, right - 4, bottom - 4,
                 palette.frame());
+        if (MagicGuiStyle.isTerminal()) renderTerminalCase(graphics, left, top, width, height);
 
         // The title/status band stays completely flat. Previous horizontal
         // accent strokes crossed the font because titles begin at y=4.
@@ -110,6 +131,16 @@ public final class MagicGuiTheme {
         graphics.fill(left + 7, inventoryTop, right - 7, bottom - 7,
                 palette.inventorySurface());
 
+        if (MagicGuiStyle.isTerminal()) {
+            graphics.fill(left + 4, top + 5, left + 6, top + 10, palette.accentRitual());
+            graphics.fill(right - 6, top + 5, right - 4, top + 10, palette.accentSource());
+            if (width >= 200 || height >= 190) {
+                for (int x = right - 29; x < right - 10; x += 4) {
+                    graphics.fill(x, bottom - 5, x + 2, bottom - 4, palette.frameDetailSoft());
+                }
+            }
+            return;
+        }
         drawDarkMagicStarlight(graphics, left, right, workTop,
                 inventoryTop, bottom);
         drawLargeFrameDetails(graphics, left, top, right, bottom,
@@ -121,27 +152,41 @@ public final class MagicGuiTheme {
     public static void renderDockedPanel(GuiGraphics graphics,
                                          int left, int top,
                                          int width, int height) {
+        renderDockedPanel(graphics, left, top, width, height, DockedPanelLayout.HEADER);
+    }
+
+    public static void renderDockedPanel(GuiGraphics graphics, int left, int top,
+                                         int width, int height, int headerHeight) {
         Palette palette = palette();
-        graphics.fill(left, top, left + width, top + height,
-                palette.frame());
-        graphics.fill(left, top, left + 12, top + 2,
-                palette.accentRitual());
-        graphics.fill(left, top + 2, left + 2, top + 12,
-                palette.accentSource());
-        graphics.fill(left + width - 2, top + 2, left + width,
-                top + height, palette.panelShadow());
-        graphics.fill(left + 2, top + height - 2, left + width,
-                top + height, palette.panelShadow());
-        graphics.fill(left + 3, top + 2, left + width - 2, top + 14,
-                palette.header());
-        graphics.fill(left + 4, top + 14, left + width - 4,
-                top + height - 4, palette.workSurface());
-        drawDockedPanelDetails(graphics, left, top, width, height, palette);
+        var panel = new DockedPanelLayout(left, top, width, height, headerHeight);
+        fillPanelRect(graphics, panel.frame(), palette.frame());
+        if (MagicGuiStyle.isTerminal()) renderTerminalCase(graphics, left, top, width, height);
+        fillPanelRect(graphics, panel.header(), palette.header());
+        fillPanelRect(graphics, panel.body(), palette.workSurface());
+        if (MagicGuiStyle.isTerminal()) {
+            graphics.fill(left + 4, top, left + 12, top + 1, palette.accentRitual());
+            return;
+        }
+        // Decorations stay inside the same two-pixel rim; no extra bottom stripe or one-sided shadow.
+        int border = DockedPanelLayout.BORDER;
+        graphics.fill(left, top, left + 10, top + border, palette.accentRitual());
+        graphics.fill(left, top, left + border, top + 10, palette.accentRitual());
+        graphics.fill(left + width - 10, top + height - border, left + width, top + height, palette.accentSource());
+        graphics.fill(left + width - border, top + height - 10, left + width, top + height, palette.accentSource());
+    }
+
+    private static void fillPanelRect(GuiGraphics graphics, DockedPanelLayout.Rect rect, int color) {
+        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), color);
     }
 
     /** Draws the same visual system behind a JEI recipe layout. */
     public static void renderRecipePanel(GuiGraphics graphics,
                                          int width, int height) {
+        if (MagicGuiStyle.isTerminal()) {
+            renderTerminalCase(graphics, 0, 0, width, height);
+            graphics.fill(4, 0, Math.min(12, width - 4), 1, accentRitual());
+            return;
+        }
         Palette palette = palette();
         graphics.fill(0, 0, width, height, palette.frame());
         graphics.fill(2, 2, width - 2, height - 2,
@@ -160,8 +205,13 @@ public final class MagicGuiTheme {
     public static void renderPanelCaption(GuiGraphics graphics, Font font,
                                           Component caption,
                                           int left, int top, int width) {
+        renderPanelCaption(graphics, font, caption, left, top, width, DockedPanelLayout.HEADER);
+    }
+
+    public static void renderPanelCaption(GuiGraphics graphics, Font font, Component caption,
+                                          int left, int top, int width, int headerHeight) {
         String text = font.plainSubstrByWidth(caption.getString(), width - 10);
-        graphics.drawString(font, text, left + 5, top + 4,
+        graphics.drawString(font, text, left + 5, top + (headerHeight - font.lineHeight) / 2,
                 textPanel(), false);
     }
 
@@ -188,8 +238,16 @@ public final class MagicGuiTheme {
 
     public static int availableTitleWidth(Font font, MachineStatus status,
                                           int screenWidth) {
-        int statusStart = statusStart(font, status, screenWidth);
-        return Math.max(28, statusStart - 16);
+        return availableTitleWidth(screenWidth, font.width(status.label()));
+    }
+
+    /** Pure layout boundary: keep four pixels between scrolling title and the status indicator. */
+    public static int availableTitleWidth(int screenWidth, int statusTextWidth) {
+        return Math.max(28, statusStart(screenWidth, statusTextWidth) - MACHINE_TITLE_X - 11);
+    }
+
+    public static int statusStart(int screenWidth, int statusTextWidth) {
+        return Math.max(screenWidth / 2 + 12, screenWidth - 8 - Math.max(0, statusTextWidth));
     }
 
     /** Draws a live state indicator at the right edge of the header. */
@@ -209,8 +267,7 @@ public final class MagicGuiTheme {
 
     private static int statusStart(Font font, MachineStatus status,
                                    int screenWidth) {
-        return Math.max(screenWidth / 2 + 12,
-                screenWidth - 8 - font.width(status.label()));
+        return statusStart(screenWidth, font.width(status.label()));
     }
 
     private static void drawFrameRails(GuiGraphics graphics,
@@ -365,26 +422,24 @@ public final class MagicGuiTheme {
         }
     }
 
-    /** Adds a restrained rune track to larger attached module frames. */
-    private static void drawDockedPanelDetails(GuiGraphics graphics,
-                                               int left, int top,
-                                               int width, int height,
-                                               Palette palette) {
-        if (width < 70 && height < 80) {
-            return;
-        }
-        int y = top + height - 3;
-        for (int x = left + 9; x < left + width - 9; x += 11) {
-            graphics.fill(x, y, Math.min(x + 4, left + width - 9), y + 1,
-                    palette.frameDetail());
-        }
+    /** Compact terminal shell. This path is enabled only by an external resource pack. */
+    private static void renderTerminalCase(GuiGraphics graphics, int x, int y, int width, int height) {
+        Palette p = palette();
+        int right = x + width;
+        int bottom = y + height;
+        graphics.fill(x + 1, y, right - 1, bottom, p.panelShadow());
+        graphics.fill(x, y + 1, right, bottom - 1, p.panelShadow());
+        graphics.fill(x + 1, y + 1, right - 1, bottom - 1, p.frame());
+        graphics.fill(x + 1, y + 1, right - 1, y + 2, p.frameDetail());
+        graphics.fill(x + 1, y + 1, x + 2, bottom - 1, p.frameDetail());
+        graphics.fill(x + 3, y + 3, right - 3, bottom - 3, p.workSurface());
     }
 
     private static Palette palette() {
-        return isLight() ? LIGHT : DARK;
+        return MagicGuiStyle.palette(isLight(), isLight() ? LIGHT : DARK);
     }
 
-    private record Palette(int textPrimary, int textMuted, int textPanel,
+    record Palette(int textPrimary, int textMuted, int textPanel,
                            int textScreen, int accentSource,
                            int accentRitual, int frame, int header,
                            int workSurface, int inventorySurface,

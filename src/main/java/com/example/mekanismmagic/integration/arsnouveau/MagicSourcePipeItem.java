@@ -1,5 +1,7 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.ModCompatibility;
+import com.example.mekanismmagic.integration.common.network.MagicPipeResourceHooks;
 import java.util.List;
 import mekanism.common.util.text.TextUtils;
 import net.minecraft.ChatFormatting;
@@ -24,14 +26,17 @@ public final class MagicSourcePipeItem extends BlockItem {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(stat("tooltip.mekanism_magic.magic_source_pipe.capacity",
-                tier.capacity()));
-        tooltip.add(stat(
-                "tooltip.mekanism_magic.magic_source_pipe.pull_rate",
-                tier.pullRate()));
-        tooltip.add(Component.translatable(
-                        "tooltip.mekanism_magic.magic_source_pipe.transfers")
-                .withStyle(ChatFormatting.DARK_GRAY));
+        if (ModCompatibility.arsNouveauLoaded()) {
+            tooltip.add(stat("tooltip.mekanism_magic.magic_source_pipe.capacity",
+                    tier.capacity()));
+            tooltip.add(stat(
+                    "tooltip.mekanism_magic.magic_source_pipe.pull_rate",
+                    tier.pullRate()));
+            tooltip.add(Component.translatable(
+                            "tooltip.mekanism_magic.magic_source_pipe.transfers")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+        }
+        MagicPipeResourceHooks.appendTooltip(tier, tooltip);
     }
 
     private static Component stat(String key, int value) {

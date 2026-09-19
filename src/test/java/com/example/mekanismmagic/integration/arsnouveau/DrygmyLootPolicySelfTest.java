@@ -69,6 +69,17 @@ public final class DrygmyLootPolicySelfTest {
     private static void verifiesDefaultEntityMappings() throws IOException {
         checkResource("nether_star", "minecraft:wither");
         checkResource("wilden_tribute", "ars_nouveau:wilden_boss");
+        checkResource("echo_shard", "minecraft:warden");
+        checkResource("turtle_scute", "minecraft:turtle");
+        checkResource("armadillo_scute", "minecraft:armadillo");
+        for (String item : new String[]{"echo_shard", "turtle_scute", "armadillo_scute"}) {
+            check(DrygmyLootPolicy.hasFixedDropMapping("drygmy_special_loot/" + item,
+                            ResourceLocation.withDefaultNamespace(item)),
+                    "Missing supplemental fixed-drop mapping: " + item);
+        }
+        check(!DrygmyLootPolicy.hasFixedDropMapping("drygmy_special_loot/echo_shard",
+                        ResourceLocation.withDefaultNamespace("diamond")),
+                "Echo source tag unexpectedly maps to an unrelated material");
         check(DrygmyLootPolicy.hasFixedDropMapping(
                         "drygmy_special_loot/nether_star",
                         ResourceLocation.withDefaultNamespace("nether_star")),

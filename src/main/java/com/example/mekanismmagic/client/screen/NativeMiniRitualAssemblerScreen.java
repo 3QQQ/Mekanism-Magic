@@ -5,6 +5,7 @@ import com.example.mekanismmagic.client.gui.GuiChalkModuleTab;
 import com.example.mekanismmagic.client.gui.MagicGuiTheme;
 import com.example.mekanismmagic.client.OccultismRecipeViewerTypes;
 import com.example.mekanismmagic.container.NativeMiniRitualAssemblerContainer;
+import com.example.mekanismmagic.container.DockedPanelLayout;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,12 +21,13 @@ public final class NativeMiniRitualAssemblerScreen
         NativeMiniRitualAssemblerContainer> {
     private final List<GuiSlot> chalkGuiSlots = new ArrayList<>();
     private boolean chalkModuleOpen;
+    private static final DockedPanelLayout PANEL = DockedPanelLayout.CHALK;
 
     public NativeMiniRitualAssemblerScreen(
         NativeMiniRitualAssemblerContainer container,
             Inventory inventory, Component title) {
         super(container, inventory, title, 208);
-        imageWidth = 210;
+        imageWidth = DockedPanelLayout.RITUAL_SCREEN_WIDTH;
         inventoryLabelX = 26;
         getTileEntity().setChalkModuleOpen(false);
     }
@@ -89,9 +91,7 @@ public final class NativeMiniRitualAssemblerScreen
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (chalkModuleOpen) {
-            int left = leftPos + 236;
-            int top = topPos + 88;
-            MagicGuiTheme.renderDockedPanel(graphics, left, top, 80, 92);
+            MagicGuiTheme.renderDockedPanel(graphics, leftPos + PANEL.x(), topPos + PANEL.y(), PANEL.width(), PANEL.height());
         }
     }
 
@@ -101,7 +101,7 @@ public final class NativeMiniRitualAssemblerScreen
         if (chalkModuleOpen) {
             MagicGuiTheme.renderPanelCaption(graphics, font,
                     Component.translatable("gui.mekanism_magic.chalk"),
-                    236, 88, 80);
+                    PANEL.x(), PANEL.y(), PANEL.width());
         }
     }
 
@@ -123,9 +123,7 @@ public final class NativeMiniRitualAssemblerScreen
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY,
                                         int left, int top, int button) {
-        if (chalkModuleOpen
-                && mouseX >= leftPos + 236 && mouseX < leftPos + 316
-                && mouseY >= topPos + 88 && mouseY < topPos + 180) {
+        if (chalkModuleOpen && PANEL.contains(mouseX - leftPos, mouseY - topPos)) {
             return false;
         }
         return super.hasClickedOutside(mouseX, mouseY, left, top, button);
@@ -134,7 +132,6 @@ public final class NativeMiniRitualAssemblerScreen
     private static boolean isChalkGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x >= 240 && x <= 294 && (x - 240) % 18 == 0
-                && y >= 104 && y <= 158 && (y - 104) % 18 == 0;
+        return PANEL.isGridSlot(x, y, 16);
     }
 }

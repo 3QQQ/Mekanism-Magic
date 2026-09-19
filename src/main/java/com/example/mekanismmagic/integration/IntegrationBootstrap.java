@@ -2,6 +2,11 @@ package com.example.mekanismmagic.integration;
 
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauIntegration;
 import com.example.mekanismmagic.integration.common.entity.EntityContainerRegistry;
+import com.example.mekanismmagic.integration.common.entity.EntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.EnderLeadEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.IndustrialForegoingEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.JustDireThingsEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.EnderIoEntityContainerAdapter;
 import com.example.mekanismmagic.integration.occultism.OccultismContentModule;
 import com.example.mekanismmagic.integration.occultism.OccultismEntityContainerAdapter;
 import net.neoforged.bus.api.IEventBus;
@@ -32,6 +37,15 @@ public final class IntegrationBootstrap {
         if (ModCompatibility.arsNouveauLoaded()) {
             EntityContainerRegistry.register(ArsNouveauIntegration.INSTANCE);
         }
+        for (EntityContainerAdapter adapter : List.of(
+                EnderLeadEntityContainerAdapter.INSTANCE,
+                IndustrialForegoingEntityContainerAdapter.INSTANCE,
+                JustDireThingsEntityContainerAdapter.INSTANCE,
+                EnderIoEntityContainerAdapter.INSTANCE)) {
+            if (ModCompatibility.loaded(adapter.modId())) {
+                EntityContainerRegistry.register(adapter);
+            }
+        }
         initialized = true;
     }
 
@@ -49,6 +63,10 @@ public final class IntegrationBootstrap {
         }
         if (modules.isEmpty()) {
             return;
+        }
+        if (ModCompatibility.magicPipesEnabled()) {
+            com.example.mekanismmagic.integration.common.network
+                    .MagicPipeRegistries.register(modBus);
         }
         if (modules.stream().anyMatch(
                 ContentIntegrationModule::registersPluginItems)) {

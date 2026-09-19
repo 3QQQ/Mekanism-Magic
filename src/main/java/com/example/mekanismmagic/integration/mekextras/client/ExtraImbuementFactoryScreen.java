@@ -29,7 +29,6 @@ import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.gui.element.slot.SlotType;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
 import mekanism.client.recipe_viewer.interfaces.IRecipeViewerGhostTarget;
-import mekanism.client.render.IFancyFontRenderer.TextAlignment;
 import mekanism.common.inventory.warning.WarningTracker.WarningType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -61,7 +60,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
         int tier = getTileEntity().tier.ordinal();
         imageWidth = ImbuementFactoryLayout.extraImageWidth(tier);
         inventoryLabelX = ImbuementFactoryLayout.extraInventoryX(tier);
-        titleLabelY = 4;
+        titleLabelY = MagicGuiTheme.MACHINE_TITLE_Y;
         dynamicSlots = true;
         tile().setCatalystLibraryOpen(false);
     }
@@ -108,8 +107,8 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                 () -> libraryOpen, this::toggleLibrary));
         catalystLockSlot = addRenderableWidget(
                 new GuiSlot(SlotType.EXTRA, this,
-                        ImbuementFactoryLayout.LOCK_SLOT_X - 1,
-                        ImbuementFactoryLayout.LOCK_SLOT_Y - 1));
+                        CatalystLibraryLayout.activeSlotX(imageWidth) - 1,
+                        CatalystLibraryLayout.ACTIVE_SLOT_Y - 1));
         configureLockGuiSlot(catalystLockSlot);
         addLibraryButtons();
     }
@@ -119,7 +118,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
         libraryButtons.clear();
         libraryButtons.add((MekanismButton) addRenderableWidget(
                 new MekanismButton(this, panelLeft + 4,
-                        CatalystLibraryLayout.PANEL_TOP + 90, 28, 18,
+                CatalystLibraryLayout.FOOTER_TOP, 28, 18,
                         Component.literal("<"),
                         (element, mouseX, mouseY) -> {
                             clickMachineButton(220);
@@ -127,7 +126,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                         })));
         libraryButtons.add((MekanismButton) addRenderableWidget(
                 new MekanismButton(this, panelLeft + 66,
-                        CatalystLibraryLayout.PANEL_TOP + 90, 28, 18,
+                CatalystLibraryLayout.FOOTER_TOP, 28, 18,
                         Component.literal(">"),
                         (element, mouseX, mouseY) -> {
                             clickMachineButton(221);
@@ -162,6 +161,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                         .IGhostIngredientConsumer() {
                     @Override
                     public Object supportedTarget(Object ingredient) {
+                        if (!libraryOpen || MekEnergisticsGuiCompat.isPatternWindowOpen(getWindows())) return null;
                         return ingredient instanceof ItemStack stack
                                 && stack.is(ArsNouveauRegistries
                                 .CATALYST_IDENTIFIER_ITEM.get())
@@ -170,6 +170,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
 
                     @Override
                     public void accept(Object ingredient) {
+                        if (!libraryOpen || MekEnergisticsGuiCompat.isPatternWindowOpen(getWindows())) return;
                         if (!(ingredient instanceof ItemStack stack)) {
                             return;
                         }
@@ -192,7 +193,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
     protected void renderBg(GuiGraphics graphics, float partialTick,
                             int mouseX, int mouseY) {
         MekEnergisticsGuiCompat.updateMachineSlot(
-                getWindows(), catalystLockSlot);
+                getWindows(), catalystLockSlot, libraryOpen);
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         MagicGuiTheme.renderMachineFrame(graphics, leftPos, topPos,
                 imageWidth, imageHeight, inventoryLabelY);
@@ -200,33 +201,24 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
             return;
         }
         int left = leftPos + CatalystLibraryLayout.panelLeft(imageWidth);
-        int top = topPos + CatalystLibraryLayout.PANEL_TOP;
+        int top = topPos + CatalystLibraryLayout.FRAME_TOP;
         MagicGuiTheme.renderDockedPanel(graphics, left, top,
                 CatalystLibraryLayout.PANEL_WIDTH,
-                CatalystLibraryLayout.PANEL_HEIGHT);
+                CatalystLibraryLayout.FRAME_HEIGHT, CatalystLibraryLayout.HEADER_HEIGHT);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (MekEnergisticsGuiCompat.updateMachineSlot(
-                getWindows(), catalystLockSlot)
+                getWindows(), catalystLockSlot, libraryOpen)
                 && button == 1
-                && mouseX >= leftPos + ImbuementFactoryLayout.LOCK_SLOT_X - 1
-                && mouseX < leftPos + ImbuementFactoryLayout.LOCK_SLOT_X + 19
-                && mouseY >= topPos + ImbuementFactoryLayout.LOCK_SLOT_Y - 1
-                && mouseY < topPos + ImbuementFactoryLayout.LOCK_SLOT_Y + 18) {
+                && CatalystLibraryLayout.containsActiveSlot(imageWidth, mouseX - leftPos, mouseY - topPos)) {
             clickMachineButton(399);
             return true;
         }
         if (libraryOpen && button == 1) {
-            int x = (int) (mouseX - leftPos
-                    - CatalystLibraryLayout.slotLeft(imageWidth));
-            int y = (int) (mouseY - topPos
-                    - CatalystLibraryLayout.SLOT_TOP);
-            if (x >= 0 && x < 72 && y >= 0 && y < 72
-                    && x % 18 < 17 && y % 18 < 17) {
-                int pageSlot = (y / 18) * CatalystLibraryLayout.COLUMNS
-                        + x / 18;
+            int pageSlot = CatalystLibraryLayout.pageSlotAt(imageWidth, mouseX - leftPos, mouseY - topPos);
+            if (pageSlot >= 0) {
                 int index = tile().catalystPage()
                         * CatalystLibraryLayout.PAGE_SIZE + pageSlot;
                 if (index < tile().catalystVisibleSlotCount()) {
@@ -245,6 +237,7 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
     }
 
     private void updateLibraryVisibility() {
+        MekEnergisticsGuiCompat.updateMachineSlot(getWindows(), catalystLockSlot, libraryOpen);
         int currentPage = tile().catalystPage();
         displayedCatalystPage = currentPage;
         displayedCatalystVisibleSlotCount =
@@ -277,11 +270,11 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                                         int left, int top, int button) {
         int panelLeft = leftPos
                 + CatalystLibraryLayout.panelLeft(imageWidth);
-        int panelTop = topPos + CatalystLibraryLayout.PANEL_TOP;
+        int panelTop = topPos + CatalystLibraryLayout.FRAME_TOP;
         if (libraryOpen && mouseX >= panelLeft
                 && mouseX < panelLeft + CatalystLibraryLayout.PANEL_WIDTH
                 && mouseY >= panelTop
-                && mouseY < panelTop + CatalystLibraryLayout.PANEL_HEIGHT) {
+                && mouseY < panelTop + CatalystLibraryLayout.FRAME_HEIGHT) {
             return false;
         }
         return super.hasClickedOutside(mouseX, mouseY, left, top, button);
@@ -306,23 +299,18 @@ public final class ExtraImbuementFactoryScreen extends GuiConfigurableTile<
                                       int mouseY) {
         MachineStatus status = tile().getActive()
                 ? MachineStatus.RUNNING : MachineStatus.IDLE;
-        drawScrollingString(graphics, title, 10, titleLabelY,
-                TextAlignment.LEFT, MagicGuiTheme.textPrimary(),
-                MagicGuiTheme.availableTitleWidth(font, status, imageWidth),
-                0, false);
-        MagicGuiTheme.renderStatus(graphics, font, status, imageWidth,
-                titleLabelY);
+        drawMachineHeader(graphics, title, status, imageWidth);
         renderInventoryText(graphics);
         if (libraryOpen) {
             int panelLeft = CatalystLibraryLayout.panelLeft(imageWidth);
             MagicGuiTheme.renderPanelCaption(graphics, font,
                     Component.translatable("gui.mekanism_magic.catalysts"),
-                    panelLeft, CatalystLibraryLayout.PANEL_TOP,
-                    CatalystLibraryLayout.PANEL_WIDTH);
+                    panelLeft, CatalystLibraryLayout.FRAME_TOP,
+                    CatalystLibraryLayout.PANEL_WIDTH - 26, CatalystLibraryLayout.HEADER_HEIGHT);
             MagicGuiTheme.renderPageNumber(graphics, font,
                     tile().catalystPage(), tile().catalystPageCount(),
                     panelLeft + 49,
-                    CatalystLibraryLayout.PANEL_TOP + 95);
+                    CatalystLibraryLayout.FOOTER_TOP + 5);
         }
         super.drawForegroundText(graphics, mouseX, mouseY);
     }

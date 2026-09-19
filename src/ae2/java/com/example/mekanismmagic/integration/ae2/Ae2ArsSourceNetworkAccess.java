@@ -16,7 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-/** Pulls Ars Energistique's Source key through a machine's active AE node. */
+/** Pulls the shared Source key through a machine's active AE node. */
 final class Ae2ArsSourceNetworkAccess
         implements ArsSourceNetworkAccess.Handler {
     static final Ae2ArsSourceNetworkAccess INSTANCE =

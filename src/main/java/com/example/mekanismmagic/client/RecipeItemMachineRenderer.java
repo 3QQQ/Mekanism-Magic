@@ -69,8 +69,9 @@ final class RecipeItemMachineRenderer {
         float time = level.getGameTime() + partialTick
                 + (tile.getBlockPos().asLong() & 31L) * 0.19F;
         if (placement.factory) {
-            renderFactory(entries, placement, time, tile, poseStack,
-                    bufferSource, packedLight, cameraDistanceSquared);
+            renderFactory(entries, placement, kind, time, tile,
+                    poseStack, bufferSource, packedLight,
+                    cameraDistanceSquared);
         } else {
             renderMachine(entries, placement, time, tile, poseStack,
                     bufferSource, packedLight, cameraDistanceSquared);
@@ -114,7 +115,8 @@ final class RecipeItemMachineRenderer {
 
     private static void renderFactory(
             List<RecipeItemDisplayState.Entry> entries,
-            ItemPlacement placement, float time,
+            ItemPlacement placement,
+            MagicMachineAnimationRenderer.Kind kind, float time,
             TileEntityMekanism tile, PoseStack poseStack,
             MultiBufferSource bufferSource, int light,
             double cameraDistanceSquared) {
@@ -125,14 +127,16 @@ final class RecipeItemMachineRenderer {
         for (int index = 0; index < visible; index++) {
             RecipeItemDisplayState.Entry entry = entries.get(index);
             float phaseTime = time + index * 11.7F;
+            float laneX = FACTORY_LANES[index];
             if (!entry.output().isEmpty()) {
-                renderTransformation(entry, FACTORY_LANES[index],
+                renderTransformation(entry, laneX,
                         placement, phaseTime, tile, poseStack,
                         bufferSource, light, entry.lane());
             } else {
-                renderOrbiting(entry.input(), FACTORY_LANES[index],
+                renderOrbiting(entry.input(), laneX,
                         placement.centerY, placement.centerZ,
-                        0.022F, phaseTime * 2.2F,
+                        0.022F,
+                        phaseTime * 2.2F,
                         placement.scale, tile, poseStack,
                         bufferSource, light, entry.lane());
             }
@@ -244,6 +248,7 @@ final class RecipeItemMachineRenderer {
             default -> null;
         };
     }
+
 
     private record ItemPlacement(float centerX, float centerY,
                                  float centerZ, float intakeZ,

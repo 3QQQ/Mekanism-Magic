@@ -5,6 +5,7 @@ import com.example.mekanismmagic.api.IRecipeEntityDisplay;
 import com.example.mekanismmagic.api.IRecipeItemDisplay;
 import com.example.mekanismmagic.api.RecipeEntityDisplayState;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
+import com.example.mekanismmagic.integration.common.energy.MeteredMachineEnergyContainer;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks.DirectNetworkStatus;
@@ -32,6 +33,7 @@ import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableBoolean;
 import mekanism.common.inventory.container.sync.SyncableInt;
+import mekanism.common.inventory.container.sync.SyncableLong;
 import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
@@ -142,6 +144,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
      * complete recipe list on every working tick.
      */
     private MachineRecipeResult cachedActiveRecipe;
+    private long syncedProcessingEnergyUsage;
     private long cachedActiveRecipeFingerprint = Long.MIN_VALUE;
     private final RecipeEntityDisplayState recipeEntityDisplay =
             new RecipeEntityDisplayState();
@@ -156,16 +159,24 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     protected void presetVariables() {
         super.presetVariables();
         configComponent = new TileComponentConfig(this,
-                EnumSet.of(TransmissionType.ITEM, TransmissionType.ENERGY));
+                nativeTransmissions());
         ejectorComponent = new TileComponentEjector(this)
                 .setCanEject(type -> level instanceof ServerLevel)
                 .setOutputData(configComponent, TransmissionType.ITEM);
     }
 
+    /** Resource-only machines can omit FE storage and its charging slot. */
+    protected EnumSet<TransmissionType> nativeTransmissions() {
+        return EnumSet.of(TransmissionType.ITEM, TransmissionType.ENERGY);
+    }
+
     @Override
     protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener) {
+        if (!nativeTransmissions().contains(TransmissionType.ENERGY)) {
+            return null;
+        }
         EnergyContainerHelper helper = EnergyContainerHelper.forSideWithConfig(this);
-        energyContainer = MachineEnergyContainer.input(this, listener);
+        energyContainer = MeteredMachineEnergyContainer.forInput(this, listener);
         helper.addContainer(energyContainer);
         var energyConfig = configComponent.setupInputConfig(
                 TransmissionType.ENERGY, energyContainer);
@@ -180,9 +191,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper helper = InventorySlotHelper.forSideWithConfig(this);
-        energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, () -> level,
-                listener, energySlotX(), energySlotY());
-        helper.addSlot(energySlot);
+        if (energyContainer != null) {
+            energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, () -> level,
+                    listener, energySlotX(), energySlotY());
+            helper.addSlot(energySlot);
+        }
         createMachineSlots(helper, listener);
         createMachineAddonSlots(helper, listener);
         completeNativeItemIOContract();
@@ -244,6 +257,8 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     public void addContainerTrackers(MekanismContainer container) {
         super.addContainerTrackers(container);
+        container.track(SyncableLong.create(this::getLastProcessingEnergyUsed,
+                value -> syncedProcessingEnergyUsage = Math.max(0L, value)));
         container.track(SyncableInt.create(() -> progress,
                 value -> progress = value));
         container.track(SyncableInt.create(() -> progressRequired,
@@ -280,8 +295,25 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         if (energySlot != null) {
             registerNativeSlotAccess(List.of(energySlot), true, true);
         }
-        var itemConfig = configComponent.setupItemIOConfig(
-                inputSlots, outputSlots, energySlot, false);
+        ConfigInfo itemConfig;
+        if (energySlot != null) {
+            itemConfig = configComponent.setupItemIOConfig(
+                    inputSlots, outputSlots, energySlot, false);
+        } else {
+            // Mekanism's convenience helper always registers an ENERGY item
+            // category, and InventorySlotInfo rejects its null charging slot.
+            itemConfig = configComponent.getConfig(TransmissionType.ITEM);
+            if (itemConfig != null) {
+                itemConfig.addSlotInfo(DataType.INPUT,
+                        new InventorySlotInfo(true, false, inputSlots));
+                itemConfig.addSlotInfo(DataType.OUTPUT,
+                        new InventorySlotInfo(false, true, outputSlots));
+                List<IInventorySlot> ioSlots = new ArrayList<>(inputSlots);
+                ioSlots.addAll(outputSlots);
+                itemConfig.addSlotInfo(DataType.INPUT_OUTPUT,
+                        new InventorySlotInfo(true, true, ioSlots));
+            }
+        }
         // A custom slot is input-only by default. Bidirectional or output
         // custom slots must be declared explicitly with addNativeItemSlotInfo;
         // silently treating every extra as an output lets the native ejector
@@ -501,6 +533,11 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return logicalSlots;
     }
 
+    /** Stable backing-slot identity for presentation modules; this does not change slot order or access policy. */
+    public final IInventorySlot getLogicalSlot(int logicalIndex) {
+        return logicalSlots == null ? null : logicalSlots.get(logicalIndex);
+    }
+
     /**
      * ItemStack's disk codec rejects oversized counts. Persist machine
      * batches as a one-item component template plus an independent long
@@ -645,6 +682,25 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         return energyContainer;
     }
 
+    /** Joules consumed by processing in the previous complete world tick, not nominal power. */
+    public final long getLastProcessingEnergyUsed() {
+        if (level != null && level.isClientSide) return syncedProcessingEnergyUsage;
+        return level != null && energyContainer instanceof MeteredMachineEnergyContainer<?> metered
+                ? metered.getLastProcessingUsage() : 0L;
+    }
+
+    /** Return reserved Joules when a same-tick resource operation fails or only partly commits. */
+    protected final long refundProcessingEnergy(long amount) {
+        if (amount <= 0 || energyContainer == null) return 0;
+        if (energyContainer instanceof MeteredMachineEnergyContainer<?> metered) return metered.refundInternalEnergy(amount);
+        return amount - energyContainer.insert(amount, Action.EXECUTE, AutomationType.INTERNAL);
+    }
+
+    private void clearProcessingEnergyUsage() {
+        syncedProcessingEnergyUsage = 0;
+        if (energyContainer instanceof MeteredMachineEnergyContainer<?> metered) metered.clearProcessingUsage();
+    }
+
     public final IInventorySlot getNativeInputSlot() {
         return inputSlot;
     }
@@ -687,14 +743,13 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     @Override
     public void recalculateUpgrades(Upgrade upgrade) {
-        if (energyContainer == null) {
-            return;
-        }
-        if (upgrade == Upgrade.SPEED) {
-            energyContainer.updateEnergyPerTick();
-        } else if (upgrade == Upgrade.ENERGY) {
-            energyContainer.updateMaxEnergy();
-            energyContainer.updateEnergyPerTick();
+        if (energyContainer != null) {
+            if (upgrade == Upgrade.SPEED) {
+                energyContainer.updateEnergyPerTick();
+            } else if (upgrade == Upgrade.ENERGY) {
+                energyContainer.updateMaxEnergy();
+                energyContainer.updateEnergyPerTick();
+            }
         }
         onNativeUpgradeChanged(upgrade);
     }
@@ -961,13 +1016,16 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
             if (snapshot == null) {
                 snapshot = snapshotInventory();
             }
-            if (level instanceof ServerLevel serverLevel
-                    && !recipe.complete(serverLevel, worldPosition)) {
+            // Prepare all item changes on the detached snapshot first. A
+            // rejected/blocked reusable entity container must not execute a
+            // command or world-effect completion while retaining its input.
+            if (!consumeSnapshot(snapshot, recipe)) {
                 progress = 0;
                 return finishServerUpdate(clearRecipeDisplays() || changed,
                         false);
             }
-            if (!consumeSnapshot(snapshot, recipe)) {
+            if (level instanceof ServerLevel serverLevel
+                    && !recipe.complete(serverLevel, worldPosition)) {
                 progress = 0;
                 return finishServerUpdate(clearRecipeDisplays() || changed,
                         false);
@@ -1456,6 +1514,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
         // their owner is removed. Never reuse a cache retained across chunk
         // unload/revive; this also covers machines moved by an upgrade.
         clearFastEjectCapabilityCaches();
+        clearProcessingEnergyUsage();
         super.onLoad();
         onNativeMachineLoaded();
         MachineNetworkLifecycleHooks.onLoad(this);
@@ -1472,6 +1531,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     @Override
     public final void setRemoved() {
         clearFastEjectCapabilityCaches();
+        clearProcessingEnergyUsage();
         super.setRemoved();
         onNativeMachineRemoved();
         MachineNetworkLifecycleHooks.onRemoved(this);
@@ -1485,6 +1545,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public final void clearRemoved() {
         super.clearRemoved();
         clearFastEjectCapabilityCaches();
+        clearProcessingEnergyUsage();
         onNativeMachineRevived();
         MachineNetworkLifecycleHooks.onRevived(this);
     }
@@ -1495,6 +1556,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
 
     @Override
     public void onChunkUnloaded() {
+        clearProcessingEnergyUsage();
         super.onChunkUnloaded();
         MachineNetworkLifecycleHooks.onChunkUnloaded(this);
     }
@@ -1525,6 +1587,7 @@ public abstract class NativeMagicMachineBlockEntity extends TileEntityMekanism
     public final void loadAdditional(net.minecraft.nbt.CompoundTag tag,
                                      net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        clearProcessingEnergyUsage();
         progress = tag.getInt("magic_progress");
         progressRequired = Math.max(1, tag.getInt("magic_progress_required"));
         activeRecipe = tag.getString("magic_active_recipe");

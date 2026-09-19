@@ -1,0 +1,14 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:duck"
+  ],
+  "kind": "item",
+  "item": "earthmobsmod:duck_egg",
+  "adult": true,
+  "nbt": {
+    "IsChickenJockey": false
+  }
+}

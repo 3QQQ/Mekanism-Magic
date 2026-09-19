@@ -1,0 +1,11 @@
+{
+  "entities": [
+    "minecraft:chicken"
+  ],
+  "kind": "item",
+  "item": "minecraft:egg",
+  "adult": true,
+  "nbt": {
+    "IsChickenJockey": false
+  }
+}

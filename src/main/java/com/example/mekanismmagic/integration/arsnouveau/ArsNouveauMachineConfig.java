@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -20,14 +21,20 @@ public final class ArsNouveauMachineConfig {
     public static final int RAW_SOURCE_PER_OPERATION = 100;
     public static final int AMPLIFIED_SOURCE_PER_OPERATION = 150;
     public static final int SOURCE_AMPLIFICATION_SPEED_BONUS_PERCENT = 10;
-    public static final long IMBUEMENT_FACTORY_FE_PER_TICK = 600L;
+    public static final long IMBUEMENT_FACTORY_JOULES_PER_TICK = MagicMachineEnergyProfiles.MATERIAL_PROCESSING;
+    /** @deprecated Legacy name; this rate has always been in Mekanism Joules, not FE. */
+    @Deprecated
+    public static final long IMBUEMENT_FACTORY_FE_PER_TICK = IMBUEMENT_FACTORY_JOULES_PER_TICK;
     public static final int ENERGYLESS_TICK_INTERVAL = 5;
     public static final int SOURCE_CONVERTER_DURATION = 100;
     // SOURCE_CAPACITY was expanded from the original 10k design to 100k.
     // Scale one conversion batch and its FE cost together so filling a base
     // converter still takes the intended ~500 seconds while preserving the
-    // 500 FE / Source conversion ratio.
-    public static final int SOURCE_CONVERTER_FE_PER_TICK = 5_000;
+    // 500 J / Source ratio (= 200 FE / Source at the default 2.5 J/FE).
+    public static final int SOURCE_CONVERTER_JOULES_PER_TICK = 5_000;
+    /** @deprecated Legacy name; retained for source compatibility, not an FE-denominated cost. */
+    @Deprecated
+    public static final int SOURCE_CONVERTER_FE_PER_TICK = SOURCE_CONVERTER_JOULES_PER_TICK;
     public static final long SOURCE_CONVERTER_ENERGY_CAPACITY = 40_000_000L;
     public static final int SOURCE_CONVERTER_SOURCE_PER_OPERATION = 1_000;
     public static final int IMBUEMENT_DURATION = 100;

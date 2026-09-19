@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.integration.mekenergistics.mixin;
 
 import com.beipuo.mekenergistics.upgrade.MeUpgradeRecipeMachineAdapter;
-import mekanism.common.item.ItemTierInstaller;
 import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.interfaces.ITierUpgradable;
 import mekanism.common.upgrade.IUpgradeData;
@@ -22,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Carries Mek Energistics' independently attached runtime across a normal
- * Mekanism tier-installer block replacement.
+ * Mekanism or Mekanism Extras tier-installer block replacement.
  *
  * <p>The machine's {@link IUpgradeData} deliberately remains owned by the
  * machine implementation. MekE state is captured separately at the exact
@@ -31,7 +30,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * slots, priority, interface recovery/pending work and managed-node state
  * without coupling those fields to every machine-specific upgrade payload.</p>
  */
-@Mixin(value = ItemTierInstaller.class, remap = false)
+@org.spongepowered.asm.mixin.Pseudo
+@Mixin(targets = {
+        "mekanism.common.item.ItemTierInstaller",
+        "com.jerry.mekextras.common.item.ItemExtraTierInstaller"
+}, remap = false)
 public abstract class MekEnergisticsTierInstallerStateMixin {
     @Unique
     private static final ThreadLocal<CapturedMeState>

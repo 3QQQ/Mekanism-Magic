@@ -3,9 +3,10 @@ package com.example.mekanismmagic.integration.arsnouveau;
 import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.integration.common.network
         .MagicSourceExternalEndpointHooks;
-import com.hollingsworth.arsnouveau.api.source.ISourceCap;
-import com.hollingsworth.arsnouveau.common.capability.SourceStorage;
-import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
+import com.example.mekanismmagic.integration.common.network.PipeSourceStorage;
+import com.example.mekanismmagic.integration.common.network.BasicPipeSourceStorage;
+import com.example.mekanismmagic.integration.common.network.MagicPipeResourceHooks;
+import com.example.mekanismmagic.integration.common.network.SourceAcceptorHooks;
 import mekanism.api.Action;
 import mekanism.api.tier.BaseTier;
 import mekanism.api.tier.ITier;
@@ -16,7 +17,6 @@ import mekanism.common.content.network.transmitter.Transmitter;
 import mekanism.common.lib.transmitter.CompatibleTransmitterValidator;
 import mekanism.common.lib.transmitter.ConnectionType;
 import mekanism.common.lib.transmitter.acceptor.AbstractAcceptorCache;
-import mekanism.common.lib.transmitter.acceptor.AcceptorCache;
 import mekanism.common.tier.PipeTier;
 import mekanism.common.tile.transmitter.TileEntityTransmitter;
 import mekanism.common.upgrade.transmitter.TransmitterUpgradeData;
@@ -37,14 +37,15 @@ import java.util.UUID;
  * Mekanism BufferedTransmitter specialization whose buffer is Ars Source.
  */
 public final class MagicSourceTransmitter extends BufferedTransmitter<
-        ISourceCap, MagicSourceNetwork, SourceStorage,
+        PipeSourceStorage, MagicSourceNetwork, PipeSourceStorage,
         MagicSourceTransmitter> implements
         IUpgradeableTransmitter<MagicSourcePipeUpgradeData> {
     private static final ITier EXTRAS_SAFE_TERMINAL_TIER =
             () -> BaseTier.CREATIVE;
     public final PipeTier tier;
     public final MagicSourcePipeTier sourceTier;
-    private final SourceStorage buffer;
+    private final BasicPipeSourceStorage buffer;
+    private final MagicPipeResourceHooks.PipeExtension extension;
     private int saveShare;
 
     public MagicSourceTransmitter(
@@ -71,26 +72,23 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
                 : sourceTierAttribute.tier();
         // Mekanism's local pipe buffer is capacity-limited, not pump-rate
         // limited. The tier pull rate is applied only by pullFromAcceptors().
-        buffer = new SourceStorage(getTierCapacity(),
+        buffer = new BasicPipeSourceStorage(getTierCapacity(),
                 getTierCapacity(), getTierCapacity()) {
             @Override
             public void onContentsChanged() {
                 MagicSourceTransmitter.this.onContentsChanged();
             }
         };
+        extension = MagicPipeResourceHooks.createPipe(this);
     }
 
     @Override
-    protected AbstractAcceptorCache<ISourceCap, ?> createAcceptorCache() {
-        return new AcceptorCache<>(
-                getTransmitterTile(),
-                CapabilityRegistry.SOURCE_CAPABILITY);
+    protected AbstractAcceptorCache<PipeSourceStorage, ?> createAcceptorCache() {
+        return SourceAcceptorHooks.create(getTransmitterTile());
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public AcceptorCache<ISourceCap> getAcceptorCache() {
-        return (AcceptorCache<ISourceCap>) super.getAcceptorCache();
+    public MagicPipeResourceHooks.PipeExtension extension() {
+        return extension;
     }
 
     @Override
@@ -102,7 +100,7 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
             if (!isConnectionType(side, ConnectionType.PULL)) {
                 continue;
             }
-            ISourceCap acceptor = getAcceptor(side);
+            PipeSourceStorage acceptor = getAcceptor(side);
             if (acceptor == null) {
                 continue;
             }
@@ -137,7 +135,7 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
         if (amount <= 0) {
             return 0;
         }
-        ISourceCap target = hasTransmitterNetwork()
+        PipeSourceStorage target = hasTransmitterNetwork()
                 ? getTransmitterNetwork().getBuffer() : buffer;
         return target.receiveSource(amount, action.execute() ? false : true);
     }
@@ -176,7 +174,8 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
     @Override
     public MagicSourcePipeUpgradeData getUpgradeData() {
         return new MagicSourcePipeUpgradeData(redstoneReactive,
-                getConnectionTypesRaw(), buffer.getSource());
+                getConnectionTypesRaw(), buffer.getSource(),
+                extension.writeUpgradeData());
     }
 
     @Override
@@ -189,10 +188,11 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
         redstoneReactive = data.redstoneReactive;
         setConnectionTypesRaw(data.connectionTypes);
         buffer.setSource(Math.min(data.source, buffer.getSourceCapacity()));
+        extension.parseUpgradeData(data.resources);
     }
 
     @Override
-    public SourceStorage getBufferWithFallback() {
+    public PipeSourceStorage getBufferWithFallback() {
         if (buffer.getSource() == 0 && hasTransmitterNetwork()) {
             return getTransmitterNetwork().getBuffer();
         }
@@ -201,12 +201,12 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
 
     @Override
     public boolean noBufferOrFallback() {
-        return getBufferWithFallback().getSource() <= 0;
+        return getBufferWithFallback().getSource() <= 0 && extension.isEmpty();
     }
 
     @Override
-    public SourceStorage releaseShare() {
-        SourceStorage share = new SourceStorage(
+    public PipeSourceStorage releaseShare() {
+        PipeSourceStorage share = new BasicPipeSourceStorage(
                 (int) getCapacity(), (int) getCapacity(),
                 (int) getCapacity());
         share.setSource(buffer.getSource());
@@ -215,23 +215,30 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
     }
 
     @Override
-    public SourceStorage getShare() {
+    public PipeSourceStorage getShare() {
         return buffer;
     }
 
     @Override
     public void takeShare() {
-        if (hasTransmitterNetwork() && saveShare > 0) {
+        // Chunk accessibility and actual unloading can both request a share
+        // before the old topology is invalidated. Never claim it twice.
+        if (buffer.getSource() == 0 && hasTransmitterNetwork() && saveShare > 0) {
             MagicSourceNetwork network = getTransmitterNetwork();
             int taken = network.getBuffer().extractSource(
                     saveShare, false);
             buffer.setSource(Math.min(
                     taken, buffer.getSourceCapacity()));
         }
+        extension.takeShare();
     }
 
     public void setSaveShare(int amount) {
-        saveShare = Math.max(0, amount);
+        int share = Math.max(0, amount);
+        if (saveShare != share) {
+            saveShare = share;
+            getTransmitterTile().markForSave();
+        }
     }
 
     public int getSource() {
@@ -244,26 +251,21 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
                 .getSourceCapacity() : buffer.getSourceCapacity();
     }
 
-    public @Nullable ISourceCap getSourceCapability(
+    public @Nullable PipeSourceStorage getSourceCapability(
             @Nullable Direction side) {
-        ISourceCap base = hasTransmitterNetwork()
-                ? getTransmitterNetwork().getBuffer() : buffer;
-        if (side == null) {
-            return base;
-        }
-        return switch (getConnectionTypeRaw(side)) {
-            case NONE -> null;
-            case NORMAL -> new SourceSidedView(base, true, true);
-            case PUSH -> new SourceSidedView(base, false, true);
-            case PULL -> new SourceSidedView(base, true, false);
-        };
+        return sourceCapabilityEnabled(side) ? new SourceSidedView(side) : null;
+    }
+
+    private boolean sourceCapabilityEnabled(@Nullable Direction side) {
+        return isValid() && !isRedstoneActivated()
+                && (side == null || getConnectionTypeRaw(side) != ConnectionType.NONE);
     }
 
     @Override
-    public CompatibleTransmitterValidator<ISourceCap,
+    public CompatibleTransmitterValidator<PipeSourceStorage,
             MagicSourceNetwork, MagicSourceTransmitter>
     getNewOrphanValidator() {
-        return new SourceTransmitterValidator();
+        return new SourceTransmitterValidator(extension.createValidator());
     }
 
     /**
@@ -311,6 +313,8 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
         return ("ae2".equals(blockId.getNamespace())
                 && "interface".equals(blockId.getPath()))
                 || MagicSourceExternalEndpointHooks.isEndpoint(
+                getLevel(), tile.getBlockPos(), side.getOpposite())
+                || extension.isEndpoint(
                 getLevel(), tile.getBlockPos(), side.getOpposite());
     }
 
@@ -334,19 +338,21 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
             saveShare = tag.getInt("magic_source_buffer");
         }
         buffer.setSource(saveShare);
+        extension.read(provider, tag);
     }
 
     @Override
     public CompoundTag write(
             HolderLookup.Provider provider, CompoundTag tag) {
         super.write(provider, tag);
-        if (hasTransmitterNetwork()) {
-            getTransmitterNetwork().validateSaveShares(this);
-        } else {
+        if (buffer.getSource() > 0 || !hasTransmitterNetwork()) {
             saveShare = buffer.getSource();
+        } else {
+            getTransmitterNetwork().validateSaveShares(this);
         }
         tag.remove("magic_source_buffer");
         tag.putInt("magic_source_save_share", saveShare);
+        extension.write(provider, tag);
         return tag;
     }
 
@@ -375,77 +381,116 @@ public final class MagicSourceTransmitter extends BufferedTransmitter<
         }
     }
 
+    @Override
+    public boolean handleUpdateTag(@NotNull CompoundTag tag,
+                                    HolderLookup.@NotNull Provider provider) {
+        boolean refreshModel = super.handleUpdateTag(tag, provider);
+        // The base class returns early for an unchanged network UUID. Extra
+        // resource render packets still carry new contents in that case.
+        extension.readUpdateTag(tag);
+        return refreshModel;
+    }
+
     private static final class SourceTransmitterValidator
-            extends CompatibleTransmitterValidator<ISourceCap,
+            extends CompatibleTransmitterValidator<PipeSourceStorage,
             MagicSourceNetwork, MagicSourceTransmitter> {
+        private final MagicPipeResourceHooks.ResourceValidator resources;
+
+        private SourceTransmitterValidator(
+                MagicPipeResourceHooks.ResourceValidator resources) {
+            this.resources = resources;
+        }
+
+        @Override
+        public boolean isNetworkCompatible(MagicSourceNetwork network) {
+            return resources.canAcceptNetwork(network);
+        }
+
         @Override
         public boolean isTransmitterCompatible(
                 mekanism.common.content.network.transmitter.Transmitter<
                         ?, ?, ?> transmitter) {
-            return transmitter instanceof MagicSourceTransmitter;
+            return transmitter instanceof MagicSourceTransmitter pipe
+                    && resources.canAcceptPipe(pipe);
         }
     }
 
-    private static final class SourceSidedView implements ISourceCap {
-        private final ISourceCap source;
-        private final boolean receive;
-        private final boolean extract;
+    private final class SourceSidedView implements PipeSourceStorage {
+        private final @Nullable Direction side;
 
-        private SourceSidedView(
-                ISourceCap source, boolean receive, boolean extract) {
-            this.source = source;
-            this.receive = receive;
-            this.extract = extract;
+        private SourceSidedView(@Nullable Direction side) {
+            this.side = side;
+        }
+
+        private PipeSourceStorage source() {
+            // Resolve on every operation: a retained capability must follow
+            // the placed pipe through orphaning, network merges and splits.
+            return hasTransmitterNetwork() ? getTransmitterNetwork().getBuffer() : buffer;
+        }
+
+        private boolean receive() {
+            return sourceCapabilityEnabled(side)
+                    && (side == null || getConnectionTypeRaw(side) != ConnectionType.PUSH);
+        }
+
+        private boolean extract() {
+            return sourceCapabilityEnabled(side)
+                    && (side == null || getConnectionTypeRaw(side) != ConnectionType.PULL);
         }
 
         @Override
         public boolean canAcceptSource(int amount) {
-            return receive && source.canAcceptSource(amount);
+            return receive() && source().canAcceptSource(amount);
         }
 
         @Override
         public boolean canProvideSource(int amount) {
-            return extract && source.canProvideSource(amount);
+            return extract() && source().canProvideSource(amount);
         }
 
         @Override
         public int getMaxExtract() {
-            return extract ? source.getMaxExtract() : 0;
+            return extract() ? source().getMaxExtract() : 0;
         }
 
         @Override
         public int getMaxReceive() {
-            return receive ? source.getMaxReceive() : 0;
+            return receive() ? source().getMaxReceive() : 0;
         }
 
         @Override
         public int getSource() {
-            return source.getSource();
+            return source().getSource();
         }
 
         @Override
         public int getSourceCapacity() {
-            return source.getSourceCapacity();
+            return source().getSourceCapacity();
         }
 
         @Override
         public void setSource(int amount) {
-            // Sided pipe capabilities must use rate-limited receive/extract.
+            // Only the unsided view retains the original administrative setter.
+            if (side == null && sourceCapabilityEnabled(null)) {
+                source().setSource(amount);
+            }
         }
 
         @Override
         public void setMaxSource(int amount) {
-            // Network capacity is derived from connected transmitter tiers.
+            if (side == null && sourceCapabilityEnabled(null)) {
+                source().setMaxSource(amount);
+            }
         }
 
         @Override
         public int receiveSource(int amount, boolean simulate) {
-            return receive ? source.receiveSource(amount, simulate) : 0;
+            return receive() ? source().receiveSource(amount, simulate) : 0;
         }
 
         @Override
         public int extractSource(int amount, boolean simulate) {
-            return extract ? source.extractSource(amount, simulate) : 0;
+            return extract() ? source().extractSource(amount, simulate) : 0;
         }
     }
 }

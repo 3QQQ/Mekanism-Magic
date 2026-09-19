@@ -161,7 +161,7 @@ public final class Ae2ImbuementProvider
             return false;
         }
         return tile.acceptAutomatedImbuementInput(
-                input,
+                imbuement.markCatalystFreeInput(input),
                 imbuement.requiresCatalystIdentifier(),
                 imbuement.catalystId().toString());
     }

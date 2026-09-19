@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AE processing pattern that keeps a catalyst identifier in its encoded
- * display data while excluding it from planning and physical dispatch.
+ * Exact imbuement processing pattern. Catalyst identifiers are optional for
+ * zero-pedestal recipes and never enter planning or physical dispatch.
  */
 public final class Ae2IdentifierImbuementPattern
         implements IPatternDetails {
@@ -30,18 +30,20 @@ public final class Ae2IdentifierImbuementPattern
     private final AEProcessingPattern delegate;
     private final ResourceLocation recipeId;
     private final ItemStack identifier;
+    private final boolean requiresCatalystIdentifier;
     private final String semanticSignature;
     private final WeakReference<Level> levelReference;
     private final long catalogVersion;
 
     private Ae2IdentifierImbuementPattern(
             AEItemKey definition, AEProcessingPattern delegate,
-            ResourceLocation recipeId, ItemStack identifier,
+            ResourceLocation recipeId, ItemStack identifier, boolean requiresCatalystIdentifier,
             String semanticSignature, long catalogVersion, Level level) {
         this.definition = definition;
         this.delegate = delegate;
         this.recipeId = recipeId;
-        this.identifier = identifier;
+        this.identifier = identifier.copy();
+        this.requiresCatalystIdentifier = requiresCatalystIdentifier;
         this.semanticSignature = semanticSignature;
         this.levelReference = new WeakReference<>(level);
         this.catalogVersion = catalogVersion;
@@ -58,6 +60,7 @@ public final class Ae2IdentifierImbuementPattern
             return null;
         }
         ResourceLocation recipeId = null;
+        String declaredSignature = null;
         ItemStack identifier = ItemStack.EMPTY;
         List<GenericStack> filteredInputs = new ArrayList<>(
                 encoded.sparseInputs().size());
@@ -73,6 +76,16 @@ public final class Ae2IdentifierImbuementPattern
                 return null;
             }
             ItemStack possibleIdentifier = itemStack(input);
+            if (ArsNouveauRecipeBridge.hasPatternRecipeMarker(possibleIdentifier)) {
+                ResourceLocation markedRecipe = ArsNouveauRecipeBridge.patternRecipe(possibleIdentifier);
+                if (markedRecipe == null || recipeId != null && !recipeId.equals(markedRecipe)) return null;
+                recipeId = markedRecipe;
+                if (ArsNouveauRecipeBridge.hasPatternRecipeSignature(possibleIdentifier)) {
+                    String markedSignature = ArsNouveauRecipeBridge.patternRecipeSignature(possibleIdentifier);
+                    if (markedSignature.isEmpty() || declaredSignature != null && !declaredSignature.equals(markedSignature)) return null;
+                    declaredSignature = markedSignature;
+                }
+            }
             if (possibleIdentifier.is(ArsNouveauRegistries
                     .CATALYST_IDENTIFIER_ITEM.get())) {
                 identifierInputs++;
@@ -80,26 +93,20 @@ public final class Ae2IdentifierImbuementPattern
                     return null;
                 }
                 identifier = possibleIdentifier.copyWithCount(1);
-                ResourceLocation markedRecipe = ArsNouveauRecipeBridge
-                        .patternRecipe(possibleIdentifier);
-                if (markedRecipe != null) {
-                    if (recipeId != null
-                            && !recipeId.equals(markedRecipe)) {
-                        return null;
-                    }
-                    recipeId = markedRecipe;
-                }
                 filteredInputs.add(null);
             } else {
                 realInputs++;
                 if (realInputs != 1 || input.amount() != 1L) {
                     return null;
                 }
-                filteredInputs.add(input);
+                // Recipe IDs/signatures are routing metadata, never an AE
+                // inventory key the crafting CPU must obtain as a material.
+                GenericStack cleaned = GenericStack.fromItemStack(ArsNouveauRecipeBridge.recipeInputView(possibleIdentifier));
+                if (cleaned == null) return null;
+                filteredInputs.add(cleaned);
             }
         }
-        if (identifierInputs != 1 || realInputs != 1
-                || identifier.isEmpty()) {
+        if (realInputs != 1) {
             return null;
         }
         if (recipeId == null) {
@@ -108,8 +115,9 @@ public final class Ae2IdentifierImbuementPattern
             // Resolve them from their signed recipe list plus the encoded
             // reagent/output instead of treating the identifier as a
             // consumable AE input.
-            recipeId = resolvePhysicalIdentifierRecipe(level, identifier,
-                    filteredInputs, encoded.sparseOutputs());
+            recipeId = identifier.isEmpty()
+                    ? resolveCatalystFreeRecipe(level, filteredInputs, encoded.sparseOutputs())
+                    : resolvePhysicalIdentifierRecipe(level, identifier, filteredInputs, encoded.sparseOutputs());
         }
         if (recipeId == null
                 || !matchesCurrentRecipe(level, recipeId, identifier,
@@ -129,8 +137,10 @@ public final class Ae2IdentifierImbuementPattern
         if (semanticSignature.isEmpty()) {
             return null;
         }
+        if (declaredSignature != null && !declaredSignature.equals(semanticSignature)) return null;
         return new Ae2IdentifierImbuementPattern(definition,
                 new AEProcessingPattern(filteredKey), recipeId, identifier,
+                ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, recipeId),
                 semanticSignature, ArsNouveauRecipeScanner.version(
                         level.getRecipeManager()), level);
     }
@@ -162,6 +172,30 @@ public final class Ae2IdentifierImbuementPattern
         return false;
     }
 
+    /** Explicit but invalid recipe metadata must not fall back to a stock material-key pattern. */
+    public static boolean containsPatternRecipeMarker(AEItemKey definition) {
+        if (definition == null) return false;
+        EncodedProcessingPattern encoded = definition.get(AEComponents.ENCODED_PROCESSING_PATTERN);
+        if (encoded == null) return false;
+        for (GenericStack input : encoded.sparseInputs()) {
+            if (input != null && input.what() instanceof AEItemKey item
+                    && ArsNouveauRecipeBridge.hasPatternRecipeMarker(item.toStack(1))) return true;
+        }
+        return false;
+    }
+
+    /** Only an exact, unambiguous zero-pedestal input/output shape claims an ordinary AE pattern. */
+    private static ResourceLocation resolveCatalystFreeRecipe(Level level,
+                                                               List<GenericStack> inputs, List<GenericStack> outputs) {
+        ResourceLocation found = null;
+        for (var holder : ArsNouveauRecipeScanner.scan(level.getRecipeManager())) {
+            if (!holder.value().getPedestalItems().isEmpty() || !matchesInputAndOutput(level, holder, inputs, outputs)) continue;
+            if (found != null && !found.equals(holder.id())) return null;
+            found = holder.id();
+        }
+        return found;
+    }
+
     private static ResourceLocation resolvePhysicalIdentifierRecipe(
             Level level, ItemStack identifier,
             List<GenericStack> inputs, List<GenericStack> outputs) {
@@ -189,6 +223,38 @@ public final class Ae2IdentifierImbuementPattern
         return recipeId;
     }
 
+    public boolean requiresCatalystIdentifier() {
+        return requiresCatalystIdentifier;
+    }
+
+    /**
+     * MekE routes KeyCounter arrays directly and does not call the external
+     * inventory callback below. Sign an owned copy at that boundary, keeping
+     * the crafting CPU's original material keys and counts completely intact.
+     */
+    public KeyCounter[] copySignedCatalystFreeInputs(KeyCounter[] inputs, Level level) {
+        if (requiresCatalystIdentifier || inputs == null || inputs.length == 0 || !matchesCurrentRecipe(level)) return null;
+        IInput[] planned = delegate.getInputs();
+        if (planned.length != 1) return null;
+        KeyCounter[] signed = new KeyCounter[inputs.length];
+        for (int index = 0; index < inputs.length; index++) {
+            KeyCounter source = inputs[index];
+            if (source == null || source.isEmpty() || source.size() != 1) return null;
+            KeyCounter target = new KeyCounter();
+            for (var entry : source) {
+                long amount = entry.getLongValue();
+                if (amount <= 0 || !(entry.getKey() instanceof AEItemKey key)
+                        || !planned[0].isValid(key, level)) return null;
+                ItemStack marked = ArsNouveauRecipeBridge.markPatternInput(key.toStack(1), recipeId, semanticSignature);
+                AEItemKey markedKey = AEItemKey.of(marked);
+                if (markedKey == null) return null;
+                target.add(markedKey, amount);
+            }
+            signed[index] = target;
+        }
+        return signed;
+    }
+
     /** Rejects queued/decoded jobs whose recipe semantics changed on reload. */
     public boolean matchesCurrentRecipe(Level level) {
         return level != null
@@ -196,8 +262,9 @@ public final class Ae2IdentifierImbuementPattern
                 level.getRecipeManager())
                 && semanticSignature.equals(ArsNouveauRecipeScanner
                 .semanticSignature(level.getRecipeManager(), recipeId))
-                && ArsNouveauRecipeBridge.identifierMatchesRecipe(
-                level, identifier, recipeId);
+                && requiresCatalystIdentifier == ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, recipeId)
+                && (identifier.isEmpty() ? !requiresCatalystIdentifier
+                : ArsNouveauRecipeBridge.identifierMatchesRecipe(level, identifier, recipeId));
     }
 
     private static boolean matchesCurrentRecipe(
@@ -207,9 +274,8 @@ public final class Ae2IdentifierImbuementPattern
                         level.getRecipeManager()).stream()
                 .filter(candidate -> candidate.id().equals(recipeId))
                 .findFirst().orElse(null);
-        if (holder == null
-                || !ArsNouveauRecipeBridge.identifierMatchesRecipe(
-                level, identifier, recipeId)) {
+        if (holder == null || (identifier.isEmpty() ? !holder.value().getPedestalItems().isEmpty()
+                : !ArsNouveauRecipeBridge.identifierMatchesRecipe(level, identifier, recipeId))) {
             return false;
         }
         return matchesInputAndOutput(level, holder, inputs, outputs);
@@ -298,7 +364,7 @@ public final class Ae2IdentifierImbuementPattern
                     if (key instanceof AEItemKey itemKey) {
                         ItemStack marked = ArsNouveauRecipeBridge
                                 .markPatternInput(
-                                        itemKey.toStack(1), recipeId);
+                                        itemKey.toStack(1), recipeId, semanticSignature);
                         AEItemKey markedKey = AEItemKey.of(marked);
                         if (markedKey != null) {
                             inputSink.pushInput(markedKey, amount);
@@ -312,7 +378,7 @@ public final class Ae2IdentifierImbuementPattern
     @Override
     public PatternDetailsTooltip getTooltip(Level level, TooltipFlag flag) {
         PatternDetailsTooltip tooltip = delegate.getTooltip(level, flag);
-        tooltip.addProperty(
+        if (requiresCatalystIdentifier) tooltip.addProperty(
                 net.minecraft.network.chat.Component.translatable(
                         "ae2.mekanism_magic.virtual_catalyst"),
                 identifier.getHoverName());

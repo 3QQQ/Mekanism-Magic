@@ -1,6 +1,9 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.container.DockedPanelLayout;
+
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
@@ -57,7 +60,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 InputInventorySlot.at(OccultismRecipeBridge::isSacrificeItem,
                         listener, 20, 85));
         dictionarySlot = registerLogicalSlot(helper, DICTIONARY_SLOT,
-                new DictionaryInventorySlot(this, listener, 240, 104));
+                new DictionaryInventorySlot(this, listener, DockedPanelLayout.DICTIONARY.slotX(0, 1),
+                        DockedPanelLayout.DICTIONARY.slotY(0, 1)));
         var itemConfig = setupNativeItemIO(
                 inputs, List.of(outputSlot, sacrificeRemainderSlot),
                 List.of());
@@ -120,7 +124,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
 
     @Override
     protected int baseEnergyPerTick() {
-        return 1_200;
+        return MagicMachineEnergyProfiles.MAGIC_REACTION;
     }
 
     @Override

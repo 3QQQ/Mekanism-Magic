@@ -38,6 +38,37 @@ public enum MagicLang implements ILangEntry {
             "block.mekanism_magic.cosmic_magic_source_pipe"),
     INFINITE_MAGIC_SOURCE_PIPE(
             "block.mekanism_magic.infinite_magic_source_pipe"),
+    AURA_FIELD_INTERFACE(
+            "block.mekanism_magic.aura_field_interface"),
+    FE_AURA_CONVERTER("block.mekanism_magic.fe_aura_converter"),
+    AURA_FUEL_GENERATOR("block.mekanism_magic.aura_fuel_generator"),
+    NATURE_ALTAR_PROCESSOR(
+            "block.mekanism_magic.nature_altar_processor"),
+    BASIC_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.basic_nature_altar_factory"),
+    ADVANCED_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.advanced_nature_altar_factory"),
+    ELITE_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.elite_nature_altar_factory"),
+    ULTIMATE_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.ultimate_nature_altar_factory"),
+    ABSOLUTE_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.absolute_nature_altar_factory"),
+    SUPREME_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.supreme_nature_altar_factory"),
+    COSMIC_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.cosmic_nature_altar_factory"),
+    INFINITE_NATURE_ALTAR_FACTORY(
+            "block.mekanism_magic.infinite_nature_altar_factory"),
+    OFFERING_PROCESSOR("block.mekanism_magic.offering_processor"),
+    TREE_RITUAL_PROCESSOR("block.mekanism_magic.tree_ritual_processor"),
+    ANIMAL_SPAWNER_PROCESSOR("block.mekanism_magic.animal_spawner_processor"),
+    CLIBANO_PROCESSOR("block.mekanism_magic.clibano_processor"),
+    HEPHAESTUS_FORGE_PROCESSOR("block.mekanism_magic.hephaestus_forge_processor"),
+    ITEM_MODIFIER_PROCESSOR("block.mekanism_magic.item_modifier_processor"),
+    SOUL_EXTRACTOR_PROCESSOR("block.mekanism_magic.soul_extractor_processor"),
+    SIMULATED_BLOOD_EXTRACTOR("block.mekanism_magic.simulated_blood_extractor"),
+    EXPERIENCE_BOTTLER("block.mekanism_magic.experience_bottler"),
     SPIRIT_PROCESSOR("block.mekanism_magic.spirit_processor"),
     DIMENSION_MINER("block.mekanism_magic.dimension_miner"),
     RITUAL_ENGINE("block.mekanism_magic.ritual_engine"),

@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.blockentity;
 
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation.PatternStack;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
 import com.example.mekanismmagic.integration.common.network.PatternAutomationRefreshHooks;
@@ -81,7 +82,7 @@ public final class NativeSpiritProcessorBlockEntity extends NativeMagicMachineBl
 
     @Override
     protected int baseEnergyPerTick() {
-        return 400;
+        return MagicMachineEnergyProfiles.MATERIAL_PROCESSING;
     }
 
     @Override

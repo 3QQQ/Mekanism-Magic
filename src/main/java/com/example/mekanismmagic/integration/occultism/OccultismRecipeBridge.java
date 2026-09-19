@@ -181,6 +181,23 @@ public final class OccultismRecipeBridge {
         }
     };
 
+    private static SpecialInputHandler sacrificeHandler(Level level) {
+        if (!(level instanceof ServerLevel server)) {
+            return SACRIFICE_HANDLER;
+        }
+        return new SpecialInputHandler() {
+            @Override
+            public boolean matches(ItemStack stack) {
+                return isSacrificeItem(stack);
+            }
+
+            @Override
+            public boolean consume(ItemStackHandler inventory, int slot) {
+                return consumeSacrifice(inventory, slot, server);
+            }
+        };
+    }
+
     public record RitualProjection(ResourceLocation recipeId, ResourceLocation pentacleId,
                                     Object multiblock) {
     }
@@ -922,7 +939,7 @@ public final class OccultismRecipeBridge {
                         inputMatch.get().uses(), activationSlot,
                         sacrificeSlot,
                         completion, sacrificeSlot < 0
-                        ? SpecialInputHandler.NONE : SACRIFICE_HANDLER));
+                        ? SpecialInputHandler.NONE : sacrificeHandler(level)));
             }
         }
         return Optional.empty();
@@ -1014,6 +1031,7 @@ public final class OccultismRecipeBridge {
             return Optional.empty();
         }
         int copies = (int) (requested / requirements.size());
+        int requirementsPerCopy = requirements.size();
         if (copies > 1) {
             List<RitualAutomationRequirement> oneCopy =
                     List.copyOf(requirements);
@@ -1048,8 +1066,10 @@ public final class OccultismRecipeBridge {
 
         int[][] roleCounts = new int[inputs.size()]
                 [RitualAutomationRole.values().length];
-        int activationInput = -1;
-        int primaryInput = -1;
+        int[] activationInputs = new int[copies];
+        int[] primaryInputs = new int[copies];
+        java.util.Arrays.fill(activationInputs, -1);
+        java.util.Arrays.fill(primaryInputs, -1);
         for (int requirement = 0;
              requirement < requirements.size(); requirement++) {
             int input = assignment.get().ingredientSlot(requirement);
@@ -1059,12 +1079,13 @@ public final class OccultismRecipeBridge {
             RitualAutomationRole role =
                     requirements.get(requirement).role();
             roleCounts[input][role.ordinal()]++;
+            int copy = requirement / requirementsPerCopy;
             if (role == RitualAutomationRole.ACTIVATION
-                    && activationInput < 0) {
-                activationInput = input;
+                    && activationInputs[copy] < 0) {
+                activationInputs[copy] = input;
             } else if (role == RitualAutomationRole.MATERIAL
-                    && primaryInput < 0) {
-                primaryInput = input;
+                    && primaryInputs[copy] < 0) {
+                primaryInputs[copy] = input;
             }
         }
         List<RitualAutomationAllocation> allocations =
@@ -1079,27 +1100,37 @@ public final class OccultismRecipeBridge {
                 }
             }
         }
-        ItemStack activationStack = activationInput < 0
-                ? ItemStack.EMPTY : inputs.get(activationInput).stack();
-        if (requiresStableSpiritName(mode)
-                && !hasSpiritName(activationStack)) {
-            return Optional.empty();
-        }
-        ItemStack primaryStack = primaryInput < 0
-                ? ItemStack.EMPTY : inputs.get(primaryInput).stack();
-        ItemStack output = machineRitualOutput(level, recipe, mode,
-                activationStack, primaryStack, false);
-        if (output.isEmpty()) {
-            return Optional.empty();
+        ItemStack output = ItemStack.EMPTY;
+        for (int copy = 0; copy < copies; copy++) {
+            ItemStack activationStack = activationInputs[copy] < 0
+                    ? ItemStack.EMPTY : inputs.get(activationInputs[copy]).stack();
+            if (requiresStableSpiritName(mode, result(level.registryAccess(), recipe))
+                    && !hasSpiritName(activationStack)) {
+                return Optional.empty();
+            }
+            ItemStack primaryStack = primaryInputs[copy] < 0
+                    ? ItemStack.EMPTY : inputs.get(primaryInputs[copy]).stack();
+            ItemStack candidate = machineRitualOutput(level, recipe, mode,
+                    activationStack, primaryStack, false);
+            if (candidate.isEmpty() || !output.isEmpty()
+                    && (candidate.getCount() != output.getCount()
+                    || !ItemStack.isSameItemSameComponents(output, candidate))) {
+                // A batch has one advertised AE output identity. Never pretend
+                // differently named, enchanted or bound inputs produce it too.
+                return Optional.empty();
+            }
+            output = candidate;
         }
         return Optional.of(new RitualAutomationPlan(
                 recipeId, allocations, output, copies));
     }
 
     private static boolean requiresStableSpiritName(
-            OccultismRitualMachineMode mode) {
-        return mode == OccultismRitualMachineMode.NAMED_ITEM
-                || mode == OccultismRitualMachineMode.MINER_ITEM;
+            OccultismRitualMachineMode mode, ItemStack declaredOutput) {
+        return (mode == OccultismRitualMachineMode.NAMED_ITEM
+                && !OccultismMachineItemIdentity.isStableNamedOutput(declaredOutput))
+                || (mode == OccultismRitualMachineMode.MINER_ITEM
+                && !OccultismMachineItemIdentity.isNativeMiner(declaredOutput));
     }
 
     /**
@@ -1319,24 +1350,117 @@ public final class OccultismRecipeBridge {
                 // be transferred safely.
                 continue;
             }
-            ItemStack output = machineRitualOutput(level, recipe,
+            ItemStack hint = machineRitualOutput(level, recipe,
                     mode.get(), ItemStack.EMPTY, ItemStack.EMPTY, true);
-            if (output.isEmpty()) {
+            if (hint.isEmpty()) {
                 continue;
             }
             Ingredient activation = invoke(recipe, "getActivationItem")
                     .filter(Ingredient.class::isInstance)
                     .map(Ingredient.class::cast)
                     .orElse(null);
-            result.add(new RitualJeiData(entry.recipeId(),
+            if ((mode.get() == OccultismRitualMachineMode.MINER_ITEM
+                    && OccultismMachineItemIdentity.isNativeMiner(hint))
+                    || (mode.get() == OccultismRitualMachineMode.NAMED_ITEM
+                    && OccultismMachineItemIdentity.isStableNamedOutput(hint))
+                    || switch (mode.get()) {
+                        case ENTITY, JOB_ENTITY, OWNED_ENTITY, CHANCE_ENTITY,
+                                UPGRADE_ITEM -> true;
+                        default -> false;
+                    }) {
+                activation = OccultismMachineItemIdentity.jeiUnboundActivation(activation);
+            }
+            List<Ingredient> displayedIngredients = ritualIngredients.stream()
+                    .map(OccultismMachineItemIdentity::jeiIngredient).toList();
+            List<ItemStack> sacrifices = sacrificeExamples(recipe);
+            RitualJeiData display = new RitualJeiData(entry.recipeId(),
                     projection.get().pentacleId(),
-                    List.copyOf(ritualIngredients),
-                    activation,
-                    sacrificeExamples(recipe),
+                    displayedIngredients, activation, sacrifices,
                     createMiniRitual(projection.get()),
-                    output));
+                    ItemStack.EMPTY);
+            List<ItemStack> defaultInputs = new ArrayList<>();
+            for (Ingredient ingredient : displayedIngredients) {
+                defaultInputs.add(ingredient.getItems()[0].copyWithCount(1));
+            }
+            if (activation != null && !activation.isEmpty()
+                    && activation.getItems().length > 0) {
+                defaultInputs.add(activation.getItems()[0].copyWithCount(1));
+            }
+            sacrifices.forEach(stack -> defaultInputs.add(stack.copyWithCount(1)));
+            // Repair examples are uninjured generic tools. The player must
+            // focus the actual tool; icons and empty soul shards are not results.
+            ItemStack output = mode.get() == OccultismRitualMachineMode.REPAIR_ITEM
+                    ? ItemStack.EMPTY : resolveRitualJeiOutput(level, display,
+                    defaultInputs).orElse(ItemStack.EMPTY);
+            result.add(new RitualJeiData(display.recipeId(), display.pentacleId(),
+                    displayedIngredients, activation, sacrifices,
+                    display.selector(), output));
         }
         return result;
+    }
+
+    /**
+     * Calculates the exact output from one full set of consumed JEI inputs.
+     * Selector and Dictionary of Spirits are catalysts and must not be included.
+     * This shares the machine planner: no item/NBT wildcard or preview icon is
+     * ever accepted as an output contract, and the supplied stacks are copied.
+     */
+    public static Optional<ItemStack> resolveRitualJeiOutput(
+            Level level, RitualJeiData recipe, List<ItemStack> inputs) {
+        if (recipe == null || inputs == null || inputs.stream()
+                .anyMatch(stack -> stack == null || stack.isEmpty())) {
+            return Optional.empty();
+        }
+        return planRitualAutomation(level, recipe.selector(), inputs.stream()
+                .map(stack -> new RitualAutomationInput(stack, stack.getCount()))
+                .toList(), true)
+                .filter(plan -> plan.copies() == 1
+                        && plan.recipeId().equals(recipe.recipeId()))
+                .map(RitualAutomationPlan::output);
+    }
+
+    /** Only for a RENDER_ONLY explanation when exact input data is unavailable. */
+    public static ItemStack ritualJeiOutputHint(Level level, RitualJeiData recipe) {
+        RitualEntry entry = ritualJeiEntry(level, recipe);
+        return entry == null || entry.mode().isEmpty() ? ItemStack.EMPTY
+                : machineRitualOutput(level, entry.recipe(), entry.mode().get(),
+                ItemStack.EMPTY, ItemStack.EMPTY, true);
+    }
+
+    /** Original ingredient retained for lookup of actual, already-bound books. */
+    public static Ingredient ritualJeiActivationIngredient(
+            Level level, RitualJeiData recipe) {
+        RitualEntry entry = ritualJeiEntry(level, recipe);
+        return entry == null ? Ingredient.EMPTY
+                : invoke(entry.recipe(), "getActivationItem")
+                .filter(Ingredient.class::isInstance).map(Ingredient.class::cast)
+                .orElse(Ingredient.EMPTY);
+    }
+
+    public static boolean matchesRitualJeiActivation(
+            Level level, RitualJeiData recipe, ItemStack stack) {
+        RitualEntry entry = ritualJeiEntry(level, recipe);
+        return entry != null && stack != null && !stack.isEmpty()
+                && activationRequired(entry.recipe())
+                && matchesActivation(entry.recipe(), stack, true);
+    }
+
+    public static boolean ritualJeiPreservesPrimaryInput(Level level, RitualJeiData recipe) {
+        RitualEntry entry = ritualJeiEntry(level, recipe);
+        return entry != null && entry.mode().orElse(null)
+                == OccultismRitualMachineMode.UPGRADE_ITEM;
+    }
+
+    public static boolean ritualJeiRequiresActivationData(Level level, RitualJeiData recipe) {
+        RitualEntry entry = ritualJeiEntry(level, recipe);
+        return entry != null && (entry.mode().orElse(null)
+                == OccultismRitualMachineMode.REPAIR_ITEM
+                || entry.mode().orElse(null) == OccultismRitualMachineMode.RESURRECT_ENTITY);
+    }
+
+    private static RitualEntry ritualJeiEntry(Level level, RitualJeiData recipe) {
+        return level == null || recipe == null ? null
+                : ritualCatalog(level).byRecipeId().get(recipe.recipeId());
     }
 
     public static void logRitualCoverage(MinecraftServer server) {
@@ -2037,7 +2161,7 @@ public final class OccultismRecipeBridge {
     public static boolean isSacrificeItem(ItemStack stack) {
         return !stack.isEmpty() && (stack.getItem() instanceof SpawnEggItem
                 || stack.getItem() instanceof RitualSpawnEggItem
-                || isFilledContainment(stack));
+                || EntityContainerRegistry.isSacrificeContainer(stack));
     }
 
     public static boolean isActivationItem(ItemStack stack) {
@@ -2045,33 +2169,65 @@ public final class OccultismRecipeBridge {
     }
 
     public static boolean consumeSacrifice(ItemStackHandler inventory, int slot) {
+        return consumeSacrifice(inventory, slot, null);
+    }
+
+    public static boolean consumeSacrifice(ItemStackHandler inventory, int slot,
+                                           ServerLevel server) {
+        int returnSlot = NativeMagicMachineBlockEntity.RITUAL_REMAINDER_SLOT;
+        if (slot < 0 || slot >= inventory.getSlots() || returnSlot >= inventory.getSlots()
+                || slot == returnSlot) {
+            return false;
+        }
         ItemStack stack = inventory.getStackInSlot(slot);
         if (!isSacrificeItem(stack)) {
             return false;
         }
-        ItemStack single = stack.copyWithCount(1);
-        if (EntityContainerRegistry.empty(single)) {
-            ItemStack consumed = inventory.extractItem(slot, 1, false);
-            if (consumed.isEmpty()) {
+        boolean vessel = EntityContainerRegistry.isFilled(stack);
+        ItemStack remainder = ItemStack.EMPTY;
+        if (vessel) {
+            if (!canStoreSacrificeRemainder(inventory, stack)) {
                 return false;
             }
-            ItemStack remainder = inventory.insertItem(
-                    NativeMagicMachineBlockEntity.RITUAL_REMAINDER_SLOT,
-                    single, false);
-            return remainder.isEmpty();
+            Optional<ItemStack> empty = EntityContainerRegistry.emptyCopy(stack, server);
+            // A failed adapter is not a disposable spawn egg.
+            if (empty.isEmpty()) {
+                return false;
+            }
+            remainder = empty.get();
+            if (!inventory.insertItem(returnSlot, remainder, true).isEmpty()) {
+                return false;
+            }
         }
-        return !inventory.extractItem(slot, 1, false).isEmpty();
+        ItemStack beforeInput = stack.copy();
+        ItemStack beforeReturn = inventory.getStackInSlot(returnSlot).copy();
+        ItemStack consumed = inventory.extractItem(slot, 1, false);
+        if (consumed.getCount() != 1
+                || !ItemStack.isSameItemSameComponents(consumed, beforeInput)) {
+            inventory.setStackInSlot(slot, beforeInput);
+            return false;
+        }
+        if (!remainder.isEmpty() && !inventory.insertItem(returnSlot, remainder, false).isEmpty()) {
+            inventory.setStackInSlot(slot, beforeInput);
+            inventory.setStackInSlot(returnSlot, beforeReturn);
+            return false;
+        }
+        return true;
     }
 
     private static boolean canStoreSacrificeRemainder(
             ItemStackHandler inventory, ItemStack sacrifice) {
-        ItemStack remainder = sacrifice.copyWithCount(1);
-        if (!EntityContainerRegistry.empty(remainder)) {
+        if (sacrifice.getItem() instanceof SpawnEggItem
+                || sacrifice.getItem() instanceof RitualSpawnEggItem) {
             return true;
+        }
+        Optional<ItemStack> remainder = EntityContainerRegistry.previewEmpty(sacrifice);
+        if (remainder.isEmpty()) {
+            return false;
         }
         return inventory.insertItem(
                 NativeMagicMachineBlockEntity.RITUAL_REMAINDER_SLOT,
-                remainder, true).isEmpty();
+                remainder.get(), true).isEmpty();
     }
 
     public static String spiritType(ItemStack stack) {
@@ -2172,7 +2328,9 @@ public final class OccultismRecipeBridge {
                 .orElse("");
     }
 
-    private static String spiritJobId(ItemStack stack) {
+    /** Read-only native profession identity, also used to group machine recipe-viewer pages. */
+    public static String spiritJobId(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "";
         return spiritEntityData(stack)
                 .map(tag -> tag.getCompound("spiritJob")
                         .getString("factoryId"))
@@ -2180,6 +2338,10 @@ public final class OccultismRecipeBridge {
     }
 
     private static Optional<CompoundTag> spiritEntityData(ItemStack stack) {
+        if (stack.getItem() instanceof RitualSpawnEggItem) {
+            CompoundTag data = RitualSpawnEggItem.data(stack);
+            return data.isEmpty() ? Optional.empty() : Optional.of(data);
+        }
         Optional<CompoundTag> captured = EntityContainerRegistry
                 .capturedEntity(stack).map(CapturedEntity::entityData);
         if (captured.isPresent()) {
@@ -2249,14 +2411,15 @@ public final class OccultismRecipeBridge {
                         activation, true);
                 case CHANCE_ENTITY -> chanceSpawnEggResult(
                         level, recipe, activation);
-                case NAMED_ITEM -> preview ? base
+                case NAMED_ITEM -> preview || OccultismMachineItemIdentity.isStableNamedOutput(base) ? base
                         : copyBoundSpiritName(base, activation, true);
                 case REPAIR_ITEM -> preview ? base
                         : repairedActivation(activation);
                 case RESURRECT_ENTITY -> preview ? base
                         : resurrectedEntityResult(activation);
-                case MINER_ITEM -> preview ? base
-                        : initializedMinerResult(level, base, activation);
+                case MINER_ITEM -> OccultismMachineItemIdentity.isNativeMiner(base)
+                        ? OccultismMachineItemIdentity.normalizeMiner(base)
+                        : preview ? base : initializedMinerResult(level, base, activation);
                 case UPGRADE_ITEM -> preview ? base
                         : upgradedResult(base, activation, primaryInput);
             };
@@ -2281,6 +2444,7 @@ public final class OccultismRecipeBridge {
         return output;
     }
 
+    /** Retain the original semantics for unaudited third-party miner recipe outputs. */
     private static ItemStack initializedMinerResult(
             Level level, ItemStack base, ItemStack activation)
             throws ReflectiveOperationException {
@@ -2300,8 +2464,8 @@ public final class OccultismRecipeBridge {
         }
         ItemStack output = base.copy();
         net.minecraft.world.item.Rarity resultRarity = output.getRarity();
-        output.applyComponents(primaryInput.getComponents());
         Integer maximumDamage = output.get(DataComponents.MAX_DAMAGE);
+        output.applyComponents(primaryInput.getComponents());
         if (maximumDamage != null) {
             output.set(DataComponents.MAX_DAMAGE, maximumDamage);
         }

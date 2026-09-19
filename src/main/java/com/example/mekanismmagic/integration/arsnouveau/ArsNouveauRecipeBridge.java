@@ -175,13 +175,17 @@ public final class ArsNouveauRecipeBridge {
             }
             ItemStack output = recipe.getResultItem(
                     level.registryAccess()).copy();
-            ItemStack identifier = createPatternIdentifierForRecipe(
-                    level, holder.id());
+            // A catalyst-free native recipe has no physical or virtual
+            // ingredient in the viewer/encoded input list. Keep the separate
+            // identifier factory for existing saved patterns and native AE
+            // provider definitions, which still need a stable recipe identity.
+            ItemStack identifier = catalystCount == 0 ? ItemStack.EMPTY
+                    : createPatternIdentifierForRecipe(level, holder.id());
             if (output.isEmpty()
-                    || !identifier.is(ArsNouveauRegistries
+                    || catalystCount > 0 && (!identifier.is(ArsNouveauRegistries
                     .CATALYST_IDENTIFIER_ITEM.get())
                     || !CatalystIdentifierItem.matchesRecipe(
-                    identifier, holder.id())) {
+                    identifier, holder.id()))) {
                 continue;
             }
             ResourceLocation displayId =
@@ -272,8 +276,11 @@ public final class ArsNouveauRecipeBridge {
             return null;
         }
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data == null ? null : ResourceLocation.tryParse(
-                data.getUnsafe().getString("pattern_recipe"));
+        if (data == null || !data.getUnsafe().contains("pattern_recipe", net.minecraft.nbt.Tag.TAG_STRING)) return null;
+        String id = data.getUnsafe().getString("pattern_recipe");
+        // ResourceLocation permits an empty path. Missing or blank metadata
+        // must not turn every ordinary CUSTOM_DATA item into a minecraft: receipt.
+        return id.isBlank() ? null : ResourceLocation.tryParse(id);
     }
 
     public static boolean hasPatternRecipeMarker(ItemStack stack) {
@@ -281,8 +288,20 @@ public final class ArsNouveauRecipeBridge {
             return false;
         }
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data != null
-                && data.getUnsafe().contains("pattern_recipe");
+        return data != null && (data.getUnsafe().contains("pattern_recipe")
+                || data.getUnsafe().contains("pattern_recipe_signature"));
+    }
+
+    public static String patternRecipeSignature(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "";
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data == null ? "" : data.getUnsafe().getString("pattern_recipe_signature");
+    }
+
+    public static boolean hasPatternRecipeSignature(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && data.getUnsafe().contains("pattern_recipe_signature");
     }
 
     /** Read-only recipe view with only our transient AE marker removed. */
@@ -297,12 +316,12 @@ public final class ArsNouveauRecipeBridge {
         }
         ItemStack cleared = stack.copy();
         CustomData existing = cleared.get(DataComponents.CUSTOM_DATA);
-        if (existing == null
-                || !existing.getUnsafe().contains("pattern_recipe")) {
+        if (existing == null || !hasPatternRecipeMarker(cleared)) {
             return cleared;
         }
         CompoundTag data = existing.copyTag();
         data.remove("pattern_recipe");
+        data.remove("pattern_recipe_signature");
         if (data.isEmpty()) {
             cleared.remove(DataComponents.CUSTOM_DATA);
         } else {
@@ -318,12 +337,20 @@ public final class ArsNouveauRecipeBridge {
      */
     public static ItemStack markPatternInput(
             ItemStack stack, ResourceLocation recipeId) {
+        return markPatternInput(stack, recipeId, null);
+    }
+
+    /** New dispatches retain a semantic receipt on the complete input batch. */
+    public static ItemStack markPatternInput(ItemStack stack, ResourceLocation recipeId, String semanticSignature) {
         if (stack == null || stack.isEmpty() || recipeId == null) {
             return stack == null ? ItemStack.EMPTY : stack.copy();
         }
         ItemStack marked = stack.copy();
-        CustomData.update(DataComponents.CUSTOM_DATA, marked, tag ->
-                tag.putString("pattern_recipe", recipeId.toString()));
+        CustomData.update(DataComponents.CUSTOM_DATA, marked, tag -> {
+            tag.putString("pattern_recipe", recipeId.toString());
+            if (semanticSignature == null) tag.remove("pattern_recipe_signature");
+            else tag.putString("pattern_recipe_signature", semanticSignature);
+        });
         return marked;
     }
 
@@ -630,6 +657,21 @@ public final class ArsNouveauRecipeBridge {
         return Optional.empty();
     }
 
+    /** Exact no-catalyst receipt. The caller retains markers on any unconsumed input remainder. */
+    public static Optional<MachineRecipeResult> findCatalystFreeImbuementByRecipe(
+            Level level, ItemStackHandler inventory, int inputSlot, ResourceLocation recipeId) {
+        if (level == null || recipeId == null) return Optional.empty();
+        RecipeHolder<ImbuementRecipe> holder = ArsNouveauRecipeScanner.find(level.getRecipeManager(), recipeId);
+        if (holder == null || !holder.value().getPedestalItems().isEmpty()) return Optional.empty();
+        ItemStack marked = inventory.getStackInSlot(inputSlot);
+        if (hasPatternRecipeMarker(marked) && !recipeId.equals(patternRecipe(marked))) return Optional.empty();
+        if (hasPatternRecipeSignature(marked) && !ArsNouveauRecipeScanner.semanticSignature(level.getRecipeManager(), recipeId)
+                .equals(patternRecipeSignature(marked))) return Optional.empty();
+        ItemStack input = recipeInputView(marked);
+        if (input.isEmpty() || !holder.value().getInput().test(input)) return Optional.empty();
+        return createImbuementResult(level, inputSlot, holder);
+    }
+
     private static Optional<MachineRecipeResult> createImbuementResult(
             Level level, int inputSlot,
             RecipeHolder<ImbuementRecipe> holder) {
@@ -700,6 +742,9 @@ public final class ArsNouveauRecipeBridge {
                     recipe instanceof EnchantingApparatusRecipe apparatus
                             ? apparatus.pedestalItems()
                             : List.copyOf(recipe.getIngredients());
+            MachineRecipeResult selected = null;
+            boolean selectedHasComponents = false;
+            boolean ambiguous = false;
             // Ars recipes distinguish a reagent from unordered pedestal
             // ingredients. Try every occupied machine input as that reagent,
             // reserving one item from the candidate slot before matching the
@@ -731,13 +776,32 @@ public final class ArsNouveauRecipeBridge {
                 }
                 List<InputUse> inputs = mergeInputUses(
                         reagentSlot, pedestalMatch.get().uses());
-                return Optional.of(new MachineRecipeResult(
+                MachineRecipeResult candidate = new MachineRecipeResult(
                         holder.id(), output,
                         ArsNouveauMachineConfig.APPARATUS_DURATION,
                         inputs, -1, -1, null, null,
                         Map.of(ArsNouveauMachineConfig.SOURCE_RESOURCE,
                                 ArsNouveauMachineConfig.apparatusSourceCost(
-                                        recipe.sourceCost()))));
+                                        recipe.sourceCost())));
+                boolean hasComponents = !reagent.getComponentsPatch().isEmpty();
+                if (selected == null || hasComponents && !selectedHasComponents) {
+                    selected = candidate;
+                    selectedHasComponents = hasComponents;
+                    ambiguous = false;
+                } else if (hasComponents == selectedHasComponents
+                        && (selected.output().getCount() != output.getCount()
+                        || !ItemStack.isSameItemSameComponents(
+                        selected.output(), output))) {
+                    ambiguous = true;
+                }
+            }
+            if (selected != null) {
+                // Unordered input ports cannot communicate which same-item
+                // stack is the reagent. Prefer the stack carrying component
+                // data (bound scroll over blank), independently of slot order.
+                // Two distinct bound results have no unambiguous meaning, so
+                // stop here instead of silently choosing another recipe.
+                return ambiguous ? Optional.empty() : Optional.of(selected);
             }
         }
         return Optional.empty();

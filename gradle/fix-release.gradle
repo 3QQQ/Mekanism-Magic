@@ -1,0 +1,85 @@
+// This maintenance branch must retain the released registry/recipe surface.
+def verifyExcludedMods = providers.gradleProperty('mekanism_magic.verify_excluded_mods')
+        .map { it.toBoolean() }.orElse(false)
+if (verifyExcludedMods.get()) {
+    repositories {
+        maven {
+            name = 'FixBoundaryModrinth'
+            url = uri('https://api.modrinth.com/maven')
+            content { includeGroup('maven.modrinth') }
+        }
+        maven {
+            name = 'FixBoundaryCurseMaven'
+            url = uri('https://cursemaven.com')
+            content { includeGroup('curse.maven') }
+        }
+    }
+    dependencies {
+        localRuntime "maven.modrinth:natures-aura:${natures_aura_version}"
+        localRuntime "vazkii.patchouli:Patchouli:${patchouli_version}"
+        localRuntime("maven.modrinth:forbidden-arcanus:${forbidden_arcanus_maven_version}") { transitive = false }
+        localRuntime("curse.maven:valhelsia-core-416935:${valhelsia_core_curse_file}") { transitive = false }
+    }
+}
+if (sourceSets.findByName('gameTest') != null) {
+    tasks.named('processGameTestResources') {
+        from('config/release-1.0.6-baseline.json') { into 'fixtures' }
+    }
+    neoForge.runs.spiritGameTestServer {
+        systemProperty 'mekanism_magic.verify_excluded_mods', verifyExcludedMods.get().toString()
+    }
+}
+
+tasks.register('validateFixRelease') {
+    group = 'verification'
+    dependsOn tasks.named('jar')
+    doLast {
+        def baseline = new groovy.json.JsonSlurper().parse(file('config/release-1.0.6-baseline.json'))
+        if (project.version.toString() != baseline.releaseVersion) {
+            throw new GradleException('Maintenance version differs from the explicitly requested release')
+        }
+        def contracts = new groovy.json.JsonSlurper().parse(file('config/machine-contracts.json'))
+        if ((contracts.entries.collect { it.id } as Set) != (baseline.machineIds as Set)) {
+            throw new GradleException('Maintenance release changed the published machine registry set')
+        }
+        def archive = new java.util.zip.ZipFile(tasks.named('jar', Jar).get().archiveFile.get().asFile)
+        try {
+            def entries = archive.entries().collect { it.name } as Set
+            def recipes = entries.findAll { it.startsWith('data/mekanism_magic/recipe/') && it.endsWith('.json') } as Set
+            def expectedRecipes = (baseline.recipeEntries + (baseline.approvedAdditionalRecipeEntries ?: [])) as Set
+            if (recipes != expectedRecipes) {
+                throw new GradleException('Maintenance recipe set changed: added=' + (recipes - expectedRecipes)
+                        + ', missing=' + (expectedRecipes - recipes))
+            }
+            def rejected = entries.findAll { path ->
+                path.contains('/integration/naturesaura/') || path.contains('/integration/forbiddenarcanus/')
+                        || path.contains('/integration/ae2/storage/') || path.contains('NatureAltar')
+                        || path.contains('Ae2Nature') || path.contains('MekEnergisticsNature')
+                        || path.contains('Ae2AuraInterface') || path.contains('Ae2MagicInterfaceCompat') || path.endsWith('GameTests.class')
+                        || path.endsWith('SelfTest.class')
+                        || (baseline.excludedMachineIds + baseline.excludedItems).any { id ->
+                    path.contains('/' + id + '.') || path.contains('/' + id + '/') || path.contains('/' + id + '_')
+                }
+            }
+            if (!rejected.isEmpty()) throw new GradleException('Excluded release entries: ' + rejected)
+            String metadata = archive.getInputStream(archive.getEntry('META-INF/neoforge.mods.toml')).withCloseable {
+                new String(it.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+            }
+            if (!metadata.contains('version="1.0.6fix"') || metadata.contains('modId="naturesaura"')
+                    || metadata.contains('modId="forbidden_arcanus"')) {
+                throw new GradleException('Invalid maintenance release metadata')
+            }
+            Properties features = new Properties()
+            archive.getInputStream(archive.getEntry('META-INF/mekanism_magic_features.properties')).withCloseable { features.load(it) }
+            if (features.getProperty('natures_aura_integration') != 'false'
+                    || features.getProperty('forbidden_arcanus_integration') != 'false') {
+                throw new GradleException('Experimental integrations are not explicitly disabled')
+            }
+            logger.lifecycle("Validated maintenance scope: ${baseline.machineIds.size()} unchanged machine IDs, ${recipes.size()} approved recipe IDs including blank capture, no excluded experimental content")
+        } finally {
+            archive.close()
+        }
+    }
+}
+
+tasks.named('check') { dependsOn tasks.named('validateFixRelease') }

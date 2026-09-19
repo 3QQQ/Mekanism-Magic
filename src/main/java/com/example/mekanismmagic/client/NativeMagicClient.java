@@ -31,6 +31,13 @@ public final class NativeMagicClient {
     }
 
     @SubscribeEvent
+    public static void registerRitualEggColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
+        if (ModCompatibility.occultismLoaded()) {
+            event.register(com.example.mekanismmagic.item.RitualSpawnEggIdentity::color, MekanismMagic.RITUAL_SPAWN_EGG.get());
+        }
+    }
+
+    @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         if (ModCompatibility.occultismLoaded()) {
             if (!occultismRecipeListenerRegistered) {
@@ -68,6 +75,9 @@ public final class NativeMagicClient {
     @SubscribeEvent
     public static void registerRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
+        if (ModCompatibility.magicPipesEnabled()) {
+            registerSharedPipeRenderers(event);
+        }
         if (ModCompatibility.occultismLoaded()) {
             event.registerBlockEntityRenderer(
                     NativeMekanismRegistries.SPIRIT_TILE.get(),
@@ -130,6 +140,33 @@ public final class NativeMagicClient {
                         MagicMachineAnimationRenderer.Kind.SPIRIT_FACTORY));
     }
 
+    private static void registerSharedPipeRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.ADVANCED_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.ELITE_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.ULTIMATE_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.ABSOLUTE_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.SUPREME_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.COSMIC_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+        event.registerBlockEntityRenderer(
+                com.example.mekanismmagic.integration.common.network.MagicPipeRegistries.INFINITE_MAGIC_SOURCE_PIPE_TILE.get(),
+                com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer::new);
+    }
+
     @SubscribeEvent
     public static void registerItemProperties(FMLClientSetupEvent event) {
         if (!ModCompatibility.occultismLoaded()) {
@@ -148,6 +185,7 @@ public final class NativeMagicClient {
         if (TextureAtlas.LOCATION_BLOCKS.equals(
                 event.getAtlas().location())) {
             MagicMachineAnimationRenderer.invalidateSpriteCache();
+            com.example.mekanismmagic.integration.arsnouveau.client.MagicSourcePipeRenderer.invalidateSpriteCache();
             if (ModCompatibility.arsNouveauMachineContentEnabled()) {
                 invokeOptionalClientHook(
                         "arsnouveau.client.ArsNouveauClient",

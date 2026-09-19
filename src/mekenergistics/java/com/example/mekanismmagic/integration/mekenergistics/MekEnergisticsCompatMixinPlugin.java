@@ -209,6 +209,26 @@ public final class MekEnergisticsCompatMixinPlugin
         if (!loaded()) {
             return false;
         }
+        if (targetClassName.endsWith("ExtraNatureAltarFactoryBlockEntity")
+                && !classPresent("com.jerry.mekextras.common.tile.factory.TileEntityExtraItemToItemFactory")) {
+            return false;
+        }
+        if (targetClassName.equals("com.jerry.mekextras.common.item.ItemExtraTierInstaller")
+                && !classPresent(targetClassName)) {
+            return false;
+        }
+        if (mixinClassName.endsWith(
+                "MekEnergisticsNatureAltarPatternMixin")
+                || mixinClassName.endsWith(
+                "MekEnergisticsNaturePatternCacheMixin")
+                || mixinClassName.endsWith(
+                "MekEnergisticsNatureFactoryAutomationMixin")) {
+            return classPresent(
+                    "de.ellpeck.naturesaura.recipes.AltarRecipe")
+                    && classPresent(
+                    "com.example.mekanismmagic.integration.ae2."
+                            + "Ae2NatureAltarPattern");
+        }
         return true;
     }
 

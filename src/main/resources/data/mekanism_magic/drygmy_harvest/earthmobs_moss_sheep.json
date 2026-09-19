@@ -1,0 +1,16 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "minecraft:sheep",
+    "earthmobsmod:horned_sheep"
+  ],
+  "kind": "item",
+  "item": "minecraft:moss_block",
+  "adult": true,
+  "nbt": {
+    "Moss": true,
+    "Sheared": false
+  }
+}

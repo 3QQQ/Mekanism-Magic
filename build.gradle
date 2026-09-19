@@ -204,6 +204,7 @@ dependencies {
     testRuntimeOnly("mekanism:Mekanism:1.21.1-${mekanism_version}") {
         transitive = false
     }
+    testRuntimeOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
 }
 
 // Opt-in runtime GameTests for the real AE2 + Mek Energistics boundary.
@@ -237,6 +238,8 @@ if (compileMekEnergistics && compileAe2) {
     ].findAll { it.exists() }
 
     dependencies {
+        gameTestCompileOnly files("libs/occultism-1.21.1-neoforge-${occultism_version}.jar",
+                'run/mods/modonomicon-1.21.1-neoforge-1.120.4.jar')
         gameTestRuntimeOnly files(spiritGameTestSupportJars)
     }
 
@@ -428,6 +431,7 @@ idea {
 // until its block entity, renderer, resources, loot and one-block geometry
 // satisfy the shared machine contract.
 apply from: 'gradle/machine-contracts.gradle'
+apply from: 'gradle/fix-release.gradle'
 
 tasks.named('check') {
     dependsOn tasks.named('validateMachineContracts'),
@@ -597,4 +601,120 @@ if (requireFullIntegrations.get()) {
 
 tasks.named('check') {
     dependsOn tasks.named('validatePackagedIntegrations')
+}
+
+// Retained regression coverage for the 1.0.6fix release.
+tasks.register('testUpgradeSerialization', JavaExec) {
+    group = 'verification'
+    description = 'Reproduces duplicate upgrade names at the vanilla lookup threshold and checks save/ID compatibility.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.upgrade.UpgradeSerializationSelfTest'
+}
+
+tasks.register('testSideConfigDefaultPage', JavaExec) {
+    group = 'verification'
+    description = 'Checks item-first opening pages and preserves other mods and page ordering.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.gui.SideConfigDefaultPageSelfTest'
+}
+
+tasks.register('testProcessingEnergyUsage', JavaExec) {
+    group = 'verification'
+    description = 'Checks actual processing debit/refund metering independently of animation and battery charging.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.common.energy.ProcessingEnergyUsageSelfTest'
+}
+
+tasks.register('testMagicMachineEnergyProfiles', JavaExec) {
+    group = 'verification'
+    description = 'Checks the fixed Mek default power tiers and per-lane unit basis.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfilesSelfTest'
+}
+
+tasks.register('testArsImbuementJeiContract', JavaExec) {
+    group = 'verification'
+    description = 'Checks catalyst-free JEI input shape and incremental Ars page reloads.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.arsnouveau.client.ArsImbuementJeiContractSelfTest'
+}
+
+tasks.register('testSpiritJeiGrouping', JavaExec) {
+    group = 'verification'
+    description = 'Checks profession categories, real JEI slots, unique display IDs and grouped reloads without GL.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.jei.SpiritJeiGroupingSelfTest'
+}
+
+tasks.register('testMachineTitles', JavaExec) {
+    group = 'verification'
+    description = 'Checks all localized machine/container title pairs and shared ordinary/factory headers.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    workingDir = projectDir
+    mainClass = 'com.example.mekanismmagic.client.MachineTitlesSelfTest'
+}
+
+tasks.register('testGuiResourcePack', JavaExec) {
+    group = 'verification'
+    description = 'Checks optional GUI resource-pack enable, replacement, invalid JSON and disable behavior.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    workingDir = projectDir
+    mainClass = 'com.example.mekanismmagic.client.gui.GuiResourcePackSelfTest'
+}
+
+tasks.register('testRetainedModules', JavaExec) {
+    group = 'verification'
+    description = 'Checks retained-sidebar geometry, original-slot wiring and catalyst selector guards.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.RetainedModuleSelfTest'
+}
+
+tasks.register('testRitualSpawnEggIdentity', JavaExec) {
+    group = 'verification'
+    description = 'Checks ritual spawn-egg names, semantic JEI variants, colors and recipe-list reloads.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.jei.RitualSpawnEggIdentitySelfTest'
+}
+
+def machinePanelAccessAgentJar = tasks.register('machinePanelAccessAgentJar', Jar) {
+    dependsOn tasks.named('testClasses')
+    from(sourceSets.test.output) {
+        include 'com/example/mekanismmagic/client/MachinePanelAccessAgent*.class'
+    }
+    destinationDirectory = layout.buildDirectory.dir('test-agents')
+    archiveFileName = 'machine-panel-access.jar'
+    manifest { attributes('Premain-Class': 'com.example.mekanismmagic.client.MachinePanelAccessAgent') }
+}
+
+tasks.register('testMachineSidebar', JavaExec) {
+    group = 'verification'
+    description = 'Checks native and optional sidebar tab spacing, real hitboxes and resize alignment.'
+    dependsOn tasks.named('testClasses'), machinePanelAccessAgentJar
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.MachineSidebarSelfTest'
+    doFirst { jvmArgs("-javaagent:" + machinePanelAccessAgentJar.get().archiveFile.get().asFile.absolutePath) }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('testUpgradeSerialization'),
+            tasks.named('testSideConfigDefaultPage'),
+            tasks.named('testProcessingEnergyUsage'),
+            tasks.named('testMagicMachineEnergyProfiles'),
+            tasks.named('testArsImbuementJeiContract'),
+            tasks.named('testSpiritJeiGrouping'),
+            tasks.named('testMachineTitles'),
+            tasks.named('testGuiResourcePack'),
+            tasks.named('testRetainedModules'),
+            tasks.named('testRitualSpawnEggIdentity'),
+            tasks.named('testMachineSidebar')
 }

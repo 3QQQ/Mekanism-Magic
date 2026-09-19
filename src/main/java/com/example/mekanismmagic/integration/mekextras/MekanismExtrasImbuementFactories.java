@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.upgrade.MagicUpgrades;
 import com.jerry.mekextras.api.ExtraUpgrade;
 import com.jerry.mekextras.common.block.attribute.ExtraAttributeUpgradeable;
@@ -8,6 +9,7 @@ import com.jerry.mekextras.common.content.blocktype.ExtraFactory;
 import com.jerry.mekextras.common.tier.ExtraFactoryTier;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import mekanism.common.content.blocktype.FactoryType;
+import mekanism.common.block.attribute.AttributeEnergy;
 import mekanism.common.block.attribute.AttributeGui;
 import mekanism.common.block.attribute.AttributeUpgradeSupport;
 import mekanism.api.Upgrade;
@@ -119,6 +121,11 @@ public final class MekanismExtrasImbuementFactories {
         ExtraFactory.ExtraFactoryBuilder builder =
                 ExtraFactory.ExtraFactoryBuilder.createFactory(
                         tile, FactoryType.SMELTING, tier);
+        AttributeEnergy originalEnergy = builder.build().get(AttributeEnergy.class);
+        // Preserve Extras' capacity supplier, including its tier scaling.
+        builder.replace(new AttributeEnergy(
+                () -> MagicMachineEnergyProfiles.MATERIAL_PROCESSING,
+                originalEnergy::getConfigStorage));
         builder.replace(new AttributeGui(
                 () -> IMBUEMENT_FACTORY_CONTAINER, null));
         builder.replace(AttributeUpgradeSupport.create(

@@ -51,7 +51,7 @@ public final class FeSourceConverterBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return ArsNouveauMachineConfig.SOURCE_CONVERTER_FE_PER_TICK;
+        return ArsNouveauMachineConfig.SOURCE_CONVERTER_JOULES_PER_TICK;
     }
 
     @Override

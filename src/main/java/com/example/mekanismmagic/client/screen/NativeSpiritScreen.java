@@ -17,7 +17,6 @@ public final class NativeSpiritScreen extends NativeMagicMachineScreen<
 
     @Override
     protected IRecipeViewerRecipeType<?>[] recipeViewerTypes() {
-        return new IRecipeViewerRecipeType<?>[]{
-                OccultismRecipeViewerTypes.SPIRIT};
+        return OccultismRecipeViewerTypes.spiritCategories();
     }
 }

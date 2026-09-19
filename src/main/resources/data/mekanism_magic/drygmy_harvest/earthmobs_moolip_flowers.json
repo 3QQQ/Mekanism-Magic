@@ -1,0 +1,12 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:moolip"
+  ],
+  "kind": "item",
+  "item": "earthmobsmod:pink_daisy",
+  "count": 4,
+  "adult": true
+}

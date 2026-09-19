@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation.PatternStack;
 import com.example.mekanismmagic.api.IRecipeEntityDisplay;
@@ -264,7 +265,8 @@ public final class NativeSpiritFactoryBlockEntity
                         && recipe.sameProcessingRevision())
                 .setActive(active -> setActiveState(active, process))
                 .setEnergyRequirements(
-                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this, 400),
+                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this,
+                                MagicMachineEnergyProfiles.MATERIAL_PROCESSING),
                         energyContainer)
                 .setRequiredTicks(
                         () -> mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()))

@@ -1,0 +1,11 @@
+{
+  "required_mods": [
+    "occultism"
+  ],
+  "entities": [
+    "occultism:deer_familiar"
+  ],
+  "kind": "item",
+  "item": "occultism:datura_seeds",
+  "chance": 0.25
+}

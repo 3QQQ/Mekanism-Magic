@@ -1,0 +1,12 @@
+{
+  "entities": [
+    "minecraft:cow",
+    "minecraft:mooshroom",
+    "minecraft:goat"
+  ],
+  "kind": "fluid",
+  "fluid_container": "minecraft:milk_bucket",
+  "fluid_tag": "c:milk",
+  "amount": 1000,
+  "adult": true
+}

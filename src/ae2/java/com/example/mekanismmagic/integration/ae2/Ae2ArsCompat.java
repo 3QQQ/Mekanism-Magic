@@ -1,7 +1,6 @@
 package com.example.mekanismmagic.integration.ae2;
 
 import com.example.mekanismmagic.MekanismMagic;
-import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRegistries;
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceNetworkAccess;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementProcessorBlockEntity;
@@ -25,10 +24,8 @@ public final class Ae2ArsCompat {
         registered = true;
         MachineNetworkLifecycleHooks.register(
                 Ae2ImbuementProvider.LIFECYCLE_HOOK);
-        if (ModCompatibility.loaded(ModCompatibility.ARS_ENERGISTIQUE)) {
-            ArsSourceNetworkAccess.register(
-                    Ae2ArsSourceNetworkAccess.INSTANCE);
-        }
+        ArsSourceNetworkAccess.register(
+                Ae2ArsSourceNetworkAccess.INSTANCE);
         modBus.addListener(Ae2ArsCompat::registerCapabilities);
     }
 
@@ -50,13 +47,9 @@ public final class Ae2ArsCompat {
 
     private static void registerMissingSourceInterfaceAdapters(
             RegisterCapabilitiesEvent event) {
-        if (!ModCompatibility.loaded(
-                ModCompatibility.ARS_ENERGISTIQUE)) {
-            return;
-        }
         int registered = 0;
         for (var block : BuiltInRegistries.BLOCK) {
-            // Ars Energistique performs the same registry-wide scan, but
+            // Ars Energistique, when present, performs the same scan, but
             // add-ons can register their generic inventories later in mod
             // order. Complete only the registrations that were missed. This
             // intentionally is not restricted to known interface IDs so new

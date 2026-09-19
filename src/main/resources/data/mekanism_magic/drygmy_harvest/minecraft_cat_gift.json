@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "entities": [
+    "minecraft:cat"
+  ],
+  "kind": "cat_gift"
+}

@@ -21,6 +21,11 @@ public final class MagicGuiTextures {
     private MagicGuiTextures() {
     }
 
+    public static void clearCaches() {
+        DARK_THEME_TEXTURES.clear();
+        LIGHT_THEME_TEXTURES.clear();
+    }
+
     public static ResourceLocation resolve(ResourceLocation original) {
         if (!isThemeActive()
                 || !MEKANISM_NAMESPACE.equals(original.getNamespace())
@@ -38,6 +43,10 @@ public final class MagicGuiTextures {
                 ? LIGHT_THEME_PREFIX : DARK_THEME_PREFIX;
         resolved = ResourceLocation.fromNamespaceAndPath(MekanismMagic.MOD_ID,
                 prefix + original.getPath().substring(GUI_PREFIX.length()));
+        // Unknown addon glyphs keep their source resource instead of becoming missing-texture squares.
+        if (MagicGuiStyle.isTerminal() && Minecraft.getInstance().getResourceManager().getResource(resolved).isEmpty()) {
+            resolved = original;
+        }
         ResourceLocation raced = cache.putIfAbsent(original, resolved);
         return raced == null ? resolved : raced;
     }

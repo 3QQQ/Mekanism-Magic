@@ -1,0 +1,10 @@
+{
+  "required_mods": [
+    "occultism"
+  ],
+  "entities": [
+    "occultism:mercy_goat"
+  ],
+  "kind": "goat_horn",
+  "adult": true
+}

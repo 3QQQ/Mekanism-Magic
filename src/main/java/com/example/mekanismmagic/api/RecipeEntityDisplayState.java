@@ -42,6 +42,20 @@ public final class RecipeEntityDisplayState {
         return resolve(source).isPresent();
     }
 
+    /** Display a recipe entity directly, without inventing an item output. */
+    public boolean updateEntity(ResourceLocation entityType, CompoundTag visualData) {
+        if (entityType == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(entityType)) {
+            return clear();
+        }
+        CompoundTag next = visualData == null ? new CompoundTag() : sanitise(visualData);
+        next.putString("id", entityType.toString());
+        if (entityData.equals(next)) {
+            return false;
+        }
+        entityData = next;
+        return true;
+    }
+
     public boolean clear() {
         if (entityData.isEmpty()) {
             return false;
@@ -121,6 +135,9 @@ public final class RecipeEntityDisplayState {
     }
 
     private static CompoundTag componentData(ItemStack source) {
+        if (source.getItem() instanceof RitualSpawnEggItem) {
+            return RitualSpawnEggItem.data(source);
+        }
         CustomData customData = source.get(DataComponents.ENTITY_DATA);
         return customData == null || customData.isEmpty()
                 ? new CompoundTag() : customData.copyTag();

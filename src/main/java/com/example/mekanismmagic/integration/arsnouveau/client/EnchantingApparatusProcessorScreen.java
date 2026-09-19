@@ -62,8 +62,6 @@ public final class EnchantingApparatusProcessorScreen
     @Override
     protected IRecipeViewerRecipeType<?>[] recipeViewerTypes() {
         return new IRecipeViewerRecipeType<?>[]{
-                ArsRecipeViewerTypes.ENCHANTING_APPARATUS,
-                ArsRecipeViewerTypes.ENCHANTMENT,
-                ArsRecipeViewerTypes.ARMOR_UPGRADE};
+                ArsRecipeViewerTypes.ENCHANTING_APPARATUS};
     }
 }

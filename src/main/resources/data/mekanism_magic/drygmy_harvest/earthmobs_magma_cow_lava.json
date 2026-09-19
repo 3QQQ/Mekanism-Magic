@@ -1,0 +1,12 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:magma_cow"
+  ],
+  "kind": "fluid",
+  "fluid": "minecraft:lava",
+  "amount": 1000,
+  "adult": true
+}

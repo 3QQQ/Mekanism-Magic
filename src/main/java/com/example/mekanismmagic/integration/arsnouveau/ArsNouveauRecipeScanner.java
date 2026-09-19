@@ -157,7 +157,7 @@ public final class ArsNouveauRecipeScanner {
 
     static String recipeSemanticSignature(ImbuementRecipe recipe) {
         String input = ingredientSignature(recipe.getInput());
-        String output = stackKey(recipe.getOutput());
+        String output = stackKey(recipe.getOutput()) + "*count=" + recipe.getOutput().getCount();
         String pedestals = recipe.getPedestalItems().stream()
                 .map(ArsNouveauRecipeScanner::ingredientSignature)
                 .sorted()
