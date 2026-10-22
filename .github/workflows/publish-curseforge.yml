@@ -13,6 +13,16 @@ on:
         required: true
         type: boolean
         default: false
+      update_changelog_only:
+        description: Update the existing 1.0.7 CF changelog without uploading a file
+        required: false
+        type: boolean
+        default: false
+      curseforge_file_id:
+        description: Existing CurseForge file to update (1.0.7 only)
+        required: false
+        type: string
+        default: '9283086'
 
 permissions:
   contents: read
@@ -21,7 +31,7 @@ jobs:
   publish:
     name: Publish release
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
+    if: (github.event_name == 'workflow_dispatch' && inputs.update_changelog_only != true) || (github.event_name == 'release' && github.event.release.prerelease == false)
 
     steps:
       - name: Resolve release target
@@ -260,3 +270,42 @@ jobs:
             pipez(optional)
             jade(optional)
             applied-flux(optional)
+
+  update-changelog:
+    name: Update existing CurseForge changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'workflow_dispatch' && inputs.update_changelog_only == true
+    steps:
+      - name: Update only the existing file changelog
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CF_API_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CF_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          CF_FILE_ID: ${{ inputs.curseforge_file_id }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          # This metadata-only operation is intentionally scoped to the released 1.0.7 file.
+          [[ "$CF_PROJECT_ID" == "1660500" && "$CF_FILE_ID" == "9283086" && "$RELEASE_TAG" == "v1.0.7-neoforge-1.21.1" ]]
+          test -n "$CF_API_TOKEN"
+          mkdir -p build
+          gh api "repos/$GITHUB_REPOSITORY/contents/docs/RELEASE_NOTES_1.0.7_CF.md?ref=$GITHUB_SHA" \
+            --jq .content | base64 --decode > build/cf-changelog.md
+          [[ "$(grep -c '^## English$' build/cf-changelog.md)" == "1" ]]
+          [[ "$(grep -c '^## 中文$' build/cf-changelog.md)" == "1" ]]
+          english_line="$(grep -n '^## English$' build/cf-changelog.md | cut -d: -f1)"
+          chinese_line="$(grep -n '^## 中文$' build/cf-changelog.md | cut -d: -f1)"
+          [[ "$english_line" -lt "$chinese_line" ]]
+          jq -n --argjson fileID "$CF_FILE_ID" --rawfile changelog build/cf-changelog.md \
+            '{fileID: $fileID, changelog: $changelog, changelogType: "markdown"}' > build/cf-changelog-metadata.json
+          # Official Project File Management API: no file part and no other metadata fields.
+          curl --fail-with-body --silent --show-error --max-time 90 --request POST \
+            --header "X-Api-Token: $CF_API_TOKEN" \
+            --form "metadata=<build/cf-changelog-metadata.json" \
+            "https://minecraft.curseforge.com/api/projects/$CF_PROJECT_ID/update-file" \
+            > build/cf-changelog-response.json
+          jq -e --argjson expected "$CF_FILE_ID" '.id == $expected' build/cf-changelog-response.json
+          printf 'Updated changelog on existing CurseForge file %s; no JAR uploaded.\n' "$CF_FILE_ID"
+          sha256sum build/cf-changelog.md
