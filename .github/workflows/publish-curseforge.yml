@@ -83,6 +83,10 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --pattern "*.jar" \
             --dir build/libs
+          # workflow_dispatch must publish the same full release notes as the release event.
+          gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json body --jq .body > build/release-changelog.md
 
       - name: Validate release asset
         shell: bash
@@ -192,7 +196,14 @@ jobs:
               "com/example/mekanismmagic/integration/naturesaura/OfferingProcessorBlockEntity.class"
               "com/example/mekanismmagic/integration/naturesaura/TreeRitualProcessorBlockEntity.class"
               "com/example/mekanismmagic/integration/naturesaura/AnimalSpawnerProcessorBlockEntity.class"
-              "com/example/mekanismmagic/integration/naturesaura/AnimalSpawnerSpawnTransaction.class"
+              "com/example/mekanismmagic/integration/naturesaura/AnimalSpawnEggs.class"
+              "com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusContentModule.class"
+              "com/example/mekanismmagic/integration/forbiddenarcanus/ClibanoProcessorBlockEntity.class"
+              "com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusForgeProcessorBlockEntity.class"
+              "com/example/mekanismmagic/integration/forbiddenarcanus/EssenceCondenserBlockEntity.class"
+              "com/example/mekanismmagic/integration/ae2/storage/MagicStorageCells.class"
+              "com/example/mekanismmagic/client/gui/GuiMachineSettingsWindow.class"
+              "com/example/mekanismmagic/client/gui/GuiMachineProgress.class"
               "com/example/mekanismmagic/integration/naturesaura/NatureAltarContextItem.class"
               "com/example/mekanismmagic/integration/naturesaura/NatureAltarContextCountPolicy.class"
               "com/example/mekanismmagic/integration/naturesaura/NatureAltarLockedContextPolicy.class"
@@ -227,8 +238,9 @@ jobs:
             ${{ steps.target.outputs.game_version }}
           java: ${{ steps.target.outputs.java_version }}
           version: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+          version-type: release
           name: Mekanism Magic ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
-          changelog: ${{ github.event.release.body || 'Automated CurseForge publication.' }}
+          changelog-file: build/release-changelog.md
           curseforge-dependencies: |
             mekanism(required)
             occultism(optional)
