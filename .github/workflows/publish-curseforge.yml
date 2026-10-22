@@ -301,11 +301,25 @@ jobs:
           jq -n --argjson fileID "$CF_FILE_ID" --rawfile changelog build/cf-changelog.md \
             '{fileID: $fileID, changelog: $changelog, changelogType: "markdown"}' > build/cf-changelog-metadata.json
           # Official Project File Management API: no file part and no other metadata fields.
-          curl --fail-with-body --silent --show-error --max-time 90 --request POST \
+          sha256sum build/cf-changelog.md
+          if ! curl --fail-with-body --silent --show-error --max-time 90 --request POST \
             --header "X-Api-Token: $CF_API_TOKEN" \
             --form "metadata=<build/cf-changelog-metadata.json" \
             "https://minecraft.curseforge.com/api/projects/$CF_PROJECT_ID/update-file" \
-            > build/cf-changelog-response.json
+            > build/cf-changelog-response.json; then
+            # Show only public error messages/titles, never request headers or tokens.
+            python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          text = Path("build/cf-changelog-response.json").read_text(errors="replace")
+          try:
+              obj = json.loads(text)
+              print(json.dumps({key: obj[key] for key in ("message", "error", "errorCode") if key in obj}, ensure_ascii=False)[:1000])
+          except (ValueError, TypeError):
+              print("Response titles:", re.findall(r"<(?:title|h1|h2)[^>]*>(.*?)</(?:title|h1|h2)>", text, re.I | re.S)[:4])
+          PY
+            exit 1
+          fi
           jq -e --argjson expected "$CF_FILE_ID" '.id == $expected' build/cf-changelog-response.json
           printf 'Updated changelog on existing CurseForge file %s; no JAR uploaded.\n' "$CF_FILE_ID"
           sha256sum build/cf-changelog.md
