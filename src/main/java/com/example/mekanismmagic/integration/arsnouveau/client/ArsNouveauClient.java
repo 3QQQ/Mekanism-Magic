@@ -48,38 +48,30 @@ public final class ArsNouveauClient {
 
     private static void onRecipesUpdated(RecipesUpdatedEvent event) {
         ArsNouveauRecipeScanner.refresh(event.getRecipeManager());
+        if (ModCompatibility.loaded("jei")) {
+            try {
+                Class.forName("com.example.mekanismmagic.integration.jei.MekanismMagicJeiPlugin")
+                        .getMethod("requestArsRuntimeRefresh").invoke(null);
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Failed to request apparatus JEI refresh", failure);
+            }
+        }
     }
 
     public static void invalidateSpriteCaches() {
-        MagicSourcePipeRenderer.invalidateSpriteCache();
+
     }
 
     public static void registerRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.ADVANCED_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.ELITE_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.ULTIMATE_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.ABSOLUTE_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.SUPREME_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.COSMIC_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
-        event.registerBlockEntityRenderer(
-                ArsNouveauRegistries.INFINITE_MAGIC_SOURCE_PIPE_TILE.get(),
-                MagicSourcePipeRenderer::new);
+
+
+
+
+
+
+
+
         event.registerBlockEntityRenderer(
                 ArsNouveauRegistries.DRYGMY_SIMULATOR_TILE.get(),
                 DrygmySimulatorRenderer::new);

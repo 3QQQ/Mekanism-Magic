@@ -3,7 +3,7 @@ package com.example.mekanismmagic.client.gui;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
 
-/** Bottom anchors shared by the two lower-left theme controls. */
+/** Shared lower-left control anchors for native and factory screens. */
 public final class MagicLeftControlLayout {
     private static final int TAB_HEIGHT = 26;
     private static final int BOTTOM_MARGIN = 3;
@@ -17,7 +17,7 @@ public final class MagicLeftControlLayout {
         return gui.getYSize() - TAB_HEIGHT - BOTTOM_MARGIN;
     }
 
-    public static int themeY(IGuiWrapper gui) {
+    public static int settingsY(IGuiWrapper gui) {
         return energyY(gui) - TAB_HEIGHT - TAB_GAP;
     }
 

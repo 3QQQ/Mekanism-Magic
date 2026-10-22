@@ -1,6 +1,11 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.api.IMekanismMagicAutomation.ItemInputGroup;
+import com.example.mekanismmagic.api.IMekanismMagicAutomation.PatternStack;
+import com.example.mekanismmagic.container.DockedPanelLayout;
+
 import com.example.mekanismmagic.NativeMekanismRegistries;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import mekanism.api.IContentsListener;
@@ -57,7 +62,8 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 InputInventorySlot.at(OccultismRecipeBridge::isSacrificeItem,
                         listener, 20, 85));
         dictionarySlot = registerLogicalSlot(helper, DICTIONARY_SLOT,
-                new DictionaryInventorySlot(this, listener, 240, 104));
+                new DictionaryInventorySlot(this, listener, DockedPanelLayout.DICTIONARY.slotX(0, 1),
+                        DockedPanelLayout.DICTIONARY.slotY(0, 1)));
         var itemConfig = setupNativeItemIO(
                 inputs, List.of(outputSlot, sacrificeRemainderSlot),
                 List.of());
@@ -120,7 +126,7 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
 
     @Override
     protected int baseEnergyPerTick() {
-        return 1_200;
+        return MagicMachineEnergyProfiles.MAGIC_REACTION;
     }
 
     @Override
@@ -171,6 +177,85 @@ public final class NativeRitualEngineBlockEntity extends NativeMagicMachineBlock
                 level, ritualSlot.getStack(), inputs,
                 dictionarySlot != null
                         && !dictionarySlot.getStack().isEmpty());
+    }
+
+    @Override
+    public Optional<List<ItemInputGroup>>
+    mekanismMagicPlanExternalItemInputs(
+            List<PatternStack> inputs, List<PatternStack> outputs) {
+        if (inputs == null || inputs.isEmpty() || outputs == null
+                || outputs.size() != 1 || activationSlot == null
+                || sacrificeSlot == null) {
+            return Optional.empty();
+        }
+        List<OccultismRecipeBridge.RitualAutomationInput> requested =
+                new ArrayList<>(inputs.size());
+        for (PatternStack input : inputs) {
+            if (input == null || input.stack().isEmpty()
+                    || input.amount() <= 0
+                    || input.amount() > Integer.MAX_VALUE) {
+                return Optional.empty();
+            }
+            requested.add(new OccultismRecipeBridge.RitualAutomationInput(
+                    input.stack(), (int) input.amount()));
+        }
+        Optional<OccultismRecipeBridge.RitualAutomationPlan> resolved =
+                mekanismMagicPlanRitualAutomation(requested);
+        if (resolved.isEmpty() || resolved.get().copies() != 1) {
+            // The physical activation and sacrifice ports each hold only one
+            // item identity. Let AE retry separate crafting operations rather
+            // than accepting a multiplied batch with mixed role candidates.
+            return Optional.empty();
+        }
+        ItemStack expected = resolved.get().output();
+        PatternStack declared = outputs.getFirst();
+        if (declared == null || declared.stack().isEmpty()
+                || declared.amount() != expected.getCount()
+                || !ItemStack.isSameItemSameComponents(
+                declared.stack(), expected)) {
+            return Optional.empty();
+        }
+
+        List<PatternStack> activation = new ArrayList<>();
+        List<PatternStack> sacrifice = new ArrayList<>();
+        List<PatternStack> materials = new ArrayList<>();
+        long[] allocated = new long[inputs.size()];
+        for (OccultismRecipeBridge.RitualAutomationAllocation allocation
+                : resolved.get().allocations()) {
+            int index = allocation.inputIndex();
+            int amount = allocation.amount();
+            if (index < 0 || index >= inputs.size() || amount <= 0) {
+                return Optional.empty();
+            }
+            allocated[index] += amount;
+            PatternStack portion = new PatternStack(
+                    inputs.get(index).stack(), amount);
+            switch (allocation.role()) {
+                case ACTIVATION -> activation.add(portion);
+                case SACRIFICE -> sacrifice.add(portion);
+                case MATERIAL -> materials.add(portion);
+            }
+        }
+        for (int index = 0; index < inputs.size(); index++) {
+            if (allocated[index] != inputs.get(index).amount()) {
+                return Optional.empty();
+            }
+        }
+        List<ItemInputGroup> groups = new ArrayList<>(3);
+        if (!activation.isEmpty()) {
+            groups.add(new ItemInputGroup(activation,
+                    List.of(activationSlot)));
+        }
+        if (!sacrifice.isEmpty()) {
+            groups.add(new ItemInputGroup(sacrifice,
+                    List.of(sacrificeSlot)));
+        }
+        if (!materials.isEmpty()) {
+            groups.add(new ItemInputGroup(materials,
+                    super.mekanismMagicPatternInputs()));
+        }
+        return groups.isEmpty() ? Optional.empty()
+                : Optional.of(List.copyOf(groups));
     }
 
     public void setDictionaryModuleOpen(boolean open) {

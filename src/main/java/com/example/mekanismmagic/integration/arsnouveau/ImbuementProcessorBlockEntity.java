@@ -1,5 +1,7 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.blockentity.NativeMachineUpgradeData;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
@@ -41,10 +43,6 @@ public final class ImbuementProcessorBlockEntity
     private boolean virtualCatalystSelected;
     private int virtualCatalystIndex = -1;
     private String virtualCatalystId = "";
-    private ItemStack cachedVirtualCatalyst = ItemStack.EMPTY;
-    private String cachedVirtualCatalystId = "";
-    private int cachedVirtualCatalystIndex = Integer.MIN_VALUE;
-    private long cachedCatalystCatalogVersion = Long.MIN_VALUE;
     private long observedRecipeCatalogVersion = Long.MIN_VALUE;
 
     public ImbuementProcessorBlockEntity(BlockPos pos, BlockState state) {
@@ -66,6 +64,7 @@ public final class ImbuementProcessorBlockEntity
         IContentsListener libraryListener = () -> {
             listener.onContentsChanged();
             clampCatalystPage();
+            PatternAutomationRefreshHooks.request(this);
             setChanged();
         };
         catalystLibraryStorage = new CatalystLibraryStorage(
@@ -95,8 +94,18 @@ public final class ImbuementProcessorBlockEntity
     @Override
     protected Optional<MachineRecipeResult> findRecipe(
             ItemStackHandler inventory) {
-        ResourceLocation patternRecipe = ArsNouveauRecipeBridge
-                .patternRecipe(inventory.getStackInSlot(REAGENT_SLOT));
+        ItemStack reagent = inventory.getStackInSlot(REAGENT_SLOT);
+        boolean marked = ArsNouveauRecipeBridge.hasPatternRecipeMarker(reagent);
+        ResourceLocation patternRecipe = marked ? ArsNouveauRecipeBridge.patternRecipe(reagent) : null;
+        if (marked && patternRecipe == null) {
+            return Optional.empty();
+        }
+        if (patternRecipe != null && !ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, patternRecipe)) {
+            // Exact no-catalyst work owns the marker on its physical remaining stack.
+            // Do not select a shared catalyst or strip the receipt from the snapshot.
+            return ArsNouveauRecipeBridge.findCatalystFreeImbuementByRecipe(
+                    level, inventory, REAGENT_SLOT, patternRecipe);
+        }
         if (patternRecipe != null
                 && (!canAdoptMarkedPatternRecipe(patternRecipe)
                 || !selectCatalystIdentifierForRecipe(patternRecipe))) {
@@ -114,6 +123,13 @@ public final class ImbuementProcessorBlockEntity
 
     @Override
     protected long recipeLookupRevision() {
+        // A virtual/physical library selection can change without changing any
+        // reagent slot. It must invalidate both active and negative lookups.
+        return 31L * recipeCatalogVersion()
+                + ItemStack.hashItemAndComponents(selectedCatalystIdentifier());
+    }
+
+    private long recipeCatalogVersion() {
         return level == null ? 0L : ArsNouveauRecipeScanner.version(
                 level.getRecipeManager());
     }
@@ -125,13 +141,12 @@ public final class ImbuementProcessorBlockEntity
     }
 
     private boolean refreshRecipeCatalogVersion() {
-        long revision = recipeLookupRevision();
+        long revision = recipeCatalogVersion();
         if (observedRecipeCatalogVersion == revision) {
             return false;
         }
         boolean initial = observedRecipeCatalogVersion == Long.MIN_VALUE;
         observedRecipeCatalogVersion = revision;
-        invalidateVirtualCatalystCache();
         clampCatalystPage();
         if (!initial) {
             progress = 0;
@@ -144,7 +159,7 @@ public final class ImbuementProcessorBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 600;
+        return MagicMachineEnergyProfiles.MATERIAL_PROCESSING;
     }
 
     @Override
@@ -188,7 +203,7 @@ public final class ImbuementProcessorBlockEntity
             net.minecraft.core.HolderLookup.Provider registries) {
         List<ItemStack> catalysts = catalystLibraryStorage == null
                 ? List.of() : catalystLibraryStorage.snapshot();
-        return new ImbuementFactoryUpgradeData(registries, redstone,
+        return NativeMachineUpgradeData.capture(new ImbuementFactoryUpgradeData(registries, redstone,
                 getControlType(), energyContainer, new int[]{progress},
                 energySlot,
                 inputSlot == null ? List.of() : List.of(inputSlot),
@@ -198,34 +213,32 @@ public final class ImbuementProcessorBlockEntity
                 selectedCatalystIndex, virtualCatalystSelected,
                 virtualCatalystId, catalystLibraryOpen, catalystPage,
                 new int[]{Math.max(1, progressRequired)},
-                sourceModesForUpgrade(), sourceLinksForUpgrade());
+                sourceModesForUpgrade(), sourceLinksForUpgrade()), this, registries);
     }
 
     @Override
     public ItemStack selectedCatalystIdentifier() {
-        if (virtualCatalystSelected && level != null) {
-            long version = ArsNouveauRecipeScanner.version(
-                    level.getRecipeManager());
-            if (version != cachedCatalystCatalogVersion
-                    || level.isClientSide()
-                    && virtualCatalystIndex != cachedVirtualCatalystIndex
-                    || !level.isClientSide()
-                    && !virtualCatalystId.equals(cachedVirtualCatalystId)) {
-                String requestedId = level.isClientSide()
-                        ? catalystIdAtVirtualIndex() : virtualCatalystId;
-                cachedVirtualCatalyst =
-                        ArsNouveauRecipeBridge.catalystIdentifierJeiStack(
-                                level, requestedId);
-                cachedVirtualCatalystId = requestedId;
-                cachedVirtualCatalystIndex = virtualCatalystIndex;
-                cachedCatalystCatalogVersion = version;
-            }
-            return cachedVirtualCatalyst;
-        }
         if (level != null && level.isClientSide()) {
             return syncedPhysicalCatalyst;
         }
+        if (virtualCatalystSelected) {
+            // Retain old saved selections, but a recipe/catalog entry is not
+            // a catalyst item. A legacy selection must still find real stock.
+            int index = catalystIdentifierIndex(virtualCatalystId);
+            return catalystLibraryStorage == null ? ItemStack.EMPTY : catalystLibraryStorage.get(index);
+        }
         return physicalSelectedCatalyst();
+    }
+
+    @Override
+    public boolean hasCatalystIdentifierForRecipe(ResourceLocation recipeId) {
+        if (level == null || recipeId == null) return false;
+        var holder = ArsNouveauRecipeScanner.find(level.getRecipeManager(), recipeId);
+        if (holder == null) return false;
+        if (holder.value().getPedestalItems().isEmpty()) return true;
+        return catalystLibraryStorage != null && catalystLibraryStorage.snapshot().stream()
+                .filter(stack -> stack.is(ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get()))
+                .anyMatch(stack -> ArsNouveauRecipeBridge.identifierMatchesRecipe(level, stack, recipeId));
     }
 
     public int selectedCatalystIndex() {
@@ -296,22 +309,19 @@ public final class ImbuementProcessorBlockEntity
             virtualCatalystSelected = false;
             virtualCatalystIndex = -1;
             virtualCatalystId = "";
-            cachedVirtualCatalyst = ItemStack.EMPTY;
             setChanged();
         }
     }
 
     public boolean selectCatalystIdentifierId(String id) {
-        VirtualCatalystSelection selection =
-                resolveVirtualCatalystSelection(id);
+        PhysicalCatalystSelection selection = resolvePhysicalCatalystSelection(id);
         if (selection == null) {
             return false;
         }
-        if (virtualCatalystSelected
-                && selection.id().equals(virtualCatalystId)) {
+        if (!virtualCatalystSelected && selectedCatalystIndex == selection.index()) {
             return true;
         }
-        applyVirtualCatalystSelection(selection);
+        applyPhysicalCatalystSelection(selection);
         return true;
     }
 
@@ -320,9 +330,11 @@ public final class ImbuementProcessorBlockEntity
         if (id == null || id.isBlank()) {
             return false;
         }
+        int physicalIndex = catalystIdentifierIndex(id);
+        if (physicalIndex < 0) return false;
         ItemStack selected = selectedCatalystIdentifier();
-        if (!selected.isEmpty() && id.equals(
-                CatalystIdentifierItem.catalystId(selected).toString())) {
+        if (!selected.isEmpty() && ItemStack.isSameItemSameComponents(
+                selected, catalystLibraryStorage.get(physicalIndex))) {
             return true;
         }
         return inputSlot != null && inputSlot.getStack().isEmpty()
@@ -336,8 +348,7 @@ public final class ImbuementProcessorBlockEntity
             return false;
         }
         ItemStack selected = selectedCatalystIdentifier();
-        if (!selected.isEmpty() && desired.equals(
-                CatalystIdentifierItem.catalystId(selected).toString())) {
+        if (!selected.isEmpty() && ArsNouveauRecipeBridge.identifierMatchesRecipe(level, selected, recipeId)) {
             return true;
         }
         ItemStack input = inputSlot == null
@@ -374,8 +385,8 @@ public final class ImbuementProcessorBlockEntity
                 || !inputSlot.getStack().isEmpty()) {
             return false;
         }
-        VirtualCatalystSelection requestedSelection = requiresCatalyst
-                ? resolveVirtualCatalystSelection(catalystId) : null;
+        PhysicalCatalystSelection requestedSelection = requiresCatalyst
+                ? resolvePhysicalCatalystSelection(catalystId) : null;
         if (requiresCatalyst && requestedSelection == null) {
             return false;
         }
@@ -399,7 +410,7 @@ public final class ImbuementProcessorBlockEntity
             if (requestedSelection == null) {
                 applyClearedCatalystSelection();
             } else {
-                applyVirtualCatalystSelection(requestedSelection);
+                applyPhysicalCatalystSelection(requestedSelection);
             }
             return true;
         } catch (RuntimeException | Error failure) {
@@ -408,7 +419,7 @@ public final class ImbuementProcessorBlockEntity
         }
     }
 
-    private VirtualCatalystSelection resolveVirtualCatalystSelection(
+    private PhysicalCatalystSelection resolvePhysicalCatalystSelection(
             String id) {
         if (level == null || id == null || id.isBlank()) {
             return null;
@@ -422,15 +433,15 @@ public final class ImbuementProcessorBlockEntity
                 .catalystIdentifierJeiStack(level, index);
         String canonicalId = canonical.isEmpty() ? id
                 : CatalystIdentifierItem.catalystId(canonical).toString();
-        return new VirtualCatalystSelection(index, canonicalId);
+        int physicalIndex = catalystIdentifierIndex(canonicalId);
+        return physicalIndex < 0 ? null : new PhysicalCatalystSelection(physicalIndex);
     }
 
-    private void applyVirtualCatalystSelection(
-            VirtualCatalystSelection selection) {
-        virtualCatalystSelected = true;
-        virtualCatalystIndex = selection.index();
-        virtualCatalystId = selection.id();
-        invalidateVirtualCatalystCache();
+    private void applyPhysicalCatalystSelection(PhysicalCatalystSelection selection) {
+        selectedCatalystIndex = selection.index();
+        virtualCatalystSelected = false;
+        virtualCatalystIndex = -1;
+        virtualCatalystId = "";
         setChanged();
     }
 
@@ -439,7 +450,6 @@ public final class ImbuementProcessorBlockEntity
         virtualCatalystIndex = -1;
         virtualCatalystId = "";
         selectedCatalystIndex = -1;
-        invalidateVirtualCatalystCache();
         setChanged();
     }
 
@@ -457,25 +467,12 @@ public final class ImbuementProcessorBlockEntity
         virtualCatalystSelected = previousSelection.virtualSelected();
         virtualCatalystIndex = previousSelection.virtualIndex();
         virtualCatalystId = previousSelection.virtualId();
-        invalidateVirtualCatalystCache();
         setChanged();
-    }
-
-    private void invalidateVirtualCatalystCache() {
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedVirtualCatalystId = "";
-        cachedVirtualCatalystIndex = Integer.MIN_VALUE;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
     }
 
     public int catalystIdentifierRecipeCount() {
         return level == null ? 0 : ArsNouveauRecipeBridge
                 .catalystIdentifierJeiRecipes(level).size();
-    }
-
-    private String catalystIdAtVirtualIndex() {
-        return ArsNouveauRecipeBridge.catalystIdentifierJeiId(
-                level, virtualCatalystIndex);
     }
 
     private int trackedVirtualCatalystIndex() {
@@ -488,7 +485,7 @@ public final class ImbuementProcessorBlockEntity
         return virtualCatalystIndex;
     }
 
-    private record VirtualCatalystSelection(int index, String id) {
+    private record PhysicalCatalystSelection(int index) {
     }
 
     private record CatalystSelectionState(
@@ -502,12 +499,18 @@ public final class ImbuementProcessorBlockEntity
         if (catalystLibraryStorage == null || id == null || id.isEmpty()) {
             return -1;
         }
+        int catalogIndex = level == null ? -1 : ArsNouveauRecipeBridge.catalystIdentifierJeiIndex(level, id);
+        if (catalogIndex < 0) return -1;
+        ItemStack canonical = ArsNouveauRecipeBridge.catalystIdentifierJeiStack(level, catalogIndex);
         List<ItemStack> catalysts = catalystLibraryStorage.snapshot();
         for (int index = 0; index < catalysts.size(); index++) {
-            var data = catalysts.get(index)
-                    .get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-            if (data != null && id.equals(data.getUnsafe()
-                    .getString("catalyst_id"))) {
+            ItemStack actual = catalysts.get(index);
+            if (actual.is(ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get())
+                    && ArsNouveauRecipeBridge.catalystIdentifierJeiIndex(level,
+                    CatalystIdentifierItem.catalystId(actual).toString()) == catalogIndex
+                    && ArsNouveauRecipeScanner.scan(level.getRecipeManager()).stream()
+                    .anyMatch(holder -> CatalystIdentifierItem.matchesRecipe(canonical, holder.id())
+                            && ArsNouveauRecipeBridge.identifierMatchesRecipe(level, actual, holder.id()))) {
                 return index;
             }
         }
@@ -558,7 +561,7 @@ public final class ImbuementProcessorBlockEntity
                 value -> syncedCatalystVisibleSlotCount =
                         Math.max(1, value)));
         container.track(SyncableItemStack.create(
-                this::physicalSelectedCatalyst,
+                this::selectedCatalystIdentifier,
                 value -> syncedPhysicalCatalyst = value == null
                         ? ItemStack.EMPTY : value.copy()));
         container.track(mekanism.common.inventory.container.sync.SyncableInt.create(
@@ -616,7 +619,5 @@ public final class ImbuementProcessorBlockEntity
             virtualCatalystSelected = false;
         }
         virtualCatalystIndex = -1;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
     }
 }

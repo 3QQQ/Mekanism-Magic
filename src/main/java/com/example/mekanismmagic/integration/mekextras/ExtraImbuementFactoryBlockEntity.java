@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.mekextras;
 
+import com.example.mekanismmagic.blockentity.NativeMachineUpgradeData;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.api.IRecipeItemDisplay;
 import com.example.mekanismmagic.api.RecipeItemDisplayState;
@@ -9,6 +10,7 @@ import com.example.mekanismmagic.inventory.CreativeMagicUpgradeSlot;
 import com.example.mekanismmagic.upgrade.CreativeMagicUpgradeMigration;
 import com.example.mekanismmagic.upgrade.MagicUpgrades;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauMachineConfig;
+import com.example.mekanismmagic.integration.arsnouveau.AeSourceFastPullHost;
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceInteraction;
 import com.example.mekanismmagic.integration.arsnouveau.ArsFactoryEnergyFallback;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRecipeBridge;
@@ -76,6 +78,7 @@ import java.util.function.BooleanSupplier;
 public final class ExtraImbuementFactoryBlockEntity
         extends TileEntityExtraItemToItemFactory<ImbuementFactoryRecipe>
         implements IMekanismMagicAutomation, ISourceTile, ArsSourceModeHost,
+        AeSourceFastPullHost,
         CatalystIdentifierSelectionHost, IRecipeItemDisplay,
         SourceLinkHost, SourceDisplayHost {
     private BasicInventorySlot lockSlot;
@@ -90,10 +93,6 @@ public final class ExtraImbuementFactoryBlockEntity
     private boolean virtualCatalystSelected;
     private int virtualCatalystIndex = -1;
     private String virtualCatalystId = "";
-    private ItemStack cachedVirtualCatalyst = ItemStack.EMPTY;
-    private String cachedVirtualCatalystId = "";
-    private int cachedVirtualCatalystIndex = Integer.MIN_VALUE;
-    private long cachedCatalystCatalogVersion = Long.MIN_VALUE;
     private long observedRecipeCatalogVersion = Long.MIN_VALUE;
     private int[] requiredTicks;
     private SourceStorage sourceStorage;
@@ -186,8 +185,21 @@ public final class ExtraImbuementFactoryBlockEntity
         if (input.isEmpty()) {
             return null;
         }
-        ResourceLocation patternRecipe =
-                ArsNouveauRecipeBridge.patternRecipe(input);
+        boolean marked = ArsNouveauRecipeBridge.hasPatternRecipeMarker(input);
+        ResourceLocation patternRecipe = marked ? ArsNouveauRecipeBridge.patternRecipe(input) : null;
+        if (marked && patternRecipe == null) {
+            return null;
+        }
+        if (patternRecipe != null && !ArsNouveauRecipeBridge.requiresCatalystIdentifier(level, patternRecipe)) {
+            ItemStackHandler inventory = new ItemStackHandler(1);
+            inventory.setStackInSlot(0, input.copy());
+            return ArsNouveauRecipeBridge.findCatalystFreeImbuementByRecipe(level, inventory, 0, patternRecipe)
+                    .map(result -> {
+                        var holder = ArsNouveauRecipeScanner.find(level.getRecipeManager(), result.id());
+                        return holder == null ? null : new ImbuementFactoryRecipe(holder, ItemStack.EMPTY, result, false,
+                                ArsNouveauRecipeScanner.version(level.getRecipeManager()), true);
+                    }).orElse(null);
+        }
         if (patternRecipe != null
                 && (!canAdoptMarkedPatternRecipe(patternRecipe)
                 || !selectCatalystIdentifierForRecipe(patternRecipe))) {
@@ -279,16 +291,13 @@ public final class ExtraImbuementFactoryBlockEntity
                 (CachedRecipe) new SourceAwareImbuementCachedRecipe(recipe,
                                 () -> true, inputHandlers[process],
                                 outputHandlers[process],
+                                () -> lockSlot != null && hasMatchingIdentifier(recipe),
+                                () -> hasCreativeUpgrade()
+                                        || hasSourceForRecipe(recipe.sourceCost()),
                                 () -> hasCreativeUpgrade()
                                         || recipe.sourceCost() <= 0
                                         || consumeSourceForRecipe(
                                         recipe.sourceCost()))
-                        .setCanHolderFunction(() -> lockSlot != null
-                                && recipe.matchesCurrentRecipe(level)
-                                && hasMatchingIdentifier(recipe)
-                                && (hasCreativeUpgrade()
-                                || hasSourceForRecipe(
-                                recipe.sourceCost())))
                         .setActive(active -> setActiveState(active, process))
                         .setEnergyRequirements(
                                 () -> ArsFactoryEnergyFallback
@@ -362,6 +371,15 @@ public final class ExtraImbuementFactoryBlockEntity
     }
 
     @Override
+    public int mekanismMagicAeFastSourceBudget() {
+        if (level == null || level.isClientSide()
+                || hasCreativeUpgrade()
+                || !sourceLinks.snapshot().isEmpty()) return 0;
+        return Math.min(Math.max(1, getTransferRate()),
+                Math.max(0, getMaxSource() - getSource()));
+    }
+
+    @Override
     public boolean mekanismMagicLinkSourceJar(BlockPos sourceJar) {
         if (level == null
                 || !SourceLinkState.isSourceEndpoint(level, sourceJar)) {
@@ -428,8 +446,6 @@ public final class ExtraImbuementFactoryBlockEntity
         }
         boolean initial = observedRecipeCatalogVersion == Long.MIN_VALUE;
         observedRecipeCatalogVersion = revision;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
         catalystPage = Math.max(0, Math.min(
                 catalystPageCount() - 1, catalystPage));
         if (!initial) {
@@ -450,30 +466,10 @@ public final class ExtraImbuementFactoryBlockEntity
 
     @Override
     public ItemStack selectedCatalystIdentifier() {
-        if (virtualCatalystSelected && level != null) {
-            long version = ArsNouveauRecipeScanner.version(
-                    level.getRecipeManager());
-            if (version != cachedCatalystCatalogVersion
-                    || level.isClientSide()
-                    && virtualCatalystIndex != cachedVirtualCatalystIndex
-                    || !level.isClientSide()
-                    && !virtualCatalystId.equals(cachedVirtualCatalystId)) {
-                String requestedId = level.isClientSide()
-                        ? catalystIdAtVirtualIndex() : virtualCatalystId;
-                cachedVirtualCatalyst = ArsNouveauRecipeBridge
-                        .catalystIdentifierJeiStack(level, requestedId);
-                cachedVirtualCatalystId = requestedId;
-                cachedVirtualCatalystIndex = virtualCatalystIndex;
-                cachedCatalystCatalogVersion = version;
-            }
-            return cachedVirtualCatalyst;
-        }
         if (level != null && level.isClientSide()) {
             return syncedPhysicalCatalyst;
         }
-        return catalystLibrary == null || selectedCatalystIndex < 0
-                ? ItemStack.EMPTY
-                : catalystLibrary.get(selectedCatalystIndex);
+        return physicalSelectedCatalyst();
     }
 
     public int catalystPage() {
@@ -522,30 +518,22 @@ public final class ExtraImbuementFactoryBlockEntity
         virtualCatalystSelected = false;
         virtualCatalystIndex = -1;
         virtualCatalystId = "";
-        cachedVirtualCatalyst = ItemStack.EMPTY;
         refreshRecipeLock();
         setChanged();
     }
 
     public boolean selectCatalystIdentifierId(String id) {
-        int index = ArsNouveauRecipeBridge.catalystIdentifierJeiIndex(
-                level, id);
+        int index = physicalCatalystIndexForCatalogId(id);
         if (index < 0) {
             return false;
         }
-        ItemStack canonical = ArsNouveauRecipeBridge
-                .catalystIdentifierJeiStack(level, index);
-        String canonicalId = canonical.isEmpty() ? id
-                : CatalystIdentifierItem.catalystId(canonical).toString();
-        if (virtualCatalystSelected
-                && canonicalId.equals(virtualCatalystId)) {
+        if (!virtualCatalystSelected && selectedCatalystIndex == index) {
             return true;
         }
-        virtualCatalystSelected = true;
-        virtualCatalystIndex = index;
-        virtualCatalystId = canonicalId;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
+        selectedCatalystIndex = index;
+        virtualCatalystSelected = false;
+        virtualCatalystIndex = -1;
+        virtualCatalystId = "";
         refreshRecipeLock();
         setChanged();
         return true;
@@ -553,7 +541,7 @@ public final class ExtraImbuementFactoryBlockEntity
 
     @Override
     public boolean canSelectCatalystIdentifierId(String id) {
-        if (id == null || id.isBlank()) {
+        if (physicalCatalystIndexForCatalogId(id) < 0) {
             return false;
         }
         ItemStack selected = selectedCatalystIdentifier();
@@ -576,7 +564,8 @@ public final class ExtraImbuementFactoryBlockEntity
     private boolean canAdoptMarkedPatternRecipe(
             ResourceLocation recipeId) {
         String desired = catalystIdentifierIdForRecipe(recipeId);
-        if (desired.isEmpty()) {
+        if (desired.isEmpty()
+                || physicalCatalystIndexForCatalogId(desired) < 0) {
             return false;
         }
         ItemStack selected = selectedCatalystIdentifier();
@@ -624,8 +613,6 @@ public final class ExtraImbuementFactoryBlockEntity
         virtualCatalystIndex = -1;
         virtualCatalystId = "";
         selectedCatalystIndex = -1;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
         refreshRecipeLock();
         setChanged();
     }
@@ -633,6 +620,65 @@ public final class ExtraImbuementFactoryBlockEntity
     public int catalystIdentifierRecipeCount() {
         return level == null ? 0 : ArsNouveauRecipeBridge
                 .catalystIdentifierJeiRecipes(level).size();
+    }
+
+    @Override
+    public boolean hasCatalystIdentifierForRecipe(
+            ResourceLocation recipeId) {
+        if (level == null || recipeId == null) {
+            return false;
+        }
+        var holder = ArsNouveauRecipeScanner.find(
+                level.getRecipeManager(), recipeId);
+        if (holder == null) {
+            return false;
+        }
+        if (holder.value().getPedestalItems().isEmpty()) {
+            return true;
+        }
+        if (catalystLibrary == null) {
+            return false;
+        }
+        for (int index = 0;
+             index < catalystLibrary.retainedSlotCount(); index++) {
+            ItemStack stack = catalystLibrary.get(index);
+            if (stack.is(ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get())
+                    && ArsNouveauRecipeBridge.identifierMatchesRecipe(
+                    level, stack, recipeId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int physicalCatalystIndexForCatalogId(String id) {
+        if (level == null || catalystLibrary == null
+                || id == null || id.isBlank()) {
+            return -1;
+        }
+        int catalogIndex = ArsNouveauRecipeBridge
+                .catalystIdentifierJeiIndex(level, id);
+        var catalog = ArsNouveauRecipeBridge
+                .catalystIdentifierJeiRecipes(level);
+        if (catalogIndex < 0 || catalogIndex >= catalog.size()) {
+            return -1;
+        }
+        List<ResourceLocation> recipeIds = catalog.get(catalogIndex)
+                .recipeIds();
+        if (recipeIds.isEmpty()) {
+            return -1;
+        }
+        for (int index = 0;
+             index < catalystLibrary.retainedSlotCount(); index++) {
+            ItemStack stack = catalystLibrary.get(index);
+            if (stack.is(ArsNouveauRegistries.CATALYST_IDENTIFIER_ITEM.get())
+                    && recipeIds.stream().allMatch(recipeId ->
+                    ArsNouveauRecipeBridge.identifierMatchesRecipe(
+                            level, stack, recipeId))) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private int catalystLibraryIndex(String catalystId) {
@@ -653,9 +699,13 @@ public final class ExtraImbuementFactoryBlockEntity
     }
 
     private ItemStack physicalSelectedCatalyst() {
-        return catalystLibrary == null || selectedCatalystIndex < 0
-                ? ItemStack.EMPTY
-                : catalystLibrary.get(selectedCatalystIndex);
+        if (catalystLibrary == null) {
+            return ItemStack.EMPTY;
+        }
+        int index = virtualCatalystSelected
+                ? physicalCatalystIndexForCatalogId(virtualCatalystId)
+                : selectedCatalystIndex;
+        return index < 0 ? ItemStack.EMPTY : catalystLibrary.get(index);
     }
 
     /** Empty factory inputs and an empty lock are normal idle state. */
@@ -679,14 +729,7 @@ public final class ExtraImbuementFactoryBlockEntity
 
     /** See the standard factory implementation for the UI hot-path reason. */
     private boolean hasCatalystSelection() {
-        if (virtualCatalystSelected) {
-            return level != null && (level.isClientSide()
-                    ? virtualCatalystIndex >= 0
-                    : !virtualCatalystId.isBlank());
-        }
-        return catalystLibrary != null
-                && selectedCatalystIndex >= 0
-                && !catalystLibrary.get(selectedCatalystIndex).isEmpty();
+        return !selectedCatalystIdentifier().isEmpty();
     }
 
     @Override
@@ -733,11 +776,6 @@ public final class ExtraImbuementFactoryBlockEntity
         refreshRecipeLock();
     }
 
-    private String catalystIdAtVirtualIndex() {
-        return ArsNouveauRecipeBridge.catalystIdentifierJeiId(
-                level, virtualCatalystIndex);
-    }
-
     private int trackedVirtualCatalystIndex() {
         if (level != null && !level.isClientSide()
                 && virtualCatalystSelected
@@ -762,7 +800,7 @@ public final class ExtraImbuementFactoryBlockEntity
 
     private long recipeEnergyUsage() {
         return mekanism.common.util.MekanismUtils.getEnergyPerTick(
-                this, ArsNouveauMachineConfig.IMBUEMENT_FACTORY_FE_PER_TICK);
+                this, ArsNouveauMachineConfig.IMBUEMENT_FACTORY_JOULES_PER_TICK);
     }
 
     @Override
@@ -834,7 +872,7 @@ public final class ExtraImbuementFactoryBlockEntity
         }
         List<ItemStack> catalysts = catalystLibrary == null
                 ? List.of() : catalystLibrary.snapshot();
-        return new ImbuementFactoryUpgradeData(registries, redstone,
+        return NativeMachineUpgradeData.capture(new ImbuementFactoryUpgradeData(registries, redstone,
                 getControlType(), energyContainer, progress,
                 currentEnergySlot, inputSlots, outputSlots, isSorting(),
                 getComponents(), getSource(),
@@ -843,7 +881,7 @@ public final class ExtraImbuementFactoryBlockEntity
                 selectedCatalystIndex, virtualCatalystSelected,
                 virtualCatalystId, catalystLibraryOpen, catalystPage,
                 requiredTicks == null ? new int[0] : requiredTicks,
-                sourceModes, sourceLinks.snapshot());
+                sourceModes, sourceLinks.snapshot()), this, registries);
     }
 
     @Override
@@ -851,6 +889,7 @@ public final class ExtraImbuementFactoryBlockEntity
             net.minecraft.core.HolderLookup.Provider registries,
             IUpgradeData data) {
         super.parseUpgradeData(registries, data);
+        NativeMachineUpgradeData.restore(data, this, registries);
         if (!(data instanceof ImbuementFactoryUpgradeData imbuement)) {
             return;
         }
@@ -882,8 +921,6 @@ public final class ExtraImbuementFactoryBlockEntity
                 : level.dimension().location());
         nextNearbySourcePullGameTime = Long.MIN_VALUE;
         virtualCatalystIndex = -1;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
         refreshRecipeLock();
     }
 
@@ -1179,8 +1216,6 @@ public final class ExtraImbuementFactoryBlockEntity
             virtualCatalystSelected = false;
         }
         virtualCatalystIndex = -1;
-        cachedVirtualCatalyst = ItemStack.EMPTY;
-        cachedCatalystCatalogVersion = Long.MIN_VALUE;
         refreshRecipeLock();
     }
 

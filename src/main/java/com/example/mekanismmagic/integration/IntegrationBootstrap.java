@@ -2,6 +2,11 @@ package com.example.mekanismmagic.integration;
 
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauIntegration;
 import com.example.mekanismmagic.integration.common.entity.EntityContainerRegistry;
+import com.example.mekanismmagic.integration.common.entity.EntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.EnderLeadEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.IndustrialForegoingEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.JustDireThingsEntityContainerAdapter;
+import com.example.mekanismmagic.integration.common.entity.component.EnderIoEntityContainerAdapter;
 import com.example.mekanismmagic.integration.occultism.OccultismContentModule;
 import com.example.mekanismmagic.integration.occultism.OccultismEntityContainerAdapter;
 import net.neoforged.bus.api.IEventBus;
@@ -32,6 +37,15 @@ public final class IntegrationBootstrap {
         if (ModCompatibility.arsNouveauLoaded()) {
             EntityContainerRegistry.register(ArsNouveauIntegration.INSTANCE);
         }
+        for (EntityContainerAdapter adapter : List.of(
+                EnderLeadEntityContainerAdapter.INSTANCE,
+                IndustrialForegoingEntityContainerAdapter.INSTANCE,
+                JustDireThingsEntityContainerAdapter.INSTANCE,
+                EnderIoEntityContainerAdapter.INSTANCE)) {
+            if (ModCompatibility.loaded(adapter.modId())) {
+                EntityContainerRegistry.register(adapter);
+            }
+        }
         initialized = true;
     }
 
@@ -47,8 +61,27 @@ public final class IntegrationBootstrap {
                     .filter(ContentIntegrationModule::isLoaded)
                     .ifPresent(modules::add);
         }
+        if (ModCompatibility.naturesAuraLoaded()) {
+            optionalModule("naturesaura.NaturesAuraContentModule")
+                    .filter(ContentIntegrationModule::isLoaded)
+                    .ifPresent(modules::add);
+        }
+        if (ModCompatibility.forbiddenArcanusLoaded()) {
+            ModCompatibility.requireForbiddenContentVersions(
+                    ModCompatibility.installedVersion(ModCompatibility.FORBIDDEN_ARCANUS).orElse(null),
+                    ModCompatibility.installedVersion(ModCompatibility.VALHELSIA_CORE).orElse(null));
+            if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+                optionalModule("forbiddenarcanus.ForbiddenArcanusContentModule")
+                        .filter(ContentIntegrationModule::isLoaded)
+                        .ifPresent(modules::add);
+            }
+        }
         if (modules.isEmpty()) {
             return;
+        }
+        if (ModCompatibility.magicPipesEnabled()) {
+            com.example.mekanismmagic.integration.common.network
+                    .MagicPipeRegistries.register(modBus);
         }
         if (modules.stream().anyMatch(
                 ContentIntegrationModule::registersPluginItems)) {
@@ -61,6 +94,13 @@ public final class IntegrationBootstrap {
                     .register(modBus);
         }
         modules.forEach(module -> module.register(modBus));
+        if (ModCompatibility.magicPipesEnabled()) {
+            // Its ledger uses common point identities only. Keep it readable
+            // when F&A is temporarily absent but shared pipes still exist for
+            // Source/Aura; otherwise a save would erase cached essence shares.
+            com.example.mekanismmagic.integration.forbiddenarcanus.pipe
+                    .MagicPipeEssenceIntegration.register();
+        }
     }
 
     private static java.util.Optional<ContentIntegrationModule> optionalModule(

@@ -1,0 +1,14 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:cluck_shroom"
+  ],
+  "kind": "item",
+  "item": "earthmobsmod:smelly_egg",
+  "adult": true,
+  "nbt": {
+    "IsChickenJockey": false
+  }
+}

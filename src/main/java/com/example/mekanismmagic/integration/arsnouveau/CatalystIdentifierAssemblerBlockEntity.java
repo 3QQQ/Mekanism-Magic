@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
@@ -56,8 +57,40 @@ public final class CatalystIdentifierAssemblerBlockEntity
     }
 
     @Override
+    public Optional<List<ItemInputGroup>> mekanismMagicPlanExternalItemInputs(
+            List<PatternStack> inputs, List<PatternStack> outputs) {
+        if (level == null || inputs == null || inputs.isEmpty()
+                || outputs == null || outputs.size() != 1) return Optional.empty();
+        // Each occupied cell is one catalyst sample. AE groups identical
+        // keys, so split repeated samples back into distinct physical cells.
+        ItemStackHandler staged = new ItemStackHandler(INPUT_COUNT);
+        List<ItemInputGroup> groups = new java.util.ArrayList<>();
+        List<mekanism.api.inventory.IInventorySlot> ports = mekanismMagicPatternInputs();
+        int target = 0;
+        for (PatternStack input : inputs) {
+            if (input == null || input.stack().isEmpty() || input.amount() <= 0
+                    || input.amount() > INPUT_COUNT - target) return Optional.empty();
+            for (int count = 0; count < input.amount(); count++) {
+                staged.setStackInSlot(target, input.stack());
+                groups.add(new ItemInputGroup(List.of(new PatternStack(input.stack(), 1)),
+                        List.of(ports.get(target))));
+                target++;
+            }
+        }
+        Optional<MachineRecipeResult> selected = ArsNouveauRecipeBridge.findCatalystIdentifier(
+                level, staged, INPUT_START, INPUT_COUNT);
+        PatternStack declared = outputs.getFirst();
+        if (selected.isEmpty() || declared == null
+                || declared.amount() != selected.get().output().getCount()
+                || !ItemStack.isSameItemSameComponents(declared.stack(), selected.get().output())) {
+            return Optional.empty();
+        }
+        return Optional.of(List.copyOf(groups));
+    }
+
+    @Override
     protected int baseEnergyPerTick() {
-        return 300;
+        return MagicMachineEnergyProfiles.ASSEMBLY;
     }
 
     @Override

@@ -1,0 +1,1882 @@
+{
+  "parent": "minecraft:block/block",
+  "credit": "Mekanism Magic - initial Clibano processing housing",
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "forbidden_arcanus:block/obsidiansteel_block",
+    "steel": "forbidden_arcanus:block/obsidiansteel_block",
+    "stone": "forbidden_arcanus:block/polished_darkstone",
+    "dark": "minecraft:block/black_concrete",
+    "metal": "forbidden_arcanus:block/deorum_block",
+    "front": "forbidden_arcanus:block/clibano/clibano_center_front_off",
+    "power": "mekanism:block/energy_cube_particle",
+    "crystal": "forbidden_arcanus:block/arcane_crystal_block"
+  },
+  "elements": [
+    {
+      "name": "load_bearing_base",
+      "from": [
+        1,
+        0.5,
+        1
+      ],
+      "to": [
+        15,
+        3.5,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            12.5,
+            15,
+            15.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            1,
+            12.5,
+            15,
+            15.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            1,
+            12.5,
+            15,
+            15.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            1,
+            12.5,
+            15,
+            15.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "insulated_furnace_body",
+      "from": [
+        1,
+        3.5,
+        3
+      ],
+      "to": [
+        15,
+        14,
+        15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            2,
+            15,
+            12.5
+          ],
+          "texture": "#stone"
+        },
+        "south": {
+          "uv": [
+            1,
+            2,
+            15,
+            12.5
+          ],
+          "texture": "#stone"
+        },
+        "west": {
+          "uv": [
+            3,
+            2,
+            15,
+            12.5
+          ],
+          "texture": "#stone"
+        },
+        "east": {
+          "uv": [
+            1,
+            2,
+            13,
+            12.5
+          ],
+          "texture": "#stone"
+        },
+        "up": {
+          "uv": [
+            1,
+            3,
+            15,
+            15
+          ],
+          "texture": "#stone"
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            13
+          ],
+          "texture": "#stone"
+        }
+      }
+    },
+    {
+      "name": "left_furnace_cheek",
+      "from": [
+        1,
+        3.5,
+        1.75
+      ],
+      "to": [
+        3,
+        14,
+        3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13,
+            2,
+            15,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            1,
+            2,
+            3,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            1.75,
+            2,
+            3,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            13,
+            2,
+            14.25,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            1,
+            1.75,
+            3,
+            3
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            1,
+            13,
+            3,
+            14.25
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "right_furnace_cheek",
+      "from": [
+        13,
+        3.5,
+        1.75
+      ],
+      "to": [
+        15,
+        14,
+        3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            2,
+            3,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            13,
+            2,
+            15,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            1.75,
+            2,
+            3,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            13,
+            2,
+            14.25,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            13,
+            1.75,
+            15,
+            3
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            13,
+            13,
+            15,
+            14.25
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "upper_furnace_lintel",
+      "from": [
+        3,
+        12.5,
+        1.75
+      ],
+      "to": [
+        13,
+        14,
+        3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            2,
+            13,
+            3.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            3,
+            2,
+            13,
+            3.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            1.75,
+            2,
+            3,
+            3.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            13,
+            2,
+            14.25,
+            3.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            3,
+            1.75,
+            13,
+            3
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            3,
+            13,
+            13,
+            14.25
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "lower_furnace_sill",
+      "from": [
+        3,
+        3.5,
+        1.75
+      ],
+      "to": [
+        13,
+        5,
+        3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            11,
+            13,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            3,
+            11,
+            13,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            1.75,
+            11,
+            3,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            13,
+            11,
+            14.25,
+            12.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            3,
+            1.75,
+            13,
+            3
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            3,
+            13,
+            13,
+            14.25
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "recessed_combustion_front",
+      "from": [
+        3,
+        5,
+        2.5
+      ],
+      "to": [
+        13,
+        12.5,
+        3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [
+            3,
+            3.5,
+            13,
+            11
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            2.5,
+            3.5,
+            3,
+            11
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            13,
+            3.5,
+            13.5,
+            11
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            3,
+            2.5,
+            13,
+            3
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            3,
+            13,
+            13,
+            13.5
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "lower_sill_lip",
+      "from": [
+        4,
+        4.65,
+        1.5
+      ],
+      "to": [
+        12,
+        4.95,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            11.05,
+            12,
+            11.35
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            4,
+            11.05,
+            12,
+            11.35
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            1.5,
+            11.05,
+            1.75,
+            11.35
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            14.25,
+            11.05,
+            14.5,
+            11.35
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            4,
+            1.5,
+            12,
+            1.75
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            4,
+            14.25,
+            12,
+            14.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "upper_sill_lip",
+      "from": [
+        4,
+        12.8,
+        1.5
+      ],
+      "to": [
+        12,
+        13.1,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            2.9000000000000004,
+            12,
+            3.1999999999999993
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            4,
+            2.9000000000000004,
+            12,
+            3.1999999999999993
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            1.5,
+            2.9000000000000004,
+            1.75,
+            3.1999999999999993
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            14.25,
+            2.9000000000000004,
+            14.5,
+            3.1999999999999993
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            4,
+            1.5,
+            12,
+            1.75
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            4,
+            14.25,
+            12,
+            14.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "retainer_1.75",
+      "from": [
+        1.75,
+        6,
+        1.5
+      ],
+      "to": [
+        2.5,
+        11.75,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13.5,
+            4.25,
+            14.25,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            1.75,
+            4.25,
+            2.5,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            1.5,
+            4.25,
+            1.75,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            14.25,
+            4.25,
+            14.5,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            1.75,
+            1.5,
+            2.5,
+            1.75
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            1.75,
+            14.25,
+            2.5,
+            14.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "lock_1.75",
+      "from": [
+        1.65,
+        8.4,
+        1.25
+      ],
+      "to": [
+        2.6,
+        9.1,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13.4,
+            6.9,
+            14.35,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "south": {
+          "uv": [
+            1.65,
+            6.9,
+            2.6,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            1.25,
+            6.9,
+            1.5,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            14.5,
+            6.9,
+            14.75,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            1.65,
+            1.25,
+            2.6,
+            1.5
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            1.65,
+            14.5,
+            2.6,
+            14.75
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "retainer_13.5",
+      "from": [
+        13.5,
+        6,
+        1.5
+      ],
+      "to": [
+        14.25,
+        11.75,
+        1.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1.75,
+            4.25,
+            2.5,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            13.5,
+            4.25,
+            14.25,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            1.5,
+            4.25,
+            1.75,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            14.25,
+            4.25,
+            14.5,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            13.5,
+            1.5,
+            14.25,
+            1.75
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            13.5,
+            14.25,
+            14.25,
+            14.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "lock_13.5",
+      "from": [
+        13.4,
+        8.4,
+        1.25
+      ],
+      "to": [
+        14.35,
+        9.1,
+        1.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1.6500000000000004,
+            6.9,
+            2.5999999999999996,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "south": {
+          "uv": [
+            13.4,
+            6.9,
+            14.35,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            1.25,
+            6.9,
+            1.5,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            14.5,
+            6.9,
+            14.75,
+            7.6
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            13.4,
+            1.25,
+            14.35,
+            1.5
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            13.4,
+            14.5,
+            14.35,
+            14.75
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "service_roof",
+      "from": [
+        1.25,
+        14,
+        3.5
+      ],
+      "to": [
+        14.75,
+        14.65,
+        14.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1.25,
+            1.3499999999999996,
+            14.75,
+            2
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            1.25,
+            1.3499999999999996,
+            14.75,
+            2
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            3.5,
+            1.3499999999999996,
+            14.75,
+            2
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            1.25,
+            1.3499999999999996,
+            12.5,
+            2
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            1.25,
+            3.5,
+            14.75,
+            14.75
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            1.25,
+            1.25,
+            14.75,
+            12.5
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "exhaust_recess",
+      "from": [
+        4.5,
+        14.65,
+        7
+      ],
+      "to": [
+        11.5,
+        14.85,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.5,
+            1.1500000000000004,
+            11.5,
+            1.3499999999999996
+          ],
+          "texture": "#dark"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            1.1500000000000004,
+            11.5,
+            1.3499999999999996
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            1.1500000000000004,
+            12,
+            1.3499999999999996
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            4,
+            1.1500000000000004,
+            9,
+            1.3499999999999996
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            4.5,
+            7,
+            11.5,
+            12
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            4.5,
+            4,
+            11.5,
+            9
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "exhaust_blade_0",
+      "from": [
+        5,
+        14.85,
+        7.5
+      ],
+      "to": [
+        11,
+        15.2,
+        8.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            7.5,
+            0.8000000000000007,
+            8.2,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            7.800000000000001,
+            0.8000000000000007,
+            8.5,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5,
+            7.5,
+            11,
+            8.2
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5,
+            7.800000000000001,
+            11,
+            8.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "exhaust_blade_1",
+      "from": [
+        5,
+        14.85,
+        8.9
+      ],
+      "to": [
+        11,
+        15.2,
+        9.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            8.9,
+            0.8000000000000007,
+            9.6,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.4,
+            0.8000000000000007,
+            7.1,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5,
+            8.9,
+            11,
+            9.6
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5,
+            6.4,
+            11,
+            7.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "exhaust_blade_2",
+      "from": [
+        5,
+        14.85,
+        10.3
+      ],
+      "to": [
+        11,
+        15.2,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            10.3,
+            0.8000000000000007,
+            11,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            5,
+            0.8000000000000007,
+            5.699999999999999,
+            1.1500000000000004
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5,
+            10.3,
+            11,
+            11
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5,
+            5,
+            11,
+            5.699999999999999
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "rear_residue_hatch",
+      "from": [
+        4.5,
+        3,
+        15
+      ],
+      "to": [
+        11.5,
+        9,
+        15.35
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.5,
+            7,
+            11.5,
+            13
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            7,
+            11.5,
+            13
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            15,
+            7,
+            15.35,
+            13
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            0.6500000000000004,
+            7,
+            1,
+            13
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            4.5,
+            15,
+            11.5,
+            15.35
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            4.5,
+            0.6500000000000004,
+            11.5,
+            1
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "rear_residue_handle",
+      "from": [
+        6.25,
+        5.5,
+        15.35
+      ],
+      "to": [
+        9.75,
+        6.25,
+        15.65
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6.25,
+            9.75,
+            9.75,
+            10.5
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6.25,
+            9.75,
+            9.75,
+            10.5
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            15.35,
+            9.75,
+            15.65,
+            10.5
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            0.34999999999999964,
+            9.75,
+            0.6500000000000004,
+            10.5
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6.25,
+            15.35,
+            9.75,
+            15.65
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6.25,
+            0.34999999999999964,
+            9.75,
+            0.6500000000000004
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "power_inlet_flange",
+      "from": [
+        0.6,
+        5.5,
+        7
+      ],
+      "to": [
+        1,
+        10.5,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            15,
+            5.5,
+            15.4,
+            10.5
+          ],
+          "texture": "#dark"
+        },
+        "south": {
+          "uv": [
+            0.6,
+            5.5,
+            1,
+            10.5
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            7,
+            5.5,
+            12,
+            10.5
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            4,
+            5.5,
+            9,
+            10.5
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            0.6,
+            7,
+            1,
+            12
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            0.6,
+            4,
+            1,
+            9
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "power_inlet",
+      "from": [
+        0.25,
+        6.15,
+        7.65
+      ],
+      "to": [
+        0.6,
+        9.85,
+        11.35
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            15.4,
+            6.15,
+            15.75,
+            9.85
+          ],
+          "texture": "#power"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            6.15,
+            0.6,
+            9.85
+          ],
+          "texture": "#power"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#power"
+        },
+        "east": {
+          "uv": [
+            4.65,
+            6.15,
+            8.35,
+            9.85
+          ],
+          "texture": "#power"
+        },
+        "up": {
+          "uv": [
+            0.25,
+            7.65,
+            0.6,
+            11.35
+          ],
+          "texture": "#power"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            4.65,
+            0.6,
+            8.35
+          ],
+          "texture": "#power"
+        }
+      }
+    },
+    {
+      "name": "soul_manifold",
+      "from": [
+        15,
+        5.5,
+        7
+      ],
+      "to": [
+        15.4,
+        10.5,
+        12
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.5999999999999996,
+            5.5,
+            1,
+            10.5
+          ],
+          "texture": "#steel"
+        },
+        "south": {
+          "uv": [
+            15,
+            5.5,
+            15.4,
+            10.5
+          ],
+          "texture": "#steel"
+        },
+        "west": {
+          "uv": [
+            7,
+            5.5,
+            12,
+            10.5
+          ],
+          "texture": "#steel"
+        },
+        "east": {
+          "uv": [
+            4,
+            5.5,
+            9,
+            10.5
+          ],
+          "texture": "#steel"
+        },
+        "up": {
+          "uv": [
+            15,
+            7,
+            15.4,
+            12
+          ],
+          "texture": "#steel"
+        },
+        "down": {
+          "uv": [
+            15,
+            4,
+            15.4,
+            9
+          ],
+          "texture": "#steel"
+        }
+      }
+    },
+    {
+      "name": "soul_manifold_window",
+      "from": [
+        15.4,
+        6.5,
+        8
+      ],
+      "to": [
+        15.7,
+        9.5,
+        11
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.3000000000000007,
+            6.5,
+            0.5999999999999996,
+            9.5
+          ],
+          "texture": "#crystal"
+        },
+        "south": {
+          "uv": [
+            15.4,
+            6.5,
+            15.7,
+            9.5
+          ],
+          "texture": "#crystal"
+        },
+        "west": {
+          "uv": [
+            8,
+            6.5,
+            11,
+            9.5
+          ],
+          "texture": "#crystal"
+        },
+        "east": {
+          "uv": [
+            5,
+            6.5,
+            8,
+            9.5
+          ],
+          "texture": "#crystal"
+        },
+        "up": {
+          "uv": [
+            15.4,
+            8,
+            15.7,
+            11
+          ],
+          "texture": "#crystal"
+        },
+        "down": {
+          "uv": [
+            15.4,
+            5,
+            15.7,
+            8
+          ],
+          "texture": "#crystal"
+        }
+      }
+    },
+    {
+      "name": "front_status_recess",
+      "from": [
+        4,
+        1.25,
+        0.75
+      ],
+      "to": [
+        12,
+        2.7,
+        1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            13.3,
+            12,
+            14.75
+          ],
+          "texture": "#dark"
+        },
+        "south": {
+          "uv": [
+            4,
+            13.3,
+            12,
+            14.75
+          ],
+          "texture": "#dark"
+        },
+        "west": {
+          "uv": [
+            0.75,
+            13.3,
+            1,
+            14.75
+          ],
+          "texture": "#dark"
+        },
+        "east": {
+          "uv": [
+            15,
+            13.3,
+            15.25,
+            14.75
+          ],
+          "texture": "#dark"
+        },
+        "up": {
+          "uv": [
+            4,
+            0.75,
+            12,
+            1
+          ],
+          "texture": "#dark"
+        },
+        "down": {
+          "uv": [
+            4,
+            15,
+            12,
+            15.25
+          ],
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "front_power_status",
+      "from": [
+        4.5,
+        1.6,
+        0.5
+      ],
+      "to": [
+        7.25,
+        2.15,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.75,
+            13.85,
+            11.5,
+            14.4
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            13.85,
+            7.25,
+            14.4
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            13.85,
+            0.75,
+            14.4
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            15.25,
+            13.85,
+            15.5,
+            14.4
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            4.5,
+            0.5,
+            7.25,
+            0.75
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            4.5,
+            15.25,
+            7.25,
+            15.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "front_soul_status",
+      "from": [
+        9.3,
+        1.6,
+        0.5
+      ],
+      "to": [
+        11.5,
+        2.15,
+        0.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.5,
+            13.85,
+            6.699999999999999,
+            14.4
+          ],
+          "texture": "#crystal"
+        },
+        "south": {
+          "uv": [
+            9.3,
+            13.85,
+            11.5,
+            14.4
+          ],
+          "texture": "#crystal"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            13.85,
+            0.75,
+            14.4
+          ],
+          "texture": "#crystal"
+        },
+        "east": {
+          "uv": [
+            15.25,
+            13.85,
+            15.5,
+            14.4
+          ],
+          "texture": "#crystal"
+        },
+        "up": {
+          "uv": [
+            9.3,
+            0.5,
+            11.5,
+            0.75
+          ],
+          "texture": "#crystal"
+        },
+        "down": {
+          "uv": [
+            9.3,
+            15.25,
+            11.5,
+            15.5
+          ],
+          "texture": "#crystal"
+        }
+      }
+    }
+  ]
+}

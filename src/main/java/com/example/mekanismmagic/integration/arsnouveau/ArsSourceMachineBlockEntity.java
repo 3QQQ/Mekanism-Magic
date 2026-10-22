@@ -30,7 +30,7 @@ import net.minecraft.world.level.block.state.BlockState;
 public abstract class ArsSourceMachineBlockEntity
         extends NativeMagicMachineBlockEntity
         implements ISourceTile, ArsSourceModeHost, SourceLinkHost,
-        SourceDisplayHost {
+        SourceDisplayHost, AeSourceFastPullHost {
     public enum SourceMode {
         NONE,
         INPUT,
@@ -248,6 +248,17 @@ public abstract class ArsSourceMachineBlockEntity
     /** Source-producing machines override this to avoid draining jars. */
     protected boolean supportsAutomaticSourcePull() {
         return true;
+    }
+
+    @Override
+    public final int mekanismMagicAeFastSourceBudget() {
+        if (level == null || level.isClientSide()
+                || !hasInternalSourceBuffer()
+                || !supportsAutomaticSourcePull()
+                || hasCreativeSourceUpgrade()
+                || !sourceLinks.snapshot().isEmpty()) return 0;
+        return Math.min(Math.max(1, getTransferRate()),
+                Math.max(0, getMaxSource() - getSource()));
     }
 
     @Override

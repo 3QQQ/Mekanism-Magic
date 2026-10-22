@@ -5,7 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "UpgradeMixin",
-    "UpgradeUtilsMixin"
+    "UpgradeUtilsMixin",
+    "RetainedSlotMixin",
+    "ChunkSerializerRetiredEssenceMixin",
+    "TileEntityMekanismAeResourceMixin",
+    "AbstractContainerMenuAeResourceMixin"
   ],
   "injectors": {
     "defaultRequire": 1

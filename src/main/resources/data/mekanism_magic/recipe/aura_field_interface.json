@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["IGI", "DCD", "IGI"],
+  "key": {
+    "I": { "item": "naturesaura:infused_iron" },
+    "G": { "item": "naturesaura:gold_leaf" },
+    "D": { "item": "naturesaura:aura_detector" },
+    "C": { "item": "mekanism:steel_casing" }
+  },
+  "result": {
+    "id": "mekanism_magic:aura_field_interface",
+    "count": 1
+  },
+  "neoforge:conditions": [{
+    "type": "neoforge:mod_loaded",
+    "modid": "naturesaura"
+  }]
+}

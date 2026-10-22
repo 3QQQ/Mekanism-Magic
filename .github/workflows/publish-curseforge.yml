@@ -53,6 +53,13 @@ jobs:
             echo "Release tag does not contain a mod version" >&2
             exit 1
           fi
+          # Four-part versions are local development revisions, not releases.
+          # Accept the existing 1.0.5fix tag at the version-format gate only.
+          if [[ "$RELEASE_TAG" == *-neoforge-1.21.1 && ! "$mod_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$mod_version" != "1.0.5fix" ]]; then
+            echo "Cannot publish development version: $mod_version" >&2
+            echo "Advance the release version and remove its development revision first." >&2
+            exit 1
+          fi
           echo "mod_version=$mod_version" >> "$GITHUB_OUTPUT"
           if [[ "$RELEASE_TAG" == *-forge-1.20.1 ]]; then
             echo "expected_jar=mekanism_magic-${mod_version}-forge-1.20.1.jar" \
@@ -125,9 +132,29 @@ jobs:
               "com/example/mekanismmagic/integration/occultism/OccultismRitualMachineMode.class"
               "com/example/mekanismmagic/integration/occultism/OccultismSpiritJobPolicy.class"
               "com/example/mekanismmagic/integration/occultism/OccultismSpiritPatternValidator.class"
+              "com/example/mekanismmagic/integration/occultism/OccultismMachineItemIdentity.class"
+              "com/example/mekanismmagic/integration/occultism/MiniPentacleCapture.class"
+              "com/example/mekanismmagic/integration/occultism/MiniPentacleClaims.class"
+              "com/example/mekanismmagic/integration/arsnouveau/ArsApparatusRecipeViews.class"
+              "com/example/mekanismmagic/integration/arsnouveau/client/ArsApparatusJeiReagents.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2ExactMachineJeiTransfer.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2RitualJeiTransfer.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2ArsApparatusJeiTransfer.class"
               "com/example/mekanismmagic/integration/occultism/MiniPentacleDeployment.class"
               "com/example/mekanismmagic/integration/common/network/PatternAutomationRefreshHooks.class"
               "com/example/mekanismmagic/integration/pipez/PipezCompatMixinPlugin.class"
+              "com/example/mekanismmagic/integration/jade/MekanismMagicJadePlugin.class"
+              "com/example/mekanismmagic/integration/jade/MagicMachineJadeProvider.class"
+              "com/example/mekanismmagic/integration/jade/MachineJadeData.class"
+              "com/example/mekanismmagic/integration/common/network/MachineAeResourceHooks.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2MachineResourceProvider.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2MachineResourceAccess.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2AppliedFluxEnergySource.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsUpgradeEligibility.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsAeNodeHandoffMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsAeSupplyGateMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsRuntimeUpgradeOwnerMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsRuntimeTileAccessor.class"
               "com/example/mekanismmagic/integration/pipez/mixin/ItemPipeTypeMixin.class"
               "com/example/mekanismmagic/integration/arsnouveau/ArsSourceProductionMixinPlugin.class"
               "com/example/mekanismmagic/integration/arsnouveau/mixin/SourcelinkEventProductionMixin.class"
@@ -137,8 +164,15 @@ jobs:
               "com/example/mekanismmagic/integration/arsnouveau/mixin/AlchemicalProductionMixin.class"
               "com/example/mekanismmagic/integration/mekextras/MekanismExtrasSpiritFactories.class"
               "com/example/mekanismmagic/integration/mekextras/MekanismExtrasImbuementFactories.class"
+              "com/example/mekanismmagic/integration/mekextras/MekanismExtrasNatureAltarFactories.class"
+              "com/example/mekanismmagic/integration/mekextras/ExtraNatureAltarFactoryBlockEntity.class"
               "com/example/mekanismmagic/integration/ae2/Ae2ArsCompat.class"
               "com/example/mekanismmagic/integration/ae2/Ae2CompatMixinPlugin.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2NatureAltarPattern.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2NatureAltarJeiTransfer.class"
+              "com/example/mekanismmagic/integration/ae2/Ae2NaturePatternCacheRefresher.class"
+              "com/example/mekanismmagic/integration/ae2/mixin/Ae2NaturePatternDecoderMixin.class"
+              "com/example/mekanismmagic/integration/ae2/mixin/Ae2NaturePatternProviderRefreshMixin.class"
               "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompat.class"
               "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsCompatMixinPlugin.class"
               "com/example/mekanismmagic/integration/mekenergistics/OccultismRitualMeRouter.class"
@@ -146,7 +180,28 @@ jobs:
               "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsPendingRefund.class"
               "com/example/mekanismmagic/integration/mekenergistics/SpiritPatternMeRouter.class"
               "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsPendingPatternContextMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsNatureAltarPatternMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsNatureFactoryAutomationMixin.class"
               "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsTierInstallerStateMixin.class"
+              "com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsNaturePatternCacheRefresher.class"
+              "com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsNaturePatternCacheMixin.class"
+              "com/example/mekanismmagic/integration/naturesaura/NaturesAuraContentModule.class"
+              "com/example/mekanismmagic/integration/common/network/MagicPipeRegistries.class"
+              "com/example/mekanismmagic/integration/naturesaura/MagicPipeAuraIntegration.class"
+              "com/example/mekanismmagic/integration/naturesaura/MagicPipeAuraChannel.class"
+              "com/example/mekanismmagic/integration/naturesaura/OfferingProcessorBlockEntity.class"
+              "com/example/mekanismmagic/integration/naturesaura/TreeRitualProcessorBlockEntity.class"
+              "com/example/mekanismmagic/integration/naturesaura/AnimalSpawnerProcessorBlockEntity.class"
+              "com/example/mekanismmagic/integration/naturesaura/AnimalSpawnerSpawnTransaction.class"
+              "com/example/mekanismmagic/integration/naturesaura/NatureAltarContextItem.class"
+              "com/example/mekanismmagic/integration/naturesaura/NatureAltarContextCountPolicy.class"
+              "com/example/mekanismmagic/integration/naturesaura/NatureAltarLockedContextPolicy.class"
+              "com/example/mekanismmagic/integration/naturesaura/NatureAltarFactoryLanePolicy.class"
+              "com/example/mekanismmagic/integration/naturesaura/DynamicNaturalAuraView.class"
+              "com/example/mekanismmagic/integration/naturesaura/NatureAltarFactoryBlockEntity.class"
+              "com/example/mekanismmagic/integration/naturesaura/NaturalAuraMergeGuard.class"
+              "com/example/mekanismmagic/integration/naturesaura/NaturalAuraPipeSemantics.class"
+              "com/example/mekanismmagic/integration/naturesaura/client/NaturesAuraJeiIntegration.class"
               "pipez_compat.mixins.json"
               "ars_source_production.mixins.json"
               "ae2_compat.mixins.json"
@@ -178,6 +233,11 @@ jobs:
             mekanism(required)
             occultism(optional)
             ars-nouveau(optional)
+            natures-aura(optional)
+            forbidden-arcanus(optional)
+            valhelsia-core(optional)
+            packagedauto(optional)
+            1502096(optional)
             jei(optional)
             applied-energistics-2(optional)
             mekanism-extras(optional)
@@ -186,3 +246,5 @@ jobs:
             905641(optional)
             extendedae(optional)
             pipez(optional)
+            jade(optional)
+            applied-flux(optional)

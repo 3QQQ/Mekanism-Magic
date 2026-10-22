@@ -1,11 +1,13 @@
 package com.example.mekanismmagic.integration.mekextras.client;
 
 import com.example.mekanismmagic.client.OccultismRecipeViewerTypes;
-import com.example.mekanismmagic.client.gui.GuiThemeToggleTab;
 import com.example.mekanismmagic.client.gui.MagicGuiTheme;
 import com.example.mekanismmagic.client.gui.MagicGuiTheme.MachineStatus;
 import com.example.mekanismmagic.client.gui.MagicLeftControlLayout;
 import com.example.mekanismmagic.client.gui.MagicThemedScreen;
+import com.example.mekanismmagic.client.gui.RetainedItemModule;
+import com.example.mekanismmagic.client.gui.FactoryInputRow;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import com.example.mekanismmagic.integration.mekextras
         .ExtraSpiritFactoryBlockEntity;
 import com.example.mekanismmagic.integration.mekextras
@@ -16,10 +18,8 @@ import com.jerry.mekextras.client.gui.element.tab.ExtraGuiSortingTab;
 import mekanism.api.recipes.cache.CachedRecipe.OperationTracker.RecipeError;
 import mekanism.client.gui.GuiConfigurableTile;
 import mekanism.client.gui.element.bar.GuiVerticalPowerBar;
-import mekanism.client.gui.element.progress.GuiProgress;
-import mekanism.client.gui.element.progress.ProgressType;
+import com.example.mekanismmagic.client.gui.GuiMachineProgress;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
-import mekanism.client.render.IFancyFontRenderer.TextAlignment;
 import mekanism.common.inventory.warning.WarningTracker.WarningType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -29,6 +29,8 @@ import net.minecraft.world.entity.player.Inventory;
 public final class ExtraSpiritFactoryScreen extends GuiConfigurableTile<
         ExtraSpiritFactoryBlockEntity, ExtraSpiritFactoryContainer>
         implements MagicThemedScreen {
+    private RetainedItemModule retainedModule;
+    private FactoryInputRow factoryInputRow;
 
     public ExtraSpiritFactoryScreen(ExtraSpiritFactoryContainer container,
                                     Inventory inventory, Component title) {
@@ -36,8 +38,9 @@ public final class ExtraSpiritFactoryScreen extends GuiConfigurableTile<
         int tier = getTileEntity().tier.ordinal();
         imageWidth = ExtraSpiritFactoryLayout.imageWidth(tier);
         inventoryLabelX = ExtraSpiritFactoryLayout.inventoryX(tier);
-        inventoryLabelY = 75;
-        titleLabelY = 4;
+        imageHeight = MachinePanelLayout.FACTORY_HEIGHT;
+        inventoryLabelY = MachinePanelLayout.inventoryLabelY(imageHeight);
+        titleLabelY = MagicGuiTheme.MACHINE_TITLE_Y;
         dynamicSlots = true;
     }
 
@@ -47,13 +50,16 @@ public final class ExtraSpiritFactoryScreen extends GuiConfigurableTile<
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         MagicGuiTheme.renderMachineFrame(graphics, leftPos, topPos,
                 imageWidth, imageHeight, inventoryLabelY);
+        if (retainedModule != null) retainedModule.renderBackground(graphics, leftPos, topPos, getWindows());
     }
 
     @Override
     protected void addGuiElements() {
+        factoryInputRow = FactoryInputRow.prepare(factoryInputRow, menu);
+        retainedModule = RetainedItemModule.prepare(retainedModule, this, menu, imageWidth, () -> { });
         super.addGuiElements();
+        if (retainedModule != null) addRenderableWidget(retainedModule.tab());
         ExtraSpiritFactoryBlockEntity tile = getTileEntity();
-        addRenderableWidget(new GuiThemeToggleTab<>(this, tile));
         addRenderableWidget(new ExtraGuiSortingTab(this, tile));
         addRenderableWidget(new GuiVerticalPowerBar(this,
                 tile.getEnergyContainer(), imageWidth - 12, 16, 52))
@@ -65,12 +71,11 @@ public final class ExtraSpiritFactoryScreen extends GuiConfigurableTile<
 
         for (int process = 0; process < tile.tier.processes; process++) {
             int index = process;
-            addRenderableWidget(new GuiProgress(
+            addRenderableWidget(GuiMachineProgress.factoryDown(
                     () -> tile.getScaledProgress(1, index),
-                    ProgressType.DOWN, this,
-                    ExtraSpiritFactoryLayout.progressX(process), 33)
+                    this, ExtraSpiritFactoryLayout.progressX(process))
                     .recipeViewerCategories(
-                            OccultismRecipeViewerTypes.SPIRIT)
+                            OccultismRecipeViewerTypes.spiritCategories())
                     .warning(WarningType.INPUT_DOESNT_PRODUCE_OUTPUT,
                             tile.getWarningCheck(
                                     RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT,
@@ -83,18 +88,33 @@ public final class ExtraSpiritFactoryScreen extends GuiConfigurableTile<
                                       int mouseY) {
         MachineStatus status = getTileEntity().getActive()
                 ? MachineStatus.RUNNING : MachineStatus.IDLE;
-        drawScrollingString(graphics, title, 10, titleLabelY,
-                TextAlignment.LEFT, MagicGuiTheme.textPrimary(),
-                MagicGuiTheme.availableTitleWidth(font, status, imageWidth),
-                0, false);
-        MagicGuiTheme.renderStatus(graphics, font, status, imageWidth,
-                titleLabelY);
+        drawMachineHeader(graphics, title, status, imageWidth);
         renderInventoryText(graphics);
+        if (retainedModule != null) retainedModule.renderCaption(graphics, font);
         super.drawForegroundText(graphics, mouseX, mouseY);
     }
 
     @Override
     public int titleTextColor() {
         return MagicGuiTheme.textPrimary();
+    }
+
+    @Override
+    protected void addSlots() {
+        super.addSlots();
+        if (retainedModule != null) retainedModule.captureOverlays(children());
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double x, double y, int left, int top, int button) {
+        return !(retainedModule != null && retainedModule.contains(x, y, leftPos, topPos))
+                && super.hasClickedOutside(x, y, left, top, button);
+    }
+
+    @Override
+    public void removed() {
+        if (factoryInputRow != null) factoryInputRow.dispose();
+        if (retainedModule != null) retainedModule.dispose();
+        super.removed();
     }
 }

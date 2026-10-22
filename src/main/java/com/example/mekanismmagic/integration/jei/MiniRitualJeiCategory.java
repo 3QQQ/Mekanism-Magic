@@ -36,7 +36,7 @@ public final class MiniRitualJeiCategory extends MagicJeiCategory<
                                     4 + column * SLOT_SPACING,
                                     4 + row * SLOT_SPACING)),
                             JeiSlotMarker.Kind.INPUT, "input_" + index)
-                    .addItemStack(recipe.materials().get(index));
+                    .addItemStacks(recipe.materialAlternatives().get(index));
         }
 
         for (int index = 0; index < recipe.chalkColors().size()

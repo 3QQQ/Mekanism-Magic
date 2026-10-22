@@ -2,6 +2,7 @@ package com.example.mekanismmagic;
 
 import com.example.mekanismmagic.client.MagicClientConfigScreen;
 import com.example.mekanismmagic.item.MiniRitualItem;
+import com.example.mekanismmagic.item.MachineItemContainers;
 import com.example.mekanismmagic.item.RitualSpawnEggItem;
 import com.example.mekanismmagic.item.UltimateMiniRitualItem;
 import com.example.mekanismmagic.item.CreativeMagicUpgradeItem;
@@ -45,6 +46,12 @@ public final class MekanismMagic {
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, MOD_ID);
     public static final DeferredRegister<IngredientType<?>> INGREDIENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.INGREDIENT_TYPES, MOD_ID);
+    public static final DeferredRegister<com.mojang.serialization.MapCodec<? extends net.neoforged.neoforge.common.conditions.ICondition>> CONDITION_SERIALIZERS =
+            DeferredRegister.create(NeoForgeRegistries.CONDITION_SERIALIZERS, MOD_ID);
+    public static final DeferredHolder<com.mojang.serialization.MapCodec<? extends net.neoforged.neoforge.common.conditions.ICondition>,
+            com.mojang.serialization.MapCodec<com.example.mekanismmagic.integration.forbiddenarcanus.ForbiddenArcanusEnabledCondition>> FORBIDDEN_ENABLED_CONDITION =
+            CONDITION_SERIALIZERS.register("forbidden_arcanus_enabled",
+                    () -> com.example.mekanismmagic.integration.forbiddenarcanus.ForbiddenArcanusEnabledCondition.CODEC);
 
     public static final DeferredHolder<Item, MiniRitualItem> MINI_RITUAL =
             ITEMS.register("mini_ritual",
@@ -101,6 +108,30 @@ public final class MekanismMagic {
                         acceptOptional(output, "infinite_magic_source_pipe");
                         acceptOptional(output, "source_link_tool");
                         acceptOptional(output, "creative_source_upgrade");
+                        for (int size : new int[]{1, 4, 16, 64, 256}) {
+                            acceptOptional(output, "magic_storage_cell_" + size + "k");
+                        }
+                        acceptOptional(output, "magic_resource_marker");
+                        acceptOptional(output, "aura_field_interface");
+                        acceptOptional(output, "fe_aura_converter");
+                        acceptOptional(output, "aura_fuel_generator");
+                        acceptOptional(output, "nature_altar_processor");
+                        acceptOptional(output, "basic_nature_altar_factory");
+                        acceptOptional(output,
+                                "advanced_nature_altar_factory");
+                        acceptOptional(output, "elite_nature_altar_factory");
+                        acceptOptional(output,
+                                "ultimate_nature_altar_factory");
+                        acceptOptional(output, "absolute_nature_altar_factory");
+                        acceptOptional(output, "supreme_nature_altar_factory");
+                        acceptOptional(output, "cosmic_nature_altar_factory");
+                        acceptOptional(output, "infinite_nature_altar_factory");
+                        acceptOptional(output, "offering_processor");
+                        acceptOptional(output, "tree_ritual_processor");
+                        acceptOptional(output, "animal_spawner_processor");
+                        acceptOptional(output, "clibano_processor");
+                        acceptOptional(output, "hephaestus_forge_processor");
+                        acceptOptional(output, "essence_condenser");
                         acceptOptional(output, "spirit_processor");
                         acceptOptional(output, "dimension_miner");
                         acceptOptional(output, "basic_spirit_factory");
@@ -113,11 +144,15 @@ public final class MekanismMagic {
                         acceptOptional(output, "infinite_spirit_factory");
                         acceptOptional(output, "ritual_engine");
                         acceptOptional(output, "mini_ritual_assembler");
+                        if (ModCompatibility.occultismLoaded()) {
+                            acceptOptional(output, "mini_ritual");
+                        }
                         acceptOptional(output, "ultimate_mini_ritual");
                         acceptOptional(output, "ritual_spawn_egg");
                     }).build());
 
     public MekanismMagic(IEventBus modBus, ModContainer modContainer) {
+        CONDITION_SERIALIZERS.register(modBus);
         modContainer.registerConfig(ModConfig.Type.CLIENT,
                 MagicClientConfig.SPEC);
         if (FMLEnvironment.dist == Dist.CLIENT) {
@@ -126,8 +161,35 @@ public final class MekanismMagic {
         IntegrationBootstrap.initialize();
         IntegrationBootstrap.registerContent(modBus);
         NeoForge.EVENT_BUS.addListener(MachineDropPreserver::onBlockDrops);
+        modBus.addListener(MachineItemContainers::onCommonSetup);
         registerAe2DirectOutput(modBus);
+        registerAe2MagicStorage(modBus);
+        registerAe2AuraBottling(modBus);
         registerMekEnergistics();
+    }
+
+    private static void registerAe2MagicStorage(IEventBus modBus) {
+        if (!ModCompatibility.loaded("ae2")) return;
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2.storage.MagicStorageCells")
+                    .getMethod("register", IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absentOptionalSourceSet) {
+            LOGGER.warn("This artifact omits the optional AE magic-storage integration");
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException("Unable to register AE magic storage", failure);
+        }
+    }
+
+    private static void registerAe2AuraBottling(IEventBus modBus) {
+        if (!ModCompatibility.loaded("ae2") || !ModCompatibility.naturesAuraLoaded()) return;
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2.Ae2AuraBottleContainerStrategy")
+                    .getMethod("register", IEventBus.class).invoke(null, modBus);
+        } catch (ClassNotFoundException absentOptionalSourceSet) {
+            LOGGER.warn("This artifact omits the optional AE Aura bottling integration");
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException("Unable to register optional AE Aura bottle container strategy", failure);
+        }
     }
 
     private static void registerAe2DirectOutput(IEventBus modBus) {
@@ -179,6 +241,17 @@ public final class MekanismMagic {
                         MOD_ID, "source_generator"));
         if (sourceGenerator != net.minecraft.world.item.Items.AIR) {
             return new ItemStack(sourceGenerator);
+        }
+        Item auraFieldInterface = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        MOD_ID, "aura_field_interface"));
+        if (auraFieldInterface != net.minecraft.world.item.Items.AIR) {
+            return new ItemStack(auraFieldInterface);
+        }
+        Item clibanoProcessor = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(MOD_ID, "clibano_processor"));
+        if (clibanoProcessor != net.minecraft.world.item.Items.AIR) {
+            return new ItemStack(clibanoProcessor);
         }
         Item spiritProcessor = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
                 net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(

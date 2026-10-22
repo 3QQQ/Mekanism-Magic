@@ -50,7 +50,19 @@ public final class MagicMachineAnimationRenderer<
         RITUAL("occult_machine/chalk",
                 0xE5C85E, 0xA46BFF),
         SCRIBING("occult_machine/chalk",
-                0xF0D66D, 0xB66DFF);
+                0xF0D66D, 0xB66DFF),
+        NATURE_ALTAR(ResourceLocation.fromNamespaceAndPath(
+                "naturesaura", "block/aura_detector"),
+                0x74D95B, 0xE7C85A),
+        OFFERING(ResourceLocation.fromNamespaceAndPath(
+                "naturesaura", "block/aura_detector"), 0xE7C85A, 0x74D95B),
+        TREE_RITUAL(ResourceLocation.fromNamespaceAndPath(
+                "naturesaura", "block/nature_altar_top"), 0x74D95B, 0xE7C85A),
+        ANIMAL_SPAWNER(ResourceLocation.fromNamespaceAndPath(
+                "naturesaura", "block/animal_spawner_top"), 0x8ACD70, 0xE7C85A),
+        NATURE_ALTAR_FACTORY(ResourceLocation.fromNamespaceAndPath(
+                "naturesaura", "block/aura_detector"),
+                0x74D95B, 0xE7C85A);
 
         private final ResourceLocation texture;
         private final int primary;
@@ -129,6 +141,10 @@ public final class MagicMachineAnimationRenderer<
             blockTexture("animation/core_orb");
     private static final ResourceLocation ENERGY_RIBBON =
             blockTexture("animation/energy_ribbon");
+    private static final ResourceLocation NATURE_ALTAR_TOP =
+            ResourceLocation.fromNamespaceAndPath(
+                    "naturesaura", "block/nature_altar_top");
+
     public MagicMachineAnimationRenderer(
             BlockEntityRendererProvider.Context context, Kind kind) {
         this.kind = kind;
@@ -210,6 +226,17 @@ public final class MagicMachineAnimationRenderer<
             case SCRIBING -> renderScribing(tile, time, poseStack,
                     buffer, mechanismBuffer, texture, glow,
                     packedOverlay, camera);
+            case NATURE_ALTAR -> renderNatureAltar(tile, time,
+                    poseStack, buffer, mechanismBuffer, texture, glow,
+                    packedOverlay, camera);
+            case OFFERING -> renderOffering(tile, time, poseStack, buffer, texture, glow, packedOverlay, camera);
+            case TREE_RITUAL -> renderTreeRitual(tile, time, poseStack, buffer, mechanismBuffer,
+                    texture, glow, packedOverlay, camera);
+            case ANIMAL_SPAWNER -> renderAnimalSpawner(tile, time, poseStack, buffer, mechanismBuffer,
+                    texture, glow, packedOverlay, camera);
+            case NATURE_ALTAR_FACTORY -> renderNatureAltarFactory(
+                    tile, time, poseStack, buffer, mechanismBuffer,
+                    texture, glow, packedOverlay, camera);
         }
         if (cameraDistanceSquared <= ITEM_VIEW_DISTANCE_SQUARED) {
             recipeItemRenderer.render(tile, kind, partialTick, poseStack,
@@ -245,6 +272,7 @@ public final class MagicMachineAnimationRenderer<
         fieldEffectSprite = resolveSprite(switch (kind) {
             case SPIRIT, SPIRIT_FACTORY, RITUAL, SCRIBING -> OCCULT_SEAL;
             case DIMENSION -> PHASE_VORTEX;
+            case NATURE_ALTAR, NATURE_ALTAR_FACTORY -> NATURE_ALTAR_TOP;
             default -> ARCANE_DISC;
         }, machineSprite);
         if (kind == Kind.SPIRIT || kind == Kind.SPIRIT_FACTORY) {
@@ -318,6 +346,108 @@ public final class MagicMachineAnimationRenderer<
                 0.028F + crownPulse * 0.012F,
                 color(kind.secondary,
                         135 + Math.round(crownPulse * 90F)));
+    }
+
+    private void renderNatureAltar(
+            TILE tile, float time, PoseStack poseStack,
+            VertexConsumer buffer, VertexConsumer glyphBuffer,
+            TextureAtlasSprite texture, int light, int overlay,
+            Camera camera) {
+        NatureMachineVisualLayout.WorkArea area =
+                NatureMachineVisualLayout.ALTAR;
+        // V4's blank pad owns one moving glyph, just above its y=5 top.
+        renderHorizontalField(tile, poseStack, glyphBuffer,
+                fieldEffectSprite, light, overlay, camera,
+                area.centerX(), area.circleY(), area.centerZ(),
+                time * 0.72F, NatureMachineVisualLayout.ALTAR_CIRCLE_RADIUS,
+                0.002F, color(0xFFFFFF, 235));
+        renderHelix(tile, poseStack, buffer, texture, light, overlay,
+                camera, area.centerX(), 5.70F / 16F, 8.70F / 16F,
+                area.centerZ(), time * 0.009F, 1.2F, 1.20F / 16F,
+                4, 0.004F, kind.primary, 170);
+        renderHelix(tile, poseStack, buffer, texture, light, overlay,
+                camera, area.centerX(), 5.90F / 16F, 8.50F / 16F,
+                area.centerZ(), time * 0.009F + 0.5F, -1.2F,
+                0.85F / 16F, 3, 0.0035F, kind.secondary, 160);
+    }
+
+    private void renderOffering(TILE tile, float time, PoseStack poseStack,
+                                VertexConsumer buffer, TextureAtlasSprite texture,
+                                int light, int overlay, Camera camera) {
+        NatureMachineVisualLayout.WorkArea area =
+                NatureMachineVisualLayout.OFFERING;
+        // The rear exchange core is sealed. The visible work happens in
+        // the front trough, never inside its shutters or solid core.
+        renderHelix(tile, poseStack, buffer, texture, light, overlay, camera,
+                area.centerX(), 6.30F / 16F, 8.40F / 16F,
+                area.centerZ(), time * 0.009F,
+                0.85F, 0.70F / 16F, 4, 0.0035F, kind.primary, 165);
+        renderOrbitingNodes(tile, poseStack, buffer, texture, light, overlay, camera,
+                area.centerX(), 7.80F / 16F, area.centerZ(),
+                time * 1.5F, 1.25F / 16F, 3, 0.0035F,
+                kind.secondary, 150);
+    }
+
+    private void renderTreeRitual(TILE tile, float time, PoseStack poseStack,
+                                  VertexConsumer buffer, VertexConsumer glyphBuffer,
+                                  TextureAtlasSprite texture, int light, int overlay, Camera camera) {
+        NatureMachineVisualLayout.WorkArea area =
+                NatureMachineVisualLayout.TREE;
+        renderHorizontalField(tile, poseStack, glyphBuffer, texture, light, overlay, camera,
+                area.centerX(), area.circleY(), area.centerZ(), time * 0.6F,
+                NatureMachineVisualLayout.TREE_CIRCLE_RADIUS,
+                0.002F, color(0xFFFFFF, 225));
+        renderHelix(tile, poseStack, buffer, texture, light, overlay, camera,
+                area.centerX(), 6F / 16F, 10.50F / 16F,
+                area.centerZ(), time * 0.008F,
+                1.0F, 1F / 16F, 4, 0.0035F, kind.primary, 165);
+    }
+
+    private void renderAnimalSpawner(TILE tile, float time, PoseStack poseStack,
+                                     VertexConsumer buffer, VertexConsumer glyphBuffer,
+                                     TextureAtlasSprite texture, int light, int overlay, Camera camera) {
+        renderHorizontalField(tile, poseStack, glyphBuffer, texture, light, overlay, camera,
+                NatureMachineVisualLayout.ANIMAL_CENTER_X,
+                NatureMachineVisualLayout.ANIMAL_CIRCLE_Y,
+                NatureMachineVisualLayout.ANIMAL_CENTER_Z,
+                -time * 0.4F, NatureMachineVisualLayout.ANIMAL_CIRCLE_RADIUS,
+                0.002F, color(0xFFFFFF, 215));
+        renderOrbitingNodes(tile, poseStack, buffer, texture, light, overlay, camera,
+                NatureMachineVisualLayout.ANIMAL_CENTER_X, 5F / 16F,
+                NatureMachineVisualLayout.ANIMAL_CENTER_Z,
+                time * 1.3F, 2.10F / 16F, 3, 0.0035F,
+                kind.secondary, 155);
+    }
+
+    private void renderNatureAltarFactory(
+            TILE tile, float time, PoseStack poseStack,
+            VertexConsumer buffer, VertexConsumer glyphBuffer,
+            TextureAtlasSprite texture, int light, int overlay,
+            Camera camera) {
+        for (int bay = 0;
+             bay < NatureAltarFactoryVisualLayout.VISIBLE_BAYS; bay++) {
+            float centerX = NatureAltarFactoryVisualLayout.laneX(bay);
+            float phase = time * 0.15F + bay * 2.094F;
+            float pulse = (Mth.sin(phase) + 1F) * 0.5F;
+
+            // V4's narrow reaction medium has no authored altar glyph.
+            // Keep one circle per lane, above its y=5.1 top and clear of
+            // the adjacent side drive housings even at 45 degrees.
+            renderHorizontalField(tile, poseStack, glyphBuffer,
+                    fieldEffectSprite, light, overlay, camera,
+                    centerX, NatureAltarFactoryVisualLayout.CIRCLE_Y,
+                    NatureAltarFactoryVisualLayout.CENTER_Z,
+                    time * (0.78F + bay * 0.09F) + bay * 37F,
+                    NatureAltarFactoryVisualLayout.CIRCLE_RADIUS,
+                    0.0018F, color(0xFFFFFF, 225));
+
+            renderHelix(tile, poseStack, buffer, texture, light, overlay,
+                    camera, centerX, 5.75F / 16F, 8.20F / 16F,
+                    NatureAltarFactoryVisualLayout.CENTER_Z,
+                    time * 0.011F + bay / 3F, 0.82F,
+                    0.38F / 16F, 4, 0.003F,
+                    kind.primary, 150 + Math.round(pulse * 55F));
+        }
     }
 
     private void renderConverter(TILE tile, float time,

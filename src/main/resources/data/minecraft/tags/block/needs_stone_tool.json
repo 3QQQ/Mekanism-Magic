@@ -1,5 +1,14 @@
 {
   "values": [
+    {"id":"mekanism_magic:essence_condenser","required":false},
+    {
+      "id": "mekanism_magic:fe_aura_converter",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:aura_fuel_generator",
+      "required": false
+    },
     {
       "id": "mekanism_magic:spirit_processor",
       "required": false
@@ -134,6 +143,66 @@
     },
     {
       "id": "mekanism_magic:drygmy_simulator",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:aura_field_interface",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:nature_altar_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:basic_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:advanced_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:elite_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:ultimate_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:absolute_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:supreme_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:cosmic_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:infinite_nature_altar_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:offering_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:tree_ritual_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:animal_spawner_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:clibano_processor",
+      "required": false
+    },
+    {
+      "id": "mekanism_magic:hephaestus_forge_processor",
       "required": false
     }
   ]

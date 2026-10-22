@@ -12,6 +12,7 @@ import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableLong;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -25,6 +26,8 @@ public final class FeSourceConverterBlockEntity
         extends ArsSourceMachineBlockEntity {
     private static final int MAX_STACK_UPGRADES = 8;
     private int ejectSideCursor;
+    private long sourceOutputTick = Long.MIN_VALUE;
+    private int sourceOutputThisTick;
 
     public FeSourceConverterBlockEntity(BlockPos pos, BlockState state) {
         super(ArsNouveauRegistries.SOURCE_CONVERTER_BLOCK.get()
@@ -51,7 +54,7 @@ public final class FeSourceConverterBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return ArsNouveauMachineConfig.SOURCE_CONVERTER_FE_PER_TICK;
+        return ArsNouveauMachineConfig.SOURCE_CONVERTER_JOULES_PER_TICK;
     }
 
     @Override
@@ -107,6 +110,42 @@ public final class FeSourceConverterBlockEntity
     @Override
     public boolean canAcceptSource() {
         return false;
+    }
+
+    /**
+     * Reserves real converter output before a transport invokes its target.
+     * Direct network output and adjacent ejection share one per-tick limit.
+     */
+    public int extractProducedSource(int requested, boolean simulate) {
+        if (!(level instanceof ServerLevel) || isRemoved()
+                || requested <= 0 || hasCreativeSourceUpgrade()) return 0;
+        boolean outputEnabled = false;
+        for (Direction side : Direction.values()) {
+            outputEnabled |= getSourceMode(side).allowsOutput();
+        }
+        if (!outputEnabled) return 0;
+        long gameTime = level.getGameTime();
+        int spent = gameTime == sourceOutputTick ? sourceOutputThisTick : 0;
+        int remaining = Math.max(0, getTransferRate() - spent);
+        int extracted = getSourceStorage().extractSource(
+                Math.min(requested, remaining), simulate);
+        if (!simulate && extracted > 0) {
+            sourceOutputTick = gameTime;
+            sourceOutputThisTick = spent + extracted;
+        }
+        return extracted;
+    }
+
+    /** Returns a still-owned output remainder without reopening Source input. */
+    public int refundProducedSource(int amount) {
+        if (!(level instanceof ServerLevel) || isRemoved()
+                || amount <= 0 || hasCreativeSourceUpgrade()) return 0;
+        var storage = getSourceStorage();
+        int before = Math.max(0, storage.getSource());
+        int restored = Math.min(amount,
+                Math.max(0, storage.getSourceCapacity() - before));
+        if (restored > 0) storage.setSource(before + restored);
+        return restored;
     }
 
     @Override
@@ -279,22 +318,25 @@ public final class FeSourceConverterBlockEntity
             if (target == null) {
                 continue;
             }
-            int extractable = getSourceStorage().extractSource(remaining,
-                    true);
+            int extractable = extractProducedSource(remaining, true);
             if (extractable <= 0) {
                 break;
             }
-            int accepted = target.receiveSource(extractable, true);
-            if (accepted <= 0) {
+            int accepted = Math.max(0, Math.min(extractable,
+                    target.receiveSource(extractable, true)));
+            if (accepted <= 0 || !getSourceMode(side).allowsOutput()) {
                 continue;
             }
-            int delivered = target.receiveSource(accepted, false);
-            if (delivered <= 0) {
+            // Reserve before the external callback, which may reenter this
+            // machine through another transport during its own insertion.
+            int extracted = extractProducedSource(accepted, false);
+            if (extracted <= 0) {
                 continue;
             }
-            int extracted = getSourceStorage().extractSource(delivered,
-                    false);
-            transferred += extracted;
+            int delivered = Math.max(0, Math.min(extracted,
+                    target.receiveSource(extracted, false)));
+            refundProducedSource(extracted - delivered);
+            transferred += delivered;
             remaining -= extracted;
         }
         return transferred;

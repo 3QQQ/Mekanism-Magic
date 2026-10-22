@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.blockentity;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation.PatternStack;
 import com.example.mekanismmagic.api.IRecipeEntityDisplay;
@@ -264,7 +265,8 @@ public final class NativeSpiritFactoryBlockEntity
                         && recipe.sameProcessingRevision())
                 .setActive(active -> setActiveState(active, process))
                 .setEnergyRequirements(
-                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this, 400),
+                        () -> mekanism.common.util.MekanismUtils.getEnergyPerTick(this,
+                                MagicMachineEnergyProfiles.MATERIAL_PROCESSING),
                         energyContainer)
                 .setRequiredTicks(
                         () -> mekanism.common.util.MekanismUtils.getTicks(this, recipe.duration()))
@@ -496,7 +498,7 @@ public final class NativeSpiritFactoryBlockEntity
                 break;
             }
         }
-        return new SpiritMachineUpgradeData(registries, redstone, getControlType(),
+        return NativeMachineUpgradeData.capture(new SpiritMachineUpgradeData(registries, redstone, getControlType(),
                 energyContainer, progress, currentEnergySlot, inputSlots, outputSlots,
                 isSorting(), getComponents(),
                 spiritSlot == null ? ItemStack.EMPTY : spiritSlot.getStack(),
@@ -504,13 +506,14 @@ public final class NativeSpiritFactoryBlockEntity
                         ? new int[0] : processRequiredTicks,
                 java.util.Map.of(), spiritTradeNonces == null
                         ? new long[0] : spiritTradeNonces,
-                spiritTradeSalt);
+                spiritTradeSalt), this, registries);
     }
 
     @Override
     public void parseUpgradeData(net.minecraft.core.HolderLookup.Provider registries,
                                  IUpgradeData data) {
         super.parseUpgradeData(registries, data);
+        NativeMachineUpgradeData.restore(data, this, registries);
         if (data instanceof SpiritMachineUpgradeData spiritUpgrade) {
             if (spiritSlot != null) {
                 spiritSlot.setStack(spiritUpgrade.spiritSource.copy());

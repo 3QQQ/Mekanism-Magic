@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IGI",
+    "CSC",
+    "IAI"
+  ],
+  "key": {
+    "I": {
+      "item": "naturesaura:infused_iron"
+    },
+    "G": {
+      "item": "naturesaura:gold_leaf"
+    },
+    "S": {
+      "item": "naturesaura:animal_spawner"
+    },
+    "A": {
+      "item": "mekanism:steel_casing"
+    },
+    "C": {
+      "item": "mekanism:elite_control_circuit"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:animal_spawner_processor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "naturesaura"
+    }
+  ]
+}

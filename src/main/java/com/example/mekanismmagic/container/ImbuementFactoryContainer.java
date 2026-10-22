@@ -17,8 +17,7 @@ public final class ImbuementFactoryContainer
 
     @Override
     protected int getInventoryYOffset() {
-        // Match Mekanism's FactoryContainer exactly.
-        return 85;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.FACTORY_HEIGHT);
     }
 
     @Override

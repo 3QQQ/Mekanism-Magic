@@ -2,6 +2,7 @@ package com.example.mekanismmagic.item;
 
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
 import com.example.mekanismmagic.integration.occultism.MiniPentacleDeployment;
+import com.example.mekanismmagic.integration.occultism.MiniPentacleCapture;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -45,8 +46,30 @@ public final class MiniRitualItem extends Item {
                 }
                 return InteractionResultHolder.fail(miniature);
             }
+            // A blank carrier cannot copy a paid structure from a projection.
+            if (!isConfigured(miniature) && !player.getAbilities().instabuild) {
+                if (!level.isClientSide()) {
+                    player.displayClientMessage(Component.translatable(
+                            "item.mekanism_magic.mini_ritual.capture_required"), true);
+                }
+                return InteractionResultHolder.fail(miniature);
+            }
+            var target = OccultismRecipeBridge.findProjection(level, reference);
+            ResourceLocation currentPentacle = pentacleId(miniature);
+            if (currentPentacle == null && ritualId(miniature) != null) {
+                currentPentacle = OccultismRecipeBridge.findProjection(level, ritualId(miniature))
+                        .map(OccultismRecipeBridge.RitualProjection::pentacleId).orElse(null);
+            }
+            if (isConfigured(miniature) && (target.isEmpty()
+                    || !target.get().pentacleId().equals(currentPentacle))) {
+                if (!level.isClientSide()) {
+                    player.displayClientMessage(Component.translatable(
+                            "item.mekanism_magic.mini_ritual.same_pentacle_required"), true);
+                }
+                return InteractionResultHolder.fail(miniature);
+            }
             if (!level.isClientSide()) {
-                OccultismRecipeBridge.findProjection(level, reference).ifPresent(projection -> {
+                target.ifPresent(projection -> {
                     OccultismRecipeBridge.bindMiniRitual(miniature, projection);
                     player.displayClientMessage(Component.translatable(
                             "item.mekanism_magic.mini_ritual.bound",
@@ -77,11 +100,26 @@ public final class MiniRitualItem extends Item {
     }
 
     @Override
+    public Component getName(ItemStack stack) {
+        return MiniPentacleCapture.isBlank(stack)
+                ? Component.translatable("item.mekanism_magic.mini_ritual.blank") : super.getName(stack);
+    }
+
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        // Prevent a sacrificial bowl from taking the blank as an ingredient first.
+        return MiniPentacleCapture.isBlank(stack) ? capture(context) : InteractionResult.PASS;
+    }
+
+    @Override
     public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
         ItemStack miniature = context.getItemInHand();
         if (player == null) {
             return InteractionResult.PASS;
+        }
+        if (MiniPentacleCapture.isBlank(miniature)) {
+            return capture(context);
         }
         if (context.getLevel().isClientSide()) {
             return isConfigured(miniature)
@@ -119,6 +157,30 @@ public final class MiniRitualItem extends Item {
                 ? InteractionResult.CONSUME : InteractionResult.FAIL;
     }
 
+    private InteractionResult capture(UseOnContext context) {
+        if (context.getPlayer() == null) {
+            return InteractionResult.PASS;
+        }
+        if (context.getLevel().isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        if (!(context.getLevel() instanceof ServerLevel level)
+                || !(context.getPlayer() instanceof ServerPlayer player)) {
+            return InteractionResult.PASS;
+        }
+        ItemStack miniature = context.getItemInHand();
+        MiniPentacleDeployment.Result result = MiniPentacleCapture.capture(
+                level, player, miniature, context.getClickedPos());
+        Component message = result.success()
+                ? Component.translatable("item.mekanism_magic.mini_ritual.capture_success",
+                OccultismRecipeBridge.pentacleDisplayName(
+                        OccultismRecipeBridge.miniRitualPentacle(miniature).orElse(null)), result.changedBlocks())
+                : Component.translatable(result.status().translationKey());
+        player.displayClientMessage(message, true);
+        player.getCooldowns().addCooldown(this, 8);
+        return result.success() ? InteractionResult.CONSUME : InteractionResult.FAIL;
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
@@ -136,7 +198,10 @@ public final class MiniRitualItem extends Item {
             if (tag.contains("pentacle")) {
                 tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.pentacle",
                         OccultismRecipeBridge.pentacleDisplayName(
-                                pentacleId(stack))));
+                                    pentacleId(stack))));
+            }
+            if (MiniPentacleCapture.hasCustomLayout(stack)) {
+                tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.saved_materials"));
             }
             if (MiniPentacleDeployment.isDeployed(stack)) {
                 tooltip.add(Component.translatable(
@@ -158,7 +223,8 @@ public final class MiniRitualItem extends Item {
             }
         } else {
             tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.unconfigured"));
-            tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.bind"));
+            tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.capture"));
+            tooltip.add(Component.translatable("item.mekanism_magic.mini_ritual.capture_nested"));
         }
     }
 

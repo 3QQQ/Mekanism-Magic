@@ -1,0 +1,15 @@
+{
+  "entities": [
+    "minecraft:mooshroom"
+  ],
+  "kind": "item",
+  "item": "minecraft:red_mushroom",
+  "count": 5,
+  "adult": true,
+  "nbt": {
+    "Type": "red"
+  },
+  "variant_keys": [
+    "Type"
+  ]
+}

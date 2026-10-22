@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import mekanism.api.IContentsListener;
 import mekanism.api.inventory.IInventorySlot;
@@ -77,6 +78,17 @@ public final class EnchantingApparatusProcessorBlockEntity
     }
 
     @Override
+    public boolean mekanismMagicUsesContextualPatternValidation() {
+        return true;
+    }
+
+    @Override
+    public boolean mekanismMagicMatchesPattern(
+            List<PatternStack> inputs, List<PatternStack> outputs) {
+        return ArsApparatusRecipeViews.matchesPattern(level, inputs, outputs);
+    }
+
+    @Override
     protected long recipeLookupRevision() {
         return level == null ? 0L : ArsNouveauRecipeScanner.version(
                 level.getRecipeManager());
@@ -101,7 +113,7 @@ public final class EnchantingApparatusProcessorBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 1_200;
+        return MagicMachineEnergyProfiles.MAGIC_REACTION;
     }
 
     @Override

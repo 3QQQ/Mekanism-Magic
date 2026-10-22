@@ -1,0 +1,7 @@
+{
+  "entities": [
+    "minecraft:frog"
+  ],
+  "kind": "frog_lights",
+  "adult": true
+}

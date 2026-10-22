@@ -6,6 +6,10 @@
   "client": [
     "GuiElementThemeMixin",
     "GuiEnergyTabMixin",
+    "GuiGraphicsStyleMixin",
+    "GuiMachineFrameMixin",
+    "GuiMachineSettingsMixin",
+    "GuiSideConfigurationDefaultPageMixin",
     "GuiSlotTypeMixin",
     "GuiTexturedElementMixin",
     "GuiUtilsMixin",

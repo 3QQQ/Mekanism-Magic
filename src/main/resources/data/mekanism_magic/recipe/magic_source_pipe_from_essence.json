@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["SGS"],
+  "key": {
+    "S": {"tag": "c:ingots/steel"},
+    "G": {"item": "forbidden_arcanus:arcane_crystal"}
+  },
+  "result": {"id": "mekanism_magic:magic_source_pipe", "count": 8},
+  "neoforge:conditions": [{"type": "mekanism_magic:forbidden_arcanus_enabled"}]
+}

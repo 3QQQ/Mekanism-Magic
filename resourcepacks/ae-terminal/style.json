@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "style": "terminal",
+  "light": {
+    "textPrimary": "#403E50", "textMuted": "#535366", "textPanel": "#403E50", "textScreen": "#D7DBE6",
+    "accentSource": "#286D5C", "accentRitual": "#705095",
+    "frame": "#9A9FB4", "header": "#CBCCD4", "workSurface": "#CBCCD4", "inventorySurface": "#CBCCD4",
+    "panelShadow": "#413F54", "frameDetail": "#F2F2F2", "frameDetailSoft": "#878FA5"
+  },
+  "dark": {
+    "textPrimary": "#DCDEE8", "textMuted": "#B6B6C6", "textPanel": "#DCDEE8", "textScreen": "#D7DBE6",
+    "accentSource": "#74C6B4", "accentRitual": "#C0A0EE",
+    "frame": "#50596E", "header": "#30333E", "workSurface": "#30333E", "inventorySurface": "#30333E",
+    "panelShadow": "#202331", "frameDetail": "#858FA5", "frameDetailSoft": "#40485E"
+  }
+}

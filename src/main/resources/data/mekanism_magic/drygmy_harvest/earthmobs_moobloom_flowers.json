@@ -1,0 +1,12 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:moobloom"
+  ],
+  "kind": "item",
+  "item": "earthmobsmod:buttercup",
+  "count": 4,
+  "adult": true
+}

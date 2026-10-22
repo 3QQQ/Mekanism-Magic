@@ -138,6 +138,8 @@ public final class Ae2ImbuementProvider
         }
         return ArsNouveauRecipeScanner.scan(
                         level.getRecipeManager()).stream()
+                .filter(holder -> tile.hasCatalystIdentifierForRecipe(
+                        holder.id()))
                 .map(holder -> new Ae2ImbuementPattern(tile, holder))
                 .filter(Ae2ImbuementPattern::isUsable)
                 .map(pattern -> (IPatternDetails) pattern)
@@ -152,6 +154,8 @@ public final class Ae2ImbuementProvider
                 || !(pattern instanceof Ae2ImbuementPattern imbuement)
                 || imbuement.tile() != tile
                 || !imbuement.matchesCurrentRecipe(tile.getLevel())
+                || !tile.hasCatalystIdentifierForRecipe(
+                imbuement.recipeId())
                 || isHostBusy(tile)) {
             return false;
         }
@@ -161,7 +165,7 @@ public final class Ae2ImbuementProvider
             return false;
         }
         return tile.acceptAutomatedImbuementInput(
-                input,
+                imbuement.markCatalystFreeInput(input),
                 imbuement.requiresCatalystIdentifier(),
                 imbuement.catalystId().toString());
     }

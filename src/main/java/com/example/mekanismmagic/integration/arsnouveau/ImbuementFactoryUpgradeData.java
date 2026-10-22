@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.blockentity.NativeMachineUpgradeData;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -9,14 +10,13 @@ import mekanism.api.inventory.IInventorySlot;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.tile.component.ITileComponent;
 import mekanism.common.tile.interfaces.IRedstoneControl;
-import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 
 /** Preserves the Source and catalyst library during factory tier upgrades. */
-public final class ImbuementFactoryUpgradeData extends MachineUpgradeData {
+public final class ImbuementFactoryUpgradeData extends NativeMachineUpgradeData {
     public final int source;
     public final ItemStack recipeLock;
     public final List<ItemStack> catalystLibrary;

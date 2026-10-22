@@ -4,7 +4,6 @@ import mekanism.api.energy.IEnergyContainer;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.tile.component.ITileComponent;
 import mekanism.common.tile.interfaces.IRedstoneControl;
-import mekanism.common.upgrade.MachineUpgradeData;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 import mekanism.api.inventory.IInventorySlot;
@@ -19,7 +18,7 @@ import java.util.Map;
  * Mekanism machine upgrade payload with the non-consumable spirit source
  * carried across a tier-installer conversion.
  */
-public final class SpiritMachineUpgradeData extends MachineUpgradeData {
+public final class SpiritMachineUpgradeData extends NativeMachineUpgradeData {
     public final ItemStack spiritSource;
     public final int[] requiredTicks;
     public final long[] spiritTradeNonces;

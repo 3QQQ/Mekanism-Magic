@@ -12,6 +12,18 @@ out/
 .gradle/
 build/
 run/
+run-gametest/
+run-nature-gametest/
+run-forbidden-gametest/
+run-forbidden-absent-gametest/
+run-machine-item-gametest/
+run-entity-container-gametest/
+run-machine-network-gametest/
+run-native-ae-absent-gametest/
+run-external-provider-gametest/
+run-energy-gametest/
+run-magic-storage-gametest/
+run-nature-client/
 .tmp-*/
 .local-repo/
 

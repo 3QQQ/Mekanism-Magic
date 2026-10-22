@@ -9,18 +9,24 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.storage.StorageHelper;
-import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.integration.common.network.MachineAeResourceHooks;
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceNetworkAccess;
 import com.hollingsworth.arsnouveau.api.source.ISourceTile;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-/** Pulls Ars Energistique's Source key through a machine's active AE node. */
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+/** Pulls the shared Source key through a machine's active AE node. */
 final class Ae2ArsSourceNetworkAccess
         implements ArsSourceNetworkAccess.Handler {
     static final Ae2ArsSourceNetworkAccess INSTANCE =
             new Ae2ArsSourceNetworkAccess();
+    private static final Map<BlockEntity, Long> LAST_PULL_TICK =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private Ae2ArsSourceNetworkAccess() {
     }
@@ -29,7 +35,8 @@ final class Ae2ArsSourceNetworkAccess
     public ArsSourceNetworkAccess.PullResult pullInto(
             BlockEntity machine, ISourceTile target, int requested) {
         if (!(machine.getLevel() instanceof ServerLevel level)
-                || requested <= 0) {
+                || requested <= 0
+                || !MachineAeResourceHooks.isInputEnabled(machine, MachineAeResourceHooks.SOURCE)) {
             return ArsSourceNetworkAccess.PullResult.NOT_CONNECTED;
         }
         IInWorldGridNodeHost host = level.getCapability(
@@ -43,6 +50,16 @@ final class Ae2ArsSourceNetworkAccess
         IGrid grid = node.getGrid();
         if (grid == null) {
             return ArsSourceNetworkAccess.PullResult.NOT_CONNECTED;
+        }
+        if (Ae2MachineResourceAccess.hasPendingRefunds(machine)) {
+            return ArsSourceNetworkAccess.PullResult.connected(0);
+        }
+        long gameTime = level.getGameTime();
+        Long previous = LAST_PULL_TICK.put(machine, gameTime);
+        if (previous != null && previous == gameTime) {
+            // The high-frequency connected refill ran earlier in this tick.
+            // Keep the old nearby-jar cycle, but do not debit AE twice.
+            return ArsSourceNetworkAccess.PullResult.connected(0);
         }
 
         int before = Math.max(0, target.getSource());
@@ -66,18 +83,11 @@ final class Ae2ArsSourceNetworkAccess
         int accepted = Math.max(0, target.getSource() - before);
         if (accepted < extracted) {
             long remainder = extracted - accepted;
-            long restored = StorageHelper.poweredInsert(
-                    grid.getEnergyService(),
-                    grid.getStorageService().getInventory(), sourceKey,
-                    remainder, actionSource, Actionable.MODULATE);
-            if (restored != remainder) {
-                MekanismMagic.LOGGER.error(
-                        "Unable to restore {} Source rejected by AE-connected "
-                                + "machine {} at {} (restored {})",
-                        remainder, machine.getType(), machine.getBlockPos(),
-                        restored);
-            }
+            Ae2MachineResourceAccess.refundOrQueue(machine, grid,
+                    actionSource, sourceKey, remainder);
         }
+        MachineAeResourceHooks.recordTransfer(machine,
+                MachineAeResourceHooks.SOURCE, accepted);
         return ArsSourceNetworkAccess.PullResult.connected(accepted);
     }
 

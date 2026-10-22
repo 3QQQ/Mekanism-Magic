@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeDimensionMinerBlockEntity;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.network.chat.Component;
@@ -16,10 +17,10 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
     public NativeDimensionMinerScreen(
             MekanismTileContainer<NativeDimensionMinerBlockEntity> container,
             Inventory inventory, Component title) {
-        super(container, inventory, title, 208);
+        super(container, inventory, title, MachinePanelLayout.MINER_HEIGHT);
         imageWidth = 210;
         inventoryLabelX = 26;
-        inventoryLabelY = 114;
+        inventoryLabelY = MachinePanelLayout.inventoryLabelY(MachinePanelLayout.MINER_HEIGHT);
     }
 
     @Override
@@ -34,8 +35,8 @@ public final class NativeDimensionMinerScreen extends NativeMagicMachineScreen<
 
     @Override
     protected int energyBarHeight() {
-        // Align the status bar with the bottom of the three output rows.
-        return 80;
+        // Leave three pixels before the inventory caption, including GuiBar's frame.
+        return 79;
     }
 
     @Override

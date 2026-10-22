@@ -1,6 +1,8 @@
 package com.example.mekanismmagic.client.screen;
 
 import com.example.mekanismmagic.blockentity.NativeRitualEngineBlockEntity;
+import com.example.mekanismmagic.container.DockedPanelLayout;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import com.example.mekanismmagic.client.gui.GuiDictionaryModuleTab;
 import com.example.mekanismmagic.client.gui.MagicGuiTheme;
 import com.example.mekanismmagic.client.OccultismRecipeViewerTypes;
@@ -25,11 +27,12 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
         MekanismTileContainer<NativeRitualEngineBlockEntity>> {
     private final List<GuiSlot> dictionaryGuiSlots = new ArrayList<>();
     private boolean dictionaryModuleOpen;
+    private static final DockedPanelLayout PANEL = DockedPanelLayout.DICTIONARY;
 
     public NativeRitualScreen(MekanismTileContainer<NativeRitualEngineBlockEntity> container,
                               Inventory inventory, Component title) {
-        super(container, inventory, title, 208);
-        imageWidth = 210;
+        super(container, inventory, title, MachinePanelLayout.RITUAL_HEIGHT);
+        imageWidth = DockedPanelLayout.RITUAL_SCREEN_WIDTH;
         inventoryLabelX = 26;
         getTileEntity().setDictionaryModuleOpen(false);
     }
@@ -41,7 +44,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
 
     @Override
     protected int workProgressX() {
-        return 145;
+        return 144;
     }
 
     @Override
@@ -56,7 +59,8 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
 
     @Override
     protected int energyBarHeight() {
-        return 87;
+        // Native GuiBar adds a two-pixel frame to the requested fill height.
+        return 85;
     }
 
     @Override
@@ -96,9 +100,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
                             int mouseX, int mouseY) {
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (dictionaryModuleOpen) {
-            int left = leftPos + 236;
-            int top = topPos + 88;
-            MagicGuiTheme.renderDockedPanel(graphics, left, top, 58, 52);
+            MagicGuiTheme.renderDockedPanel(graphics, leftPos + PANEL.x(), topPos + PANEL.y(), PANEL.width(), PANEL.height());
         }
     }
 
@@ -109,13 +111,21 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
             MagicGuiTheme.renderPanelCaption(graphics, font,
                     Component.translatable(
                             "gui.mekanism_magic.dictionary_short"),
-                    236, 88, 58);
+                    PANEL.x(), PANEL.y(), PANEL.width());
         }
     }
 
     private void toggleDictionaryModule() {
         dictionaryModuleOpen = !dictionaryModuleOpen;
+        if (dictionaryModuleOpen) closeRetainedModule();
         getTileEntity().setDictionaryModuleOpen(dictionaryModuleOpen);
+        updateDictionarySlotVisibility();
+    }
+
+    @Override
+    protected void onRetainedModuleOpened() {
+        dictionaryModuleOpen = false;
+        getTileEntity().setDictionaryModuleOpen(false);
         updateDictionarySlotVisibility();
     }
 
@@ -131,9 +141,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY,
                                         int left, int top, int button) {
-        if (dictionaryModuleOpen
-                && mouseX >= leftPos + 236 && mouseX < leftPos + 294
-                && mouseY >= topPos + 88 && mouseY < topPos + 140) {
+        if (dictionaryModuleOpen && PANEL.contains(mouseX - leftPos, mouseY - topPos)) {
             return false;
         }
         return super.hasClickedOutside(mouseX, mouseY, left, top, button);
@@ -142,7 +150,7 @@ public final class NativeRitualScreen extends NativeMagicMachineScreen<
     private static boolean isDictionaryGuiSlot(GuiSlot slot) {
         int x = slot.getRelativeX() + 1;
         int y = slot.getRelativeY() + 1;
-        return x == 240 && y == 104;
+        return PANEL.isGridSlot(x, y, 1);
     }
 
     private static boolean isSacrificeGuiSlot(GuiSlot slot) {

@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="Mekanism Magic contributors"
-description='''Mekanism-style automation for Occultism and Ars Nouveau, with AE2-aware machines, factories, and Source transport.'''
+description='''Mekanism-style automation for Occultism, Ars Nouveau, and Nature's Aura, with optional storage-network integration.'''
 
 [[dependencies.${mod_id}]]
 modId="neoforge"
@@ -45,11 +45,34 @@ ordering="AFTER"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
+modId="naturesaura"
+type="optional"
+versionRange="[41.9,42)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
 modId="jei"
 type="optional"
 versionRange="[19.20.0,)"
 ordering="AFTER"
 side="CLIENT"
+
+# Missing optional mods remain supported. If F&A is installed, ModCompatibility
+# fails fast on an unverified pair rather than omitting saved machine block IDs.
+[[dependencies.${mod_id}]]
+modId="forbidden_arcanus"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="valhelsia_core"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="mekanism_extras"
@@ -97,6 +120,20 @@ side="BOTH"
 modId="pipez"
 type="optional"
 versionRange="[1.21.1-1.2.17,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="jade"
+type="optional"
+versionRange="[15,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="appflux"
+type="optional"
+versionRange="[0,)"
 ordering="AFTER"
 side="BOTH"
 

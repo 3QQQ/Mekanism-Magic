@@ -28,13 +28,16 @@ public final class ImbuementProcessorScreen
     private boolean libraryOpen;
     private int displayedCatalystPage = -1;
     private int displayedCatalystVisibleSlotCount = -1;
-    private static final int LOCK_SLOT_X = 64;
-    private static final int LOCK_SLOT_Y = 53;
     public ImbuementProcessorScreen(
             MekanismTileContainer<ImbuementProcessorBlockEntity> container,
             Inventory inventory, Component title) {
         super(container, inventory, title, 166);
         getTileEntity().setCatalystLibraryOpen(false);
+    }
+
+    @Override
+    protected boolean showUpArrow() {
+        return false;
     }
 
     private void clickMachineButton(int id) {
@@ -51,12 +54,13 @@ public final class ImbuementProcessorScreen
         int panelLeft = CatalystLibraryLayout.panelLeft(imageWidth);
         catalystLockSlot = addRenderableWidget(
                 new GuiSlot(SlotType.INPUT, this,
-                LOCK_SLOT_X, LOCK_SLOT_Y)
+                CatalystLibraryLayout.activeSlotX(imageWidth) - 1, CatalystLibraryLayout.ACTIVE_SLOT_Y - 1)
                 .stored(getTileEntity()::selectedCatalystIdentifier)
                 .setGhostHandler(new IRecipeViewerGhostTarget
                         .IGhostIngredientConsumer() {
                     @Override
                     public Object supportedTarget(Object ingredient) {
+                        if (!libraryOpen || MekEnergisticsGuiCompat.isPatternWindowOpen(getWindows())) return null;
                         return ingredient instanceof ItemStack stack
                                 && stack.is(
                                 com.example.mekanismmagic.integration
@@ -67,6 +71,7 @@ public final class ImbuementProcessorScreen
 
                     @Override
                     public void accept(Object ingredient) {
+                        if (!libraryOpen || MekEnergisticsGuiCompat.isPatternWindowOpen(getWindows())) return;
                         if (ingredient instanceof ItemStack stack) {
                             var data = stack.get(
                                     net.minecraft.core.component.DataComponents
@@ -85,7 +90,7 @@ public final class ImbuementProcessorScreen
         libraryButtons.clear();
         libraryButtons.add((MekanismButton) addRenderableWidget(
                 new MekanismButton(this, panelLeft + 4,
-                CatalystLibraryLayout.PANEL_TOP + 90, 28, 18,
+                CatalystLibraryLayout.FOOTER_TOP, 28, 18,
                 Component.literal("<"),
                 (element, mouseX, mouseY) -> {
                     clickMachineButton(220);
@@ -93,7 +98,7 @@ public final class ImbuementProcessorScreen
                 })));
         libraryButtons.add((MekanismButton) addRenderableWidget(
                 new MekanismButton(this, panelLeft + 66,
-                CatalystLibraryLayout.PANEL_TOP + 90, 28, 18,
+                CatalystLibraryLayout.FOOTER_TOP, 28, 18,
                 Component.literal(">"),
                 (element, mouseX, mouseY) -> {
                     clickMachineButton(221);
@@ -119,48 +124,29 @@ public final class ImbuementProcessorScreen
     protected void renderBg(GuiGraphics graphics, float partialTick,
                             int mouseX, int mouseY) {
         MekEnergisticsGuiCompat.updateMachineSlot(
-                getWindows(), catalystLockSlot);
+                getWindows(), catalystLockSlot, libraryOpen);
         super.renderBg(graphics, partialTick, mouseX, mouseY);
         if (libraryOpen) {
             int left = leftPos + CatalystLibraryLayout.panelLeft(imageWidth);
-            int top = topPos + CatalystLibraryLayout.PANEL_TOP;
+            int top = topPos + CatalystLibraryLayout.FRAME_TOP;
             MagicGuiTheme.renderDockedPanel(graphics, left, top,
                     CatalystLibraryLayout.PANEL_WIDTH,
-                    CatalystLibraryLayout.PANEL_HEIGHT);
+                    CatalystLibraryLayout.FRAME_HEIGHT, CatalystLibraryLayout.HEADER_HEIGHT);
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (MekEnergisticsGuiCompat.updateMachineSlot(
-                getWindows(), catalystLockSlot)
+                getWindows(), catalystLockSlot, libraryOpen)
                 && button == 1
-                && mouseX >= leftPos + LOCK_SLOT_X - 1
-                && mouseX < leftPos + LOCK_SLOT_X + 19
-                && mouseY >= topPos + LOCK_SLOT_Y - 1
-                && mouseY < topPos + LOCK_SLOT_Y + 19) {
+                && CatalystLibraryLayout.containsActiveSlot(imageWidth, mouseX - leftPos, mouseY - topPos)) {
             clickMachineButton(399);
             return true;
         }
         if (libraryOpen && button == 1) {
-            int x = (int) (mouseX - leftPos
-                    - CatalystLibraryLayout.slotLeft(imageWidth));
-            int y = (int) (mouseY - topPos
-                    - CatalystLibraryLayout.SLOT_TOP);
-            int gridWidth = CatalystLibraryLayout.COLUMNS
-                    * CatalystLibraryLayout.SLOT_SPACING;
-            int gridHeight = Math.ceilDiv(
-                    CatalystLibraryLayout.PAGE_SIZE,
-                    CatalystLibraryLayout.COLUMNS)
-                    * CatalystLibraryLayout.SLOT_SPACING;
-            if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight
-                    && x % CatalystLibraryLayout.SLOT_SPACING
-                    < CatalystLibraryLayout.SLOT_SPACING - 1
-                    && y % CatalystLibraryLayout.SLOT_SPACING
-                    < CatalystLibraryLayout.SLOT_SPACING - 1) {
-                int windowSlot = (y / CatalystLibraryLayout.SLOT_SPACING)
-                        * CatalystLibraryLayout.COLUMNS
-                        + x / CatalystLibraryLayout.SLOT_SPACING;
+            int windowSlot = CatalystLibraryLayout.pageSlotAt(imageWidth, mouseX - leftPos, mouseY - topPos);
+            if (windowSlot >= 0) {
                 int index = CatalystLibraryStorage.absoluteIndex(
                         getTileEntity().catalystPage(), windowSlot);
                 if (index < getTileEntity().catalystVisibleSlotCount()) {
@@ -179,6 +165,7 @@ public final class ImbuementProcessorScreen
     }
 
     private void updateLibraryVisibility() {
+        MekEnergisticsGuiCompat.updateMachineSlot(getWindows(), catalystLockSlot, libraryOpen);
         int currentPage = getTileEntity().catalystPage();
         int visibleSlotCount = getTileEntity().catalystVisibleSlotCount();
         displayedCatalystPage = currentPage;
@@ -213,11 +200,11 @@ public final class ImbuementProcessorScreen
                                         int left, int top, int button) {
         int panelLeft = leftPos
                 + CatalystLibraryLayout.panelLeft(imageWidth);
-        int panelTop = topPos + CatalystLibraryLayout.PANEL_TOP;
+        int panelTop = topPos + CatalystLibraryLayout.FRAME_TOP;
         if (libraryOpen && mouseX >= panelLeft
                 && mouseX < panelLeft + CatalystLibraryLayout.PANEL_WIDTH
                 && mouseY >= panelTop
-                && mouseY < panelTop + CatalystLibraryLayout.PANEL_HEIGHT) {
+                && mouseY < panelTop + CatalystLibraryLayout.FRAME_HEIGHT) {
             return false;
         }
         return super.hasClickedOutside(mouseX, mouseY, left, top, button);
@@ -260,12 +247,12 @@ public final class ImbuementProcessorScreen
             int panelLeft = CatalystLibraryLayout.panelLeft(imageWidth);
             MagicGuiTheme.renderPanelCaption(graphics, font,
                     Component.translatable("gui.mekanism_magic.catalysts"),
-                    panelLeft, CatalystLibraryLayout.PANEL_TOP,
-                    CatalystLibraryLayout.PANEL_WIDTH);
+                    panelLeft, CatalystLibraryLayout.FRAME_TOP,
+                    CatalystLibraryLayout.PANEL_WIDTH - 26, CatalystLibraryLayout.HEADER_HEIGHT);
             MagicGuiTheme.renderPageNumber(graphics, font,
                     getTileEntity().catalystPage(),
                     getTileEntity().catalystPageCount(), panelLeft + 49,
-                    CatalystLibraryLayout.PANEL_TOP + 95);
+                    CatalystLibraryLayout.FOOTER_TOP + 5);
         }
     }
 }

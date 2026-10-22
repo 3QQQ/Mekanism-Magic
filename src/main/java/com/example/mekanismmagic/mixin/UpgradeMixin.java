@@ -2,11 +2,12 @@ package com.example.mekanismmagic.mixin;
 
 import com.example.mekanismmagic.MagicLang;
 import com.example.mekanismmagic.upgrade.MagicUpgrades;
+import com.example.mekanismmagic.upgrade.UpgradeSerialization;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Map;
 import java.util.function.IntFunction;
 import mekanism.api.Upgrade;
 import mekanism.api.text.EnumColor;
@@ -14,7 +15,6 @@ import mekanism.api.text.ILangEntry;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.ByIdMap;
-import net.minecraft.util.StringRepresentable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -85,12 +85,8 @@ public abstract class UpgradeMixin {
     @Unique
     private static void mekanismMagic$rebuildSerialization() {
         Upgrade[] values = $VALUES;
-        Function<String, Upgrade> nameLookup =
-                StringRepresentable.createNameLookup(
-                        values, Function.identity());
-        Function<String, Upgrade> remapper = name -> "gas".equals(name)
-                ? Upgrade.CHEMICAL : nameLookup.apply(name);
-        CODEC = new StringRepresentable.EnumCodec<>(values, remapper);
+        CODEC = UpgradeSerialization.createCodec(values,
+                Map.of("gas", Upgrade.CHEMICAL));
         BY_ID = ByIdMap.continuous(Upgrade::ordinal, values,
                 ByIdMap.OutOfBoundsStrategy.WRAP);
         STREAM_CODEC = ByteBufCodecs.idMapper(BY_ID, Upgrade::ordinal);

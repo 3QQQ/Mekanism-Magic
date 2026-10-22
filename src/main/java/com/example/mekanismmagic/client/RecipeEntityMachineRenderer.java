@@ -72,8 +72,11 @@ final class RecipeEntityMachineRenderer {
         float height = Math.max(0.1F, entity.getBbHeight());
         float scale = Math.min(placement.maxWidth / width,
                 placement.maxHeight / height);
-        scale = Mth.clamp(scale, placement.minScale,
-                placement.maxScale);
+        // A minimum scale can force a large animal through the V4 scanner.
+        // Nature's display must always respect both available dimensions.
+        scale = kind == MagicMachineAnimationRenderer.Kind.ANIMAL_SPAWNER
+                ? Math.min(scale, placement.maxScale)
+                : Mth.clamp(scale, placement.minScale, placement.maxScale);
         float bob = Mth.sin(renderTime * 0.095F) * placement.bob;
         float yaw = 180F + Mth.sin(renderTime * 0.028F) * 9F;
         setYaw(entity, yaw);
@@ -151,6 +154,14 @@ final class RecipeEntityMachineRenderer {
             case RITUAL -> new DisplayPlacement(
                     0.5F, 0.395F, 0.5F,
                     0.38F, 0.42F, 0.075F, 0.46F, 0.012F);
+            case ANIMAL_SPAWNER -> new DisplayPlacement(
+                    NatureMachineVisualLayout.ANIMAL_CENTER_X,
+                    NatureMachineVisualLayout.ANIMAL_FLOOR_Y,
+                    NatureMachineVisualLayout.ANIMAL_CENTER_Z,
+                    NatureMachineVisualLayout.ANIMAL_MAX_WIDTH,
+                    NatureMachineVisualLayout.ANIMAL_MAX_HEIGHT,
+                    0F, NatureMachineVisualLayout.ANIMAL_MAX_SCALE,
+                    NatureMachineVisualLayout.ANIMAL_BOB);
             default -> null;
         };
     }

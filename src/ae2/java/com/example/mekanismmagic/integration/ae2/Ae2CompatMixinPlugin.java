@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Prevents the identifier-pattern mixin from resolving unless both AE2 and
- * the Ars recipe API referenced by its decoder are present.
+ * Gates AE mixins by the optional recipe/resource API each one references.
  */
 public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
     private static boolean aePresent() {
@@ -24,6 +23,11 @@ public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
         return resourcePresent(
                 "com/hollingsworth/arsnouveau/common/crafting/recipes/"
                         + "ImbuementRecipe.class");
+    }
+
+    private static boolean naturesAuraPresent() {
+        return resourcePresent(
+                "de/ellpeck/naturesaura/recipes/AltarRecipe.class");
     }
 
     private static boolean resourcePresent(String path) {
@@ -42,7 +46,14 @@ public final class Ae2CompatMixinPlugin implements IMixinConfigPlugin {
         if (!aePresent()) {
             return false;
         }
-        return arsPresent();
+        if (mixinClassName.endsWith("Ae2MagicMarkerStorageGuardMixin")) {
+            return true;
+        }
+        if (mixinClassName.endsWith("Ae2AuraBottleContainerUnitMixin")) {
+            return naturesAuraPresent();
+        }
+        return mixinClassName.contains("Ae2NaturePattern")
+                ? naturesAuraPresent() : arsPresent();
     }
     @Override public void acceptTargets(
             Set<String> myTargets, Set<String> otherTargets) { }

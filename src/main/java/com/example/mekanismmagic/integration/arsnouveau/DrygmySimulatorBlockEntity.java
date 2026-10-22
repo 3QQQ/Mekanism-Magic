@@ -1,9 +1,11 @@
 package com.example.mekanismmagic.integration.arsnouveau;
 
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.common.entity.CapturedEntity;
-import com.example.mekanismmagic.integration.common.entity.EntityContainerRegistry;
+import com.example.mekanismmagic.integration.common.entity.SimulationEntitySamples;
 import com.example.mekanismmagic.integration.common.network.MachineDirectOutputHooks;
+import com.example.mekanismmagic.integration.common.network.MachineAeResourceHooks;
 import com.example.mekanismmagic.integration.common.recipe.MachineRecipeResult;
 import com.example.mekanismmagic.integration.pipez.PipezItemHandlerCompat;
 import com.hollingsworth.arsnouveau.api.ANFakePlayer;
@@ -33,6 +35,7 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
@@ -43,7 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Simulates Drygmy loot production from captured entities without placing
+ * Simulates Drygmy loot production from retained entity samples without placing
  * those entities into the world.
  */
 public final class DrygmySimulatorBlockEntity
@@ -57,12 +60,17 @@ public final class DrygmySimulatorBlockEntity
     private static final int VISUAL_STALL_GRACE_TICKS =
             EJECT_INTERVAL_TICKS * 2;
     private static final int EMPTY_LOOT_RETRY_TICKS = 200;
+    private static final int FLUID_ACCEPTANCE_RETRY_TICKS = 20;
     private static final int MAX_LOOT_SELECTION_ROLLS = 4_096;
     private static final int MAX_STACK_OPERATION_MULTIPLIER = 1 << 8;
     private static final String VISUAL_PROCESSING_NBT =
             "drygmy_visual_processing";
     private static final String PENDING_OUTPUTS_NBT =
             "drygmy_pending_outputs";
+    private static final String PENDING_FLUIDS_NBT =
+            "drygmy_pending_fluids";
+    private static final String PAID_FLUID_OUTPUTS_NBT =
+            "drygmy_paid_fluid_outputs";
     private static final String PENDING_SIGNATURE_NBT =
             "drygmy_pending_signature";
     private static final String PENDING_MULTIPLIER_NBT =
@@ -78,11 +86,16 @@ public final class DrygmySimulatorBlockEntity
     private List<BasicInventorySlot> jarSlots;
     private List<BasicInventorySlot> outputSlots;
     private final List<ItemStack> pendingOutputs = new ArrayList<>();
+    private final List<FluidStack> pendingFluids = new ArrayList<>();
     // BlockItem restores BLOCK_ENTITY_DATA before Mekanism's inventory data
     // components. Jar-slot listeners therefore run after our custom NBT and
     // would erase a prepared roll. Hold it until the first server tick, then
     // bind it only if the fully restored jar signature still matches.
     private final List<ItemStack> deferredPendingOutputs = new ArrayList<>();
+    private final List<FluidStack> deferredPendingFluids = new ArrayList<>();
+    // Completed, paid harvests only wait here when the shared AE execution
+    // budget deferred their first attempt. Capacity rejection is never stored.
+    private final List<FluidStack> paidFluidOutputs = new ArrayList<>();
     private final List<BufferedOutput> bufferedOutputs = new ArrayList<>();
     private final List<LivingEntity> cachedLootEntities = new ArrayList<>();
     private String pendingSignature = "";
@@ -100,6 +113,13 @@ public final class DrygmySimulatorBlockEntity
     private int cachedUniqueEntityTypeCount;
     private boolean jarSignatureDirty = true;
     private long nextLootPreparationGameTime = Long.MIN_VALUE;
+    private long observedHarvestCatalogRevision = Long.MIN_VALUE;
+    private boolean observedHarvestAeOnline;
+    private long nextFluidAcceptanceCheckGameTime = Long.MIN_VALUE;
+    private MachineDirectOutputHooks.DirectNetworkStatus
+            lastFluidAcceptanceStatus = MachineDirectOutputHooks
+            .DirectNetworkStatus.UNAVAILABLE;
+    private boolean transferringPaidFluids;
     private boolean outputTransferDirty;
     private boolean ejectRetryPending;
     private long nextOutputTransferGameTime;
@@ -128,6 +148,7 @@ public final class DrygmySimulatorBlockEntity
         outputSlots = new ArrayList<>(OUTPUT_SLOT_COUNT);
         IContentsListener inputListener = () -> {
             pendingOutputs.clear();
+            pendingFluids.clear();
             pendingSignature = "";
             clearCurrentPendingOperationContext();
             cachedJarSignature = "";
@@ -175,7 +196,7 @@ public final class DrygmySimulatorBlockEntity
 
     @Override
     protected int baseEnergyPerTick() {
-        return 800;
+        return MagicMachineEnergyProfiles.RESOURCE_GATHERING;
     }
 
     @Override
@@ -204,6 +225,11 @@ public final class DrygmySimulatorBlockEntity
     @Override
     public boolean mekanismMagicSupportsDirectNetworkOutput() {
         return true;
+    }
+
+    @Override
+    public boolean mekanismMagicSettlingPaidNetworkOutput() {
+        return transferringPaidFluids;
     }
 
     @Override
@@ -298,13 +324,22 @@ public final class DrygmySimulatorBlockEntity
 
     @Override
     protected boolean onUpdateServer() {
+        if (transferringPaidFluids) {
+            return false;
+        }
         clearNativeRecipeWarnings();
         restoreDeferredPendingState();
+        boolean changed = attemptPaidFluidOutput();
         boolean bufferedReady = attemptOutputTransfer();
-        boolean changed = autoPullNearbySource();
+        changed |= autoPullNearbySource();
         changed |= nativeBaseUpdate();
         if (!(level instanceof ServerLevel serverLevel)) {
             return finishServerUpdate(changed, false);
+        }
+        if (!canFunction()) {
+            // Restoring/draining paid queues is independent of starting a new
+            // harvest. Keep the current roll and costs intact while redstone stops work.
+            return finishVisualUpdate(changed, false);
         }
         String signature = jarSignature();
         if (signature.isEmpty()) {
@@ -312,20 +347,34 @@ public final class DrygmySimulatorBlockEntity
             return finishVisualUpdate(changed, false);
         }
         long gameTime = serverLevel.getGameTime();
+        long catalogRevision = DrygmyHarvestCatalog.revision();
+        boolean aeOnline = MachineDirectOutputHooks.status(this).connected()
+                && MachineAeResourceHooks.isOutputEnabled(this, MachineAeResourceHooks.OUTPUT_FLUIDS);
+        if (!hasPendingHarvest()
+                && (catalogRevision != observedHarvestCatalogRevision
+                || aeOnline != observedHarvestAeOnline)) {
+            nextLootPreparationGameTime = Long.MIN_VALUE;
+        }
+        observedHarvestCatalogRevision = catalogRevision;
+        observedHarvestAeOnline = aeOnline;
         if (!signature.equals(pendingSignature)
-                || pendingOutputs.isEmpty()
+                || !hasPendingHarvest()
                 && gameTime >= nextLootPreparationGameTime) {
             prepareOutputs(serverLevel, signature);
-            nextLootPreparationGameTime = pendingOutputs.isEmpty()
+            nextLootPreparationGameTime = !hasPendingHarvest()
                     ? gameTime + EMPTY_LOOT_RETRY_TICKS
                     : Long.MAX_VALUE;
         }
-        if (pendingOutputs.isEmpty()) {
+        if (!hasPendingHarvest()) {
             setInputDoesntProduceOutputWarning(true);
             return finishVisualUpdate(changed, false);
         }
         if (!bufferedReady) {
             return finishBufferedWait(changed);
+        }
+        if (pendingOutputs.isEmpty()
+                && !hasFluidOnlyAcceptance(gameTime)) {
+            return finishVisualUpdate(changed, false);
         }
         visualStallTicks = 0;
         MachineRecipeResult process = processResult();
@@ -355,13 +404,23 @@ public final class DrygmySimulatorBlockEntity
                 progress = 0;
                 return finishVisualUpdate(changed, false);
             }
+            List<ItemStack> completedItems = new ArrayList<>(pendingOutputs);
+            List<FluidStack> completedFluids = new ArrayList<>(pendingFluids);
             progress = 0;
-            mergeBufferedOutputs(pendingOutputs);
             pendingOutputs.clear();
+            pendingFluids.clear();
+            pendingSignature = "";
             clearCurrentPendingOperationContext();
             refreshSourceLimits();
             nextLootPreparationGameTime = Long.MIN_VALUE;
+            // Retire the paid batch before any external insertion can invoke
+            // callbacks or save the machine. No reload may repay this harvest.
+            mergeBufferedOutputs(completedItems);
+            for (FluidStack fluid : completedFluids) {
+                mergePaidFluidOutput(fluid);
+            }
             outputTransferDirty = true;
+            attemptPaidFluidOutput();
             attemptOutputTransfer();
             changed = true;
         }
@@ -399,6 +458,8 @@ public final class DrygmySimulatorBlockEntity
     private void prepareOutputs(ServerLevel serverLevel,
                                 String signature) {
         pendingOutputs.clear();
+        pendingFluids.clear();
+        nextFluidAcceptanceCheckGameTime = Long.MIN_VALUE;
         pendingSignature = signature;
         pendingOperationMultiplier = stackOperationMultiplier();
         pendingSourceCost = sourceCostPerOperation(
@@ -431,6 +492,12 @@ public final class DrygmySimulatorBlockEntity
                 DrygmyLootPolicy.extractFixedOutputs(
                         possibleLoot, cachedLootEntities,
                         operationMultiplier);
+        DrygmyHarvestCatalog.Harvest liveHarvest =
+                DrygmyHarvestCatalog.collect(serverLevel,
+                        cachedLootEntities, possibleLoot,
+                        operationMultiplier,
+                        MachineDirectOutputHooks.status(this).connected()
+                                && MachineAeResourceHooks.isOutputEnabled(this, MachineAeResourceHooks.OUTPUT_FLUIDS));
         addExperienceGems(experience / 4);
         if (!possibleLoot.isEmpty()) {
             int bonus = cachedUniqueEntityTypeCount
@@ -461,9 +528,96 @@ public final class DrygmySimulatorBlockEntity
             }
         }
         scalePendingOutputs(operationMultiplier);
-        // Fixed custom-death drops already represent the stack-operation
+        // Fixed supplemental drops already represent the stack-operation
         // count and must not be multiplied with ordinary selected loot again.
         pendingOutputs.addAll(fixedOutputs);
+        pendingOutputs.addAll(liveHarvest.items());
+        pendingFluids.addAll(liveHarvest.fluids());
+    }
+
+    private boolean hasPendingHarvest() {
+        return !pendingOutputs.isEmpty() || !pendingFluids.isEmpty();
+    }
+
+    private boolean hasDeferredPendingHarvest() {
+        return !deferredPendingOutputs.isEmpty()
+                || !deferredPendingFluids.isEmpty();
+    }
+
+    private boolean hasFluidOnlyAcceptance(long gameTime) {
+        if (!MachineAeResourceHooks.isOutputEnabled(this, MachineAeResourceHooks.OUTPUT_FLUIDS)) return false;
+        var status = MachineDirectOutputHooks.status(this);
+        if (status != lastFluidAcceptanceStatus) {
+            lastFluidAcceptanceStatus = status;
+            nextFluidAcceptanceCheckGameTime = Long.MIN_VALUE;
+        }
+        if (!status.connected()
+                || gameTime < nextFluidAcceptanceCheckGameTime) {
+            return false;
+        }
+        for (FluidStack fluid : pendingFluids) {
+            if (MachineDirectOutputHooks.simulateFluidAcceptance(
+                    this, fluid, fluid.getAmount()) > 0) {
+                // Check positive acceptance again next tick: a preview does
+                // not reserve space while this harvest is still processing.
+                return true;
+            }
+        }
+        nextFluidAcceptanceCheckGameTime = gameTime
+                + FLUID_ACCEPTANCE_RETRY_TICKS;
+        return false;
+    }
+
+    private void mergePaidFluidOutput(FluidStack output) {
+        if (output.isEmpty()) {
+            return;
+        }
+        for (FluidStack fluid : paidFluidOutputs) {
+            if (FluidStack.isSameFluidSameComponents(fluid, output)) {
+                fluid.setAmount((int) Math.min(Integer.MAX_VALUE,
+                        (long) fluid.getAmount() + output.getAmount()));
+                return;
+            }
+        }
+        paidFluidOutputs.add(output.copy());
+    }
+
+    private boolean attemptPaidFluidOutput() {
+        if (paidFluidOutputs.isEmpty() || transferringPaidFluids
+                || level == null || level.isClientSide()) {
+            return false;
+        }
+        transferringPaidFluids = true;
+        boolean changed = false;
+        try {
+            // Each entry gets at most one chance in this pass. Remove it
+            // before invoking AE so synchronous saves cannot replay it.
+            int entries = paidFluidOutputs.size();
+            for (int index = 0; index < entries; index++) {
+                FluidStack fluid = paidFluidOutputs.removeFirst();
+                changed = true;
+                MachineDirectOutputHooks.DirectInsertResult result =
+                        MachineDirectOutputHooks.insertFluidDetailed(
+                                this, fluid, fluid.getAmount());
+                if (!result.attempted()
+                        && result.status() == MachineDirectOutputHooks
+                        .DirectNetworkStatus.ONLINE) {
+                    int remaining = (int) Math.max(0L,
+                            fluid.getAmount() - Math.max(0L, result.accepted()));
+                    if (remaining > 0 && !isRemoved()) {
+                        paidFluidOutputs.add(fluid.copyWithAmount(remaining));
+                    }
+                }
+                // Offline, capacity rejection and partial acceptance all
+                // finish this fluid output. None creates a physical fallback.
+            }
+        } finally {
+            transferringPaidFluids = false;
+            if (changed) {
+                setChanged();
+            }
+        }
+        return changed;
     }
 
     private void rebuildCachedLootEntities(
@@ -472,7 +626,7 @@ public final class DrygmySimulatorBlockEntity
         Set<EntityType<?>> uniqueTypes = new HashSet<>();
         for (BasicInventorySlot slot : jarSlots) {
             Optional<CapturedEntity> captured =
-                    EntityContainerRegistry.capturedEntity(
+                    SimulationEntitySamples.read(
                             slot.getStack());
             if (captured.isEmpty()) {
                 continue;
@@ -616,7 +770,10 @@ public final class DrygmySimulatorBlockEntity
         for (BasicInventorySlot slot : jarSlots) {
             ItemStack stack = slot.getStack();
             if (!stack.isEmpty()
-                    && EntityContainerRegistry.isFilled(stack)) {
+                    && SimulationEntitySamples.isSample(stack)) {
+                // One occupied slot is one specimen regardless of stack count.
+                // Keep every component (including an egg's ENTITY_DATA override)
+                // in the existing signature format so saved jar plans still match.
                 builder.append(stack.getItemHolder())
                         .append(':')
                         .append(stack.getComponentsPatch())
@@ -659,7 +816,8 @@ public final class DrygmySimulatorBlockEntity
             return bufferedOutputs.isEmpty();
         }
         long gameTime = level.getGameTime();
-        boolean aeOnline = MachineDirectOutputHooks.status(this).connected();
+        boolean aeOnline = MachineDirectOutputHooks.status(this).connected()
+                && MachineAeResourceHooks.isOutputEnabled(this, MachineAeResourceHooks.OUTPUT_ITEMS);
         if (bufferedOutputs.isEmpty()) {
             lastAeOnline = aeOnline;
             if (!aeOnline) {
@@ -876,6 +1034,7 @@ public final class DrygmySimulatorBlockEntity
 
     private void resetProcess() {
         pendingOutputs.clear();
+        pendingFluids.clear();
         pendingSignature = "";
         clearCurrentPendingOperationContext();
         clearDeferredPendingState();
@@ -899,25 +1058,33 @@ public final class DrygmySimulatorBlockEntity
         if (!outputs.isEmpty()) {
             tag.put("drygmy_long_buffer", outputs);
         }
-        List<ItemStack> pendingToSave = deferredPendingOutputs.isEmpty()
-                ? pendingOutputs : deferredPendingOutputs;
-        String signatureToSave = deferredPendingOutputs.isEmpty()
-                ? pendingSignature : deferredPendingSignature;
-        int multiplierToSave = deferredPendingOutputs.isEmpty()
-                ? pendingOperationMultiplier
-                : deferredPendingOperationMultiplier;
-        int sourceCostToSave = deferredPendingOutputs.isEmpty()
-                ? pendingSourceCost : deferredPendingSourceCost;
-        long energyToSave = deferredPendingOutputs.isEmpty()
-                ? pendingEnergyPerTick : deferredPendingEnergyPerTick;
+        saveFluidOutputs(tag, PAID_FLUID_OUTPUTS_NBT,
+                paidFluidOutputs, registries);
+        boolean deferred = hasDeferredPendingHarvest();
+        List<ItemStack> pendingToSave = deferred
+                ? deferredPendingOutputs : pendingOutputs;
+        List<FluidStack> fluidsToSave = deferred
+                ? deferredPendingFluids : pendingFluids;
+        String signatureToSave = deferred
+                ? deferredPendingSignature : pendingSignature;
+        int multiplierToSave = deferred
+                ? deferredPendingOperationMultiplier
+                : pendingOperationMultiplier;
+        int sourceCostToSave = deferred
+                ? deferredPendingSourceCost : pendingSourceCost;
+        long energyToSave = deferred
+                ? deferredPendingEnergyPerTick : pendingEnergyPerTick;
         net.minecraft.nbt.ListTag pending = new net.minecraft.nbt.ListTag();
         for (ItemStack output : pendingToSave) {
             if (!output.isEmpty()) {
                 pending.add(saveCountedItemStack(output, registries));
             }
         }
-        if (!pending.isEmpty() && !signatureToSave.isEmpty()) {
+        if ((!pending.isEmpty() || !fluidsToSave.isEmpty())
+                && !signatureToSave.isEmpty()) {
             tag.put(PENDING_OUTPUTS_NBT, pending);
+            saveFluidOutputs(tag, PENDING_FLUIDS_NBT,
+                    fluidsToSave, registries);
             tag.putString(PENDING_SIGNATURE_NBT, signatureToSave);
             tag.putInt(PENDING_MULTIPLIER_NBT,
                     Math.max(1, multiplierToSave));
@@ -925,7 +1092,7 @@ public final class DrygmySimulatorBlockEntity
                     Math.max(0, sourceCostToSave));
             tag.putLong(PENDING_ENERGY_NBT,
                     Math.max(1L, energyToSave));
-            if (!deferredPendingOutputs.isEmpty()) {
+            if (deferred) {
                 // NativeMagicMachineBlockEntity wrote the common progress
                 // fields before invoking this hook, so replace them with the
                 // deferred values if inventory restoration reset the fields.
@@ -933,6 +1100,13 @@ public final class DrygmySimulatorBlockEntity
                 tag.putInt("magic_progress_required",
                         deferredPendingProgressRequired);
             }
+        } else {
+            tag.remove(PENDING_OUTPUTS_NBT);
+            tag.remove(PENDING_FLUIDS_NBT);
+            tag.remove(PENDING_SIGNATURE_NBT);
+            tag.remove(PENDING_MULTIPLIER_NBT);
+            tag.remove(PENDING_SOURCE_COST_NBT);
+            tag.remove(PENDING_ENERGY_NBT);
         }
         tag.putBoolean(VISUAL_PROCESSING_NBT, visualProcessing);
     }
@@ -956,7 +1130,12 @@ public final class DrygmySimulatorBlockEntity
             }
         }
         pendingOutputs.clear();
+        pendingFluids.clear();
         pendingSignature = "";
+        clearCurrentPendingOperationContext();
+        paidFluidOutputs.clear();
+        loadFluidOutputs(tag, PAID_FLUID_OUTPUTS_NBT,
+                paidFluidOutputs, registries);
         clearDeferredPendingState();
         deferredPendingSignature = tag.getString(PENDING_SIGNATURE_NBT);
         deferredPendingOperationMultiplier = tag.contains(
@@ -968,11 +1147,10 @@ public final class DrygmySimulatorBlockEntity
                 ? Math.max(0, tag.getInt(PENDING_SOURCE_COST_NBT))
                 : sourceCostPerOperation(
                         deferredPendingOperationMultiplier);
-        deferredPendingEnergyPerTick = tag.contains(
-                PENDING_ENERGY_NBT, net.minecraft.nbt.Tag.TAG_LONG)
-                ? Math.max(1L, tag.getLong(PENDING_ENERGY_NBT))
-                : stackScaledEnergyUsage(
-                        deferredPendingOperationMultiplier);
+        // Serialized loot and Source costs are fixed; the power tariff is
+        // recalculated without asking the harvest catalog to roll again.
+        deferredPendingEnergyPerTick = stackScaledEnergyUsage(
+                deferredPendingOperationMultiplier);
         net.minecraft.nbt.ListTag pending = tag.getList(
                 PENDING_OUTPUTS_NBT, net.minecraft.nbt.Tag.TAG_COMPOUND);
         for (int index = 0; index < pending.size(); index++) {
@@ -982,8 +1160,10 @@ public final class DrygmySimulatorBlockEntity
                 deferredPendingOutputs.add(stack);
             }
         }
+        loadFluidOutputs(tag, PENDING_FLUIDS_NBT,
+                deferredPendingFluids, registries);
         if (deferredPendingSignature.isEmpty()
-                || deferredPendingOutputs.isEmpty()) {
+                || !hasDeferredPendingHarvest()) {
             clearDeferredPendingState();
             progress = 0;
         } else {
@@ -1000,10 +1180,41 @@ public final class DrygmySimulatorBlockEntity
         cachedJarSignature = "";
         jarSignatureDirty = true;
         nextLootPreparationGameTime = Long.MIN_VALUE;
+        observedHarvestCatalogRevision = Long.MIN_VALUE;
+    }
+
+    private static void saveFluidOutputs(
+            CompoundTag tag, String key, List<FluidStack> fluids,
+            net.minecraft.core.HolderLookup.Provider registries) {
+        net.minecraft.nbt.ListTag saved = new net.minecraft.nbt.ListTag();
+        for (FluidStack fluid : fluids) {
+            if (!fluid.isEmpty()) {
+                saved.add(fluid.save(registries));
+            }
+        }
+        if (saved.isEmpty()) {
+            tag.remove(key);
+        } else {
+            tag.put(key, saved);
+        }
+    }
+
+    private static void loadFluidOutputs(
+            CompoundTag tag, String key, List<FluidStack> fluids,
+            net.minecraft.core.HolderLookup.Provider registries) {
+        net.minecraft.nbt.ListTag saved = tag.getList(
+                key, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int index = 0; index < saved.size(); index++) {
+            FluidStack fluid = FluidStack.parseOptional(
+                    registries, saved.getCompound(index));
+            if (!fluid.isEmpty()) {
+                fluids.add(fluid);
+            }
+        }
     }
 
     private void restoreDeferredPendingState() {
-        if (deferredPendingOutputs.isEmpty()) {
+        if (!hasDeferredPendingHarvest()) {
             return;
         }
         String restoredJarSignature = jarSignature();
@@ -1014,14 +1225,21 @@ public final class DrygmySimulatorBlockEntity
             deferredPendingOutputs.stream()
                     .map(ItemStack::copy)
                     .forEach(pendingOutputs::add);
+            pendingFluids.clear();
+            deferredPendingFluids.stream()
+                    .map(FluidStack::copy)
+                    .forEach(pendingFluids::add);
             pendingSignature = deferredPendingSignature;
             pendingOperationMultiplier =
                     deferredPendingOperationMultiplier;
             pendingSourceCost = deferredPendingSourceCost;
-            pendingEnergyPerTick = deferredPendingEnergyPerTick;
+            // Upgrade components are now restored too (including block-item
+            // placement), so use the current profile for the saved batch.
+            pendingEnergyPerTick = stackScaledEnergyUsage(pendingOperationMultiplier);
             progress = deferredPendingProgress;
             progressRequired = deferredPendingProgressRequired;
             cachedProcessResult = null;
+            nextFluidAcceptanceCheckGameTime = Long.MIN_VALUE;
             refreshSourceLimits();
         }
         clearDeferredPendingState();
@@ -1032,6 +1250,7 @@ public final class DrygmySimulatorBlockEntity
 
     private void clearDeferredPendingState() {
         deferredPendingOutputs.clear();
+        deferredPendingFluids.clear();
         deferredPendingSignature = "";
         deferredPendingProgress = 0;
         deferredPendingProgressRequired = 1;
@@ -1047,6 +1266,7 @@ public final class DrygmySimulatorBlockEntity
         cachedProcessResult = null;
         cachedProcessMultiplier = -1;
         cachedProcessSourceCost = -1;
+        nextFluidAcceptanceCheckGameTime = Long.MIN_VALUE;
     }
 
     @Override
@@ -1079,7 +1299,7 @@ public final class DrygmySimulatorBlockEntity
             // stack multiplier is intentionally applied to the next harvest;
             // clearing here made upgrade insertion/removal a reroll button.
         }
-        if (!pendingOutputs.isEmpty()
+        if (hasPendingHarvest()
                 && (upgrade == mekanism.api.Upgrade.SPEED
                 || upgrade == mekanism.api.Upgrade.ENERGY
                 || stackUpgrade != null && upgrade == stackUpgrade)) {
@@ -1286,7 +1506,7 @@ public final class DrygmySimulatorBlockEntity
             energyContainer.setEnergy(energyContainer.getMaxEnergy());
         }
         prepareOutputs(serverLevel, jarSignature());
-        if (pendingOutputs.isEmpty()) {
+        if (!hasPendingHarvest()) {
             return 0;
         }
         progress = Math.max(0, progressRequired - 1);
@@ -1306,6 +1526,14 @@ public final class DrygmySimulatorBlockEntity
         return pendingOutputs.stream().map(ItemStack::copy).toList();
     }
 
+    List<FluidStack> developmentPendingFluids() {
+        return pendingFluids.stream().map(FluidStack::copy).toList();
+    }
+
+    List<FluidStack> developmentPaidFluidOutputs() {
+        return paidFluidOutputs.stream().map(FluidStack::copy).toList();
+    }
+
     String developmentPendingSignature() {
         return pendingSignature;
     }
@@ -1319,12 +1547,34 @@ public final class DrygmySimulatorBlockEntity
     }
 
     int developmentSourceCost() {
-        return pendingOutputs.isEmpty() ? sourceCostPerOperation()
+        return !hasPendingHarvest() ? sourceCostPerOperation()
                 : pendingSourceCost;
     }
 
     boolean developmentHasCreativeSourceUpgrade() {
         return hasCreativeSourceUpgrade();
+    }
+
+    /** Shared read-only sample semantics; never spawns or consumes an egg/container. */
+    public Optional<CapturedEntity> getSampleEntity(int slot) {
+        return jarSlots == null || slot < 0 || slot >= jarSlots.size() ? Optional.empty()
+                : SimulationEntitySamples.read(jarSlots.get(slot).getStack());
+    }
+
+    int developmentCachedSampleCount() {
+        return cachedLootEntities.size();
+    }
+
+    int developmentCachedUniqueSampleTypes() {
+        return cachedUniqueEntityTypeCount;
+    }
+
+    List<CompoundTag> developmentCachedSampleData() {
+        return cachedLootEntities.stream().map(entity -> {
+            CompoundTag tag = entity.saveWithoutId(new CompoundTag());
+            tag.putString("id", net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
+            return tag;
+        }).toList();
     }
 
     private static final class PersistentJarSlot
@@ -1334,7 +1584,7 @@ public final class DrygmySimulatorBlockEntity
             super((stack, automation) ->
                             automation == AutomationType.MANUAL,
                     (stack, automation) -> true,
-                    EntityContainerRegistry::isFilled,
+                    SimulationEntitySamples::isSample,
                     listener, x, y);
             setSlotType(ContainerSlotType.INPUT);
         }

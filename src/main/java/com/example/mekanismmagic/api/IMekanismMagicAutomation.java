@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Stable, dependency-free integration surface for external automation mods.
@@ -15,7 +16,7 @@ import java.util.List;
  * of live Mekanism inventory-slot references.</p>
  */
 public interface IMekanismMagicAutomation {
-    int API_VERSION = 5;
+    int API_VERSION = 6;
 
     default int mekanismMagicAutomationApiVersion() {
         return API_VERSION;
@@ -102,6 +103,29 @@ public interface IMekanismMagicAutomation {
     /** Whether equivalent factory input lanes may share one routing port. */
     default boolean mekanismMagicGroupParallelItemInputs() {
         return false;
+    }
+
+    /**
+     * Plans one ordinary external provider batch. Groups describe physical
+     * input roles; planning must not change inventory or persistent context.
+     * The caller checks the configured face, simulates every group, and commits
+     * the complete batch atomically.
+     */
+    default Optional<List<ItemInputGroup>> mekanismMagicPlanExternalItemInputs(
+            List<PatternStack> inputs, List<PatternStack> outputs) {
+        if (mekanismMagicUsesContextualPatternValidation()
+                && !mekanismMagicMatchesPattern(inputs, outputs)) {
+            return Optional.empty();
+        }
+        return Optional.of(List.of(new ItemInputGroup(inputs,
+                mekanismMagicPatternInputs())));
+    }
+
+    record ItemInputGroup(List<PatternStack> inputs, List<IInventorySlot> slots) {
+        public ItemInputGroup {
+            inputs = List.copyOf(inputs);
+            slots = List.copyOf(slots);
+        }
     }
 
     /** Immutable-count item description used at optional automation edges. */

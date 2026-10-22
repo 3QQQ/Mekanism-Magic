@@ -1,0 +1,13 @@
+{
+  "neoforge:conditions": [{"type": "mekanism_magic:forbidden_arcanus_enabled"}],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["DGD", "OCO", "DGD"],
+  "key": {
+    "D": {"item": "forbidden_arcanus:deorum_ingot"},
+    "G": {"item": "minecraft:glass"},
+    "O": {"item": "forbidden_arcanus:obsidiansteel_ingot"},
+    "C": {"item": "mekanism:steel_casing"}
+  },
+  "result": {"id": "mekanism_magic:essence_condenser", "count": 1}
+}

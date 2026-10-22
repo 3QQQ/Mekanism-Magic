@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.client.gui;
 
+import com.example.mekanismmagic.container.MachineSidebarLayout;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.tab.GuiInsetToggleElement;
 import mekanism.client.render.MekanismRenderer;
@@ -13,8 +14,6 @@ import java.util.function.BooleanSupplier;
 
 public final class GuiCatalystLibraryTab<TILE extends TileEntityMekanism>
         extends GuiInsetToggleElement<TILE> {
-    private static final int TAB_Y = 90;
-
     private static final ResourceLocation ICON =
             ResourceLocation.fromNamespaceAndPath(
                     "ars_nouveau", "textures/item/source_gem.png");
@@ -25,7 +24,7 @@ public final class GuiCatalystLibraryTab<TILE extends TileEntityMekanism>
                                  BooleanSupplier open, Runnable toggle) {
         // ME pattern automation occupies the right-side y=62..87 tab. Use
         // the next standard 28-pixel tab row so the two never overlap.
-        super(gui, tile, gui.getXSize(), TAB_Y, 26, 18, false,
+        super(gui, tile, gui.getXSize(), MachineSidebarLayout.moduleY(false), 26, 18, false,
                 ICON, ICON, open);
         this.toggle = toggle;
         setTooltip(Tooltip.create(Component.translatable(

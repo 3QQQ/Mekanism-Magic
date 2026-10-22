@@ -20,6 +20,6 @@ public final class CatalystIdentifierAssemblerContainer
 
     @Override
     protected int getInventoryYOffset() {
-        return 126;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.ARS_THREE_BY_THREE_HEIGHT);
     }
 }

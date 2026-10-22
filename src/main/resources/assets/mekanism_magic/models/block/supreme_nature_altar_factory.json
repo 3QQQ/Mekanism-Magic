@@ -1,0 +1,9 @@
+{
+  "loader": "neoforge:composite",
+  "parent": "block/block",
+  "textures": {"particle": "mekanism:block/steel_casing"},
+  "children": {
+    "base": {"parent": "mekanism_magic:block/nature_altar_factory/base"},
+    "front_led": {"parent": "mekanism_magic:block/nature_altar_factory/front_led/supreme"}
+  }
+}

@@ -10,7 +10,7 @@ public final class ExtraSpiritFactoryLayout {
     }
 
     public static int inventoryX(int tierOrdinal) {
-        return 22 * (tierOrdinal + 2) - 3 * tierOrdinal;
+        return com.example.mekanismmagic.container.MachinePanelLayout.inventoryX(imageWidth(tierOrdinal));
     }
 
     public static int progressX(int process) {

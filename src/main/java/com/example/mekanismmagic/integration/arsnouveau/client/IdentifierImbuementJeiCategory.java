@@ -8,20 +8,23 @@ import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.ItemLike;
 
 /** JEI view of the recipe shape consumed by our imbuement machines. */
 public final class IdentifierImbuementJeiCategory
         extends MagicJeiCategory<
         ArsNouveauRecipeBridge.IdentifierImbuementJeiData> {
     public IdentifierImbuementJeiCategory(IGuiHelper guiHelper) {
+        this(guiHelper, ArsNouveauRegistries.IMBUEMENT_PROCESSOR_BLOCK.asItem());
+    }
+
+    public IdentifierImbuementJeiCategory(IGuiHelper guiHelper, ItemLike icon) {
         super(guiHelper,
                 ArsNouveauJeiIntegration
                         .IDENTIFIER_IMBUEMENT_RECIPE_TYPE,
                 Component.translatable(
                         "jei.mekanism_magic.identifier_imbuement"),
-                guiHelper.createDrawableItemLike(
-                        ArsNouveauRegistries
-                                .IMBUEMENT_PROCESSOR_BLOCK.asItem()),
+                guiHelper.createDrawableItemLike(icon),
                 150, 72);
     }
 
@@ -34,13 +37,15 @@ public final class IdentifierImbuementJeiCategory
         // compatibility. AE2 JEI Integration's universal handler ignores the
         // CATALYST role; our decoded pattern still removes this marker from
         // planning and physical dispatch, so it remains non-consumable.
-        input(builder.addInputSlot(10, 27))
+        if (!recipe.identifier().isEmpty()) {
+            input(builder.addInputSlot(10, 27))
                 .setSlotName("catalyst_identifier")
                 .addItemStack(recipe.identifier())
                 .addRichTooltipCallback((view, tooltip) -> tooltip.add(
                         Component.translatable(
                                 "jei.mekanism_magic.identifier_imbuement"
                                         + ".identifier_hint")));
+        }
         input(builder.addInputSlot(58, 27))
                 .setSlotName("input")
                 .addIngredients(recipe.input());

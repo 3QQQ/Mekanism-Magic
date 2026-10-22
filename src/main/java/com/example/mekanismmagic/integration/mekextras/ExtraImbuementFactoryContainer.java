@@ -1,6 +1,7 @@
 package com.example.mekanismmagic.integration.mekextras;
 
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementFactoryLayout;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -17,7 +18,7 @@ public final class ExtraImbuementFactoryContainer
 
     @Override
     protected int getInventoryYOffset() {
-        return 85;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.FACTORY_HEIGHT);
     }
 
     @Override

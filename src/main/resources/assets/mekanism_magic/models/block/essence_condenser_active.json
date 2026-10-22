@@ -1,0 +1,4 @@
+{
+  "parent": "mekanism_magic:block/essence_condenser",
+  "textures": {"glow": "minecraft:block/cyan_terracotta"}
+}

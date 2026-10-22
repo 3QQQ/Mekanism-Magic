@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,active=false": {"model": "mekanism_magic:block/essence_condenser"},
+    "facing=south,active=false": {"model": "mekanism_magic:block/essence_condenser", "y": 180},
+    "facing=east,active=false": {"model": "mekanism_magic:block/essence_condenser", "y": 90},
+    "facing=west,active=false": {"model": "mekanism_magic:block/essence_condenser", "y": 270},
+    "facing=north,active=true": {"model": "mekanism_magic:block/essence_condenser_active"},
+    "facing=south,active=true": {"model": "mekanism_magic:block/essence_condenser_active", "y": 180},
+    "facing=east,active=true": {"model": "mekanism_magic:block/essence_condenser_active", "y": 90},
+    "facing=west,active=true": {"model": "mekanism_magic:block/essence_condenser_active", "y": 270}
+  }
+}

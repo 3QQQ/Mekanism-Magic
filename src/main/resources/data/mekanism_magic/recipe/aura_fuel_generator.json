@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IGI",
+    "RCR",
+    "IGI"
+  ],
+  "key": {
+    "I": {
+      "item": "naturesaura:infused_iron"
+    },
+    "G": {
+      "item": "naturesaura:gold_leaf"
+    },
+    "C": {
+      "item": "mekanism:steel_casing"
+    },
+    "R": {
+      "item": "naturesaura:infused_stone"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:aura_fuel_generator",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "naturesaura"
+    }
+  ]
+}

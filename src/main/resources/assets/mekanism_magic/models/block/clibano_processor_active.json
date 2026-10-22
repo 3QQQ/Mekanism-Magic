@@ -1,0 +1,6 @@
+{
+  "parent": "mekanism_magic:block/clibano_processor",
+  "textures": {
+    "front": "forbidden_arcanus:block/clibano/fire/clibano_center_front"
+  }
+}

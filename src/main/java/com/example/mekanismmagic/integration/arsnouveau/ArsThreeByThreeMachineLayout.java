@@ -9,8 +9,8 @@ public final class ArsThreeByThreeMachineLayout {
     public static final int SLOT_SPACING = 18;
     public static final int ENERGY_SLOT_X = 30;
     public static final int ENERGY_SLOT_Y = 35;
-    public static final int STANDARD_PROGRESS_X = 140;
-    public static final int SOURCE_SAFE_PROGRESS_X = 135;
+    public static final int STANDARD_PROGRESS_X = 139;
+    public static final int SOURCE_SAFE_PROGRESS_X = 134;
     public static final int PROGRESS_Y = 62;
     public static final int OUTPUT_Y = 58;
     public static final int STANDARD_OUTPUT_X = 176;

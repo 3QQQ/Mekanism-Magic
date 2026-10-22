@@ -2,6 +2,9 @@ package com.example.mekanismmagic.integration.mekenergistics;
 
 import com.beipuo.mekenergistics.api.upgrade.MePatternAutomation;
 import com.example.mekanismmagic.MekanismMagic;
+import com.example.mekanismmagic.integration.common.network.MachineAeNodeOwnershipHooks;
+import com.example.mekanismmagic.api.IMekanismMagicAutomation;
+import com.beipuo.mekenergistics.upgrade.MeUpgradeRecipeMachineAdapter;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -22,6 +25,14 @@ public final class MekEnergisticsCompat {
 
     public static void registerBlocks() {
         verifySafetyGateClasses();
+        MachineAeNodeOwnershipHooks.register(tile ->
+                tile instanceof MeUpgradeRecipeMachineAdapter adapter
+                        && tile instanceof IMekanismMagicAutomation magic
+                        && adapter.isMeUpgradeTarget()
+                        && !magic.mekanismMagicSupportsDirectNetworkOutput()
+                        && !"imbuement_processor".equals(
+                        magic.mekanismMagicMachineId().getPath())
+                        && !adapter.getMeUpgradeContainer().isEmpty());
         String[] paths = {
                 "basic_imbuement_factory",
                 "advanced_imbuement_factory",
@@ -32,6 +43,15 @@ public final class MekEnergisticsCompat {
                 "cosmic_imbuement_factory",
                 "infinite_imbuement_factory",
                 "enchanting_apparatus_processor",
+                "nature_altar_processor",
+                "basic_nature_altar_factory",
+                "advanced_nature_altar_factory",
+                "elite_nature_altar_factory",
+                "ultimate_nature_altar_factory",
+                "absolute_nature_altar_factory",
+                "supreme_nature_altar_factory",
+                "cosmic_nature_altar_factory",
+                "infinite_nature_altar_factory",
                 "spirit_processor",
                 "ritual_engine",
                 "mini_ritual_assembler",

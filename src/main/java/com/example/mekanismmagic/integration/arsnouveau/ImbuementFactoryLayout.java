@@ -19,8 +19,8 @@ public final class ImbuementFactoryLayout {
     }
 
     public static int standardInventoryX(FactoryTier tier) {
-        return (tier == FactoryTier.ULTIMATE ? 26 : 8)
-                + SOURCE_STRIP_WIDTH / 2;
+        return com.example.mekanismmagic.container.MachinePanelLayout.inventoryX(
+                standardImageWidth(tier));
     }
 
     public static int extraImageWidth(int tierOrdinal) {
@@ -29,8 +29,8 @@ public final class ImbuementFactoryLayout {
     }
 
     public static int extraInventoryX(int tierOrdinal) {
-        return 22 * (tierOrdinal + 2) - 3 * tierOrdinal
-                + SOURCE_STRIP_WIDTH / 2;
+        return com.example.mekanismmagic.container.MachinePanelLayout.inventoryX(
+                extraImageWidth(tierOrdinal));
     }
 
     public static int firstProcessX(FactoryTier tier) {

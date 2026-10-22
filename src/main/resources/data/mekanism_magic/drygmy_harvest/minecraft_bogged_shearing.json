@@ -1,0 +1,10 @@
+{
+  "entities": [
+    "minecraft:bogged"
+  ],
+  "kind": "loot_table",
+  "loot_table": "minecraft:shearing/bogged",
+  "nbt": {
+    "sheared": false
+  }
+}

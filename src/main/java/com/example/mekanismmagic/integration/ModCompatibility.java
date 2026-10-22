@@ -18,6 +18,11 @@ public final class ModCompatibility {
     public static final String OCCULTISM = "occultism";
     public static final String ARS_NOUVEAU = "ars_nouveau";
     public static final String ARS_ENERGISTIQUE = "arseng";
+    public static final String NATURES_AURA = "naturesaura";
+    public static final String FORBIDDEN_ARCANUS = "forbidden_arcanus";
+    public static final String VALHELSIA_CORE = "valhelsia_core";
+    public static final String FORBIDDEN_ARCANUS_BRIDGE_VERSION = "2.6.1";
+    public static final String VALHELSIA_CORE_BRIDGE_VERSION = "1.1.5";
     public static final String MEKANISM_EXTRAS = "mekanism_extras";
     public static final String MEKMM = "mekmm";
     public static final String MEK_ENERGISTICS = "mekenergistics";
@@ -36,6 +41,47 @@ public final class ModCompatibility {
 
     public static boolean arsNouveauLoaded() {
         return loaded(ARS_NOUVEAU);
+    }
+
+    public static boolean naturesAuraLoaded() {
+        return loaded(NATURES_AURA);
+    }
+
+    public static boolean forbiddenArcanusLoaded() {
+        return loaded(FORBIDDEN_ARCANUS);
+    }
+
+    /** Must run before loading any F&A implementation class or registering a hook. */
+    public static boolean forbiddenArcanusIntegrationEnabled() {
+        return forbiddenArcanusVersionsSupported(
+                installedVersion(FORBIDDEN_ARCANUS).orElse(null),
+                installedVersion(VALHELSIA_CORE).orElse(null));
+    }
+
+    /** No open ABI range: 2.6.1 uses internal record and registry implementation types. */
+    public static boolean forbiddenArcanusVersionsSupported(String forbidden, String core) {
+        return FORBIDDEN_ARCANUS_BRIDGE_VERSION.equals(forbidden)
+                && VALHELSIA_CORE_BRIDGE_VERSION.equals(core);
+    }
+
+    /** Once block IDs exist, silently omitting them on an ABI mismatch can erase saved inventories. */
+    public static void requireForbiddenContentVersions(String forbidden, String core) {
+        if (forbidden == null || forbiddenArcanusVersionsSupported(forbidden, core)) return;
+        throw new IllegalStateException("Forbidden & Arcanus machine content requires "
+                + FORBIDDEN_ARCANUS_BRIDGE_VERSION + " + Valhelsia Core " + VALHELSIA_CORE_BRIDGE_VERSION
+                + "; found " + forbidden + " + " + (core == null ? "absent" : core)
+                + ". Startup was stopped rather than dropping saved Clibano machine registrations.");
+    }
+
+    public static Optional<String> installedVersion(String modId) {
+        return ModList.get().getModContainerById(modId)
+                .map(container -> container.getModInfo().getVersion().toString());
+    }
+
+    /** One shared transport family for any installed resource integration. */
+    public static boolean magicPipesEnabled() {
+        return arsNouveauMachineContentEnabled() || naturesAuraLoaded()
+                || forbiddenArcanusIntegrationEnabled();
     }
 
     /**

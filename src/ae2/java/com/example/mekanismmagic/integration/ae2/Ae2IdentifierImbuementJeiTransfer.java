@@ -14,9 +14,7 @@ import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /** Writes identifier-aware imbuement recipes into AE2 processing patterns. */
@@ -65,23 +63,15 @@ public final class Ae2IdentifierImbuementJeiTransfer implements
             ArsNouveauRecipeBridge.IdentifierImbuementJeiData recipe,
             IRecipeSlotsView recipeSlots, Player player,
             boolean maxTransfer, boolean doTransfer) {
-        List<GenericStack> reagentChoices = Arrays.stream(
-                        recipe.input().getItems())
-                .map(stack -> stack.copyWithCount(1))
-                .map(GenericStack::fromItemStack)
-                .filter(Objects::nonNull)
-                .toList();
-        GenericStack identifier = GenericStack.fromItemStack(
-                recipe.identifier().copyWithCount(1));
+        List<List<GenericStack>> inputs = Ae2ImbuementPatternEncoding.encodingInputs(recipe);
         GenericStack output = GenericStack.fromItemStack(
                 recipe.output().copy());
-        if (reagentChoices.isEmpty()
-                || identifier == null || output == null) {
+        if (inputs.isEmpty() || output == null) {
             return helper.createInternalError();
         }
         if (doTransfer) {
             EncodingHelper.encodeProcessingRecipe(menu,
-                    List.of(reagentChoices, List.of(identifier)),
+                    inputs,
                     List.of(output));
         }
         return null;

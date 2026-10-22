@@ -4,6 +4,7 @@ import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.stacks.AEKey;
 import appeng.api.AECapabilities;
+import com.example.mekanismmagic.integration.ae2.storage.MagicResourceKeys;
 import com.hollingsworth.arsnouveau.api.source.ISourceCap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -12,13 +13,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-/** Adapts an Ars Énergistique Source-marked interface inventory to Ars. */
+/** Adapts a Source-marked interface inventory to Ars without another tank. */
 final class Ae2SourceInterfaceStorage implements ISourceCap {
-    private static final String SOURCE_KEY_CLASS =
-            "gripe._90.arseng.me.key.SourceKey";
-    private static volatile boolean sourceKeyResolved;
-    private static AEKey sourceKey;
-
     private final GenericInternalInventory inventory;
     private final AEKey key;
     private int insertSlotHint;
@@ -69,24 +65,7 @@ final class Ae2SourceInterfaceStorage implements ISourceCap {
     }
 
     static AEKey sourceKey() {
-        if (!sourceKeyResolved) {
-            synchronized (Ae2SourceInterfaceStorage.class) {
-                if (!sourceKeyResolved) {
-                    try {
-                        Object value = Class.forName(SOURCE_KEY_CLASS)
-                                .getField("KEY").get(null);
-                        if (value instanceof AEKey resolved) {
-                            sourceKey = resolved;
-                        }
-                    } catch (ReflectiveOperationException
-                             | LinkageError ignored) {
-                        sourceKey = null;
-                    }
-                    sourceKeyResolved = true;
-                }
-            }
-        }
-        return sourceKey;
+        return MagicResourceKeys.source();
     }
 
     @Override
@@ -119,7 +98,8 @@ final class Ae2SourceInterfaceStorage implements ISourceCap {
         long capacity = 0L;
         for (int slot = 0; slot < inventory.size(); slot++) {
             AEKey existing = inventory.getKey(slot);
-            if (existing == null || existing == key) {
+            if ((existing == null || key.equals(existing))
+                    && inventory.isAllowedIn(slot, key)) {
                 capacity = saturatingAdd(capacity,
                         inventory.getMaxAmount(key));
             }

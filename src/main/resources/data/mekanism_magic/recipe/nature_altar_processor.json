@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AGA",
+    "SNS",
+    "AEA"
+  ],
+  "key": {
+    "A": {"item": "mekanism:alloy_infused"},
+    "G": {"item": "naturesaura:gold_leaf"},
+    "S": {"item": "naturesaura:infused_stone"},
+    "N": {"item": "naturesaura:nature_altar"},
+    "E": {"item": "mekanism:steel_casing"}
+  },
+  "result": {
+    "id": "mekanism_magic:nature_altar_processor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {"type": "neoforge:mod_loaded", "modid": "naturesaura"}
+  ]
+}

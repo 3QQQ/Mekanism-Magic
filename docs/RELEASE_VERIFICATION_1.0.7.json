@@ -1,0 +1,25 @@
+{
+  "version": "1.0.7",
+  "status": "PASS",
+  "baselineVersion": "1.0.6.66",
+  "baselineSha256": "523DB143D30DFEEB232CE3305D55728A6A6E96BDEE39F321E2F3DB526B6C3378",
+  "releaseSha256": "B4FF6AF25F13216031415B33604A009D9C7CBE71EC1B40497B47B8D7AA392232",
+  "releaseSize": 3382350,
+  "nonDirectoryEntries": 2128,
+  "byteIdenticalClasses": 786,
+  "byteIdenticalEntries": 2127,
+  "changedEntries": ["META-INF/neoforge.mods.toml"],
+  "metadataChange": "Only version=1.0.6.66 -> version=1.0.7",
+  "extraEntries": [],
+  "missingEntries": [],
+  "fullBuildTasks": 44,
+  "machineContracts": 52,
+  "bilingualTitles": 44,
+  "historicalBaselinePreserved": true,
+  "postBaselineIntegrationsExcluded": ["malum", "goety", "astralsorcery"],
+  "changelogBaseline": {
+    "remoteRelease": "v1.0.6-neoforge-1.21.1",
+    "size": 2086791,
+    "sha256": "8CC891DDF375808F1B987A0A31EB00339230EE3D797CA2F4654D87E5A728C8ED"
+  }
+}

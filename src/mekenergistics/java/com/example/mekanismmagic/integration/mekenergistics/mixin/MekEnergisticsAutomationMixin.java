@@ -1,9 +1,12 @@
 package com.example.mekanismmagic.integration.mekenergistics.mixin;
 
 import com.beipuo.mekenergistics.api.upgrade.IMePatternAutomationHost;
+import com.beipuo.mekenergistics.upgrade.MeUpgradeType;
 import com.example.mekanismmagic.api.IMekanismMagicAutomation;
+import com.example.mekanismmagic.integration.mekenergistics.MekEnergisticsUpgradeEligibility;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.energy.IEnergyContainer;
+import mekanism.common.tile.base.TileEntityMekanism;
 import org.spongepowered.asm.mixin.Mixin;
 
 import java.util.List;
@@ -23,6 +26,12 @@ public abstract class MekEnergisticsAutomationMixin
         implements IMePatternAutomationHost {
     private IMekanismMagicAutomation mekanismMagicHost() {
         return (IMekanismMagicAutomation) (Object) this;
+    }
+
+    /** All MekE upgrade types share the same target policy as its installer. */
+    public boolean supportsUpgrade(MeUpgradeType upgrade) {
+        return MekEnergisticsUpgradeEligibility.allows(
+                (TileEntityMekanism) (Object) this, upgrade);
     }
 
     @Override

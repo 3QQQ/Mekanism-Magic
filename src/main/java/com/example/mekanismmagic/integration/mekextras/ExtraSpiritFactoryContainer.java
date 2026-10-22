@@ -1,5 +1,6 @@
 package com.example.mekanismmagic.integration.mekextras;
 
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -14,7 +15,7 @@ public final class ExtraSpiritFactoryContainer
 
     @Override
     protected int getInventoryYOffset() {
-        return 85;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.FACTORY_HEIGHT);
     }
 
     @Override

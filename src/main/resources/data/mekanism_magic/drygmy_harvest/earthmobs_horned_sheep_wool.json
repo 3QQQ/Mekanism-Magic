@@ -1,0 +1,13 @@
+{
+  "required_mods": [
+    "earthmobsmod"
+  ],
+  "entities": [
+    "earthmobsmod:horned_sheep"
+  ],
+  "kind": "colored_wool",
+  "adult": true,
+  "nbt": {
+    "Sheared": false
+  }
+}

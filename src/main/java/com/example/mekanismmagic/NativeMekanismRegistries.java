@@ -8,7 +8,9 @@ import com.example.mekanismmagic.blockentity.NativeDimensionMinerBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritFactoryBlockEntity;
 import com.example.mekanismmagic.blockentity.NativeSpiritProcessorBlockEntity;
 import com.example.mekanismmagic.container.NativeSpiritFactoryContainer;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import com.example.mekanismmagic.integration.ModCompatibility;
+import com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfiles;
 import mekanism.api.Upgrade;
 import mekanism.common.block.attribute.AttributeTier;
 import mekanism.common.block.attribute.AttributeUpgradeable;
@@ -49,10 +51,12 @@ public final class NativeMekanismRegistries {
             NativeSpiritProcessorBlockEntity.class).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeDimensionMinerBlockEntity>>
             DIMENSION_MINER_CONTAINER = CONTAINERS.custom("dimension_miner",
-            NativeDimensionMinerBlockEntity.class).offset(16, 42).build();
+            NativeDimensionMinerBlockEntity.class).offset(17,
+                    MachinePanelLayout.inventoryY(MachinePanelLayout.MINER_HEIGHT) - 84).build();
     public static final ContainerTypeRegistryObject<MekanismTileContainer<NativeRitualEngineBlockEntity>>
             RITUAL_CONTAINER = CONTAINERS.custom("ritual_engine",
-            NativeRitualEngineBlockEntity.class).offset(17, 42).build();
+            NativeRitualEngineBlockEntity.class).offset(17,
+                    MachinePanelLayout.inventoryY(MachinePanelLayout.RITUAL_HEIGHT) - 84).build();
     public static final ContainerTypeRegistryObject<
             NativeMiniRitualAssemblerContainer> MINI_RITUAL_ASSEMBLER_CONTAINER =
             CONTAINERS.register("mini_ritual_assembler",
@@ -69,7 +73,7 @@ public final class NativeMekanismRegistries {
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.SPIRIT_TILE,
                             MagicLang.SPIRIT_PROCESSOR)
                     .withGui(() -> SPIRIT_CONTAINER)
-                    .withEnergyConfig(() -> 400L, () -> 1_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MATERIAL_PROCESSING, () -> 1_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .with(new AttributeUpgradeable(
@@ -81,7 +85,7 @@ public final class NativeMekanismRegistries {
             Machine.MachineBuilder.createMachine(() -> NativeMekanismRegistries.RITUAL_TILE,
                             MagicLang.RITUAL_ENGINE)
                     .withGui(() -> RITUAL_CONTAINER)
-                    .withEnergyConfig(() -> 1_200L, () -> 4_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MAGIC_REACTION, () -> 4_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .build();
@@ -91,7 +95,7 @@ public final class NativeMekanismRegistries {
                             () -> NativeMekanismRegistries.MINI_RITUAL_ASSEMBLER_TILE,
                             MagicLang.MINI_RITUAL_ASSEMBLER)
                     .withGui(() -> MINI_RITUAL_ASSEMBLER_CONTAINER)
-                    .withEnergyConfig(() -> 300L, () -> 1_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.ASSEMBLY, () -> 1_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .build();
@@ -103,7 +107,7 @@ public final class NativeMekanismRegistries {
                             MagicLang.BASIC_SPIRIT_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 1_200L, () -> 3_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MATERIAL_PROCESSING, () -> 3_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .with(new AttributeTier<>(FactoryTier.BASIC),
@@ -117,7 +121,7 @@ public final class NativeMekanismRegistries {
                             MagicLang.ADVANCED_SPIRIT_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 2_000L, () -> 5_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MATERIAL_PROCESSING, () -> 5_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .with(new AttributeTier<>(FactoryTier.ADVANCED),
@@ -131,7 +135,7 @@ public final class NativeMekanismRegistries {
                             MagicLang.ELITE_SPIRIT_FACTORY,
                             FactoryType.CRUSHING)
                     .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                    .withEnergyConfig(() -> 2_800L, () -> 7_000_000L)
+                    .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MATERIAL_PROCESSING, () -> 7_000_000L)
                     .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                     .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                     .with(new AttributeTier<>(FactoryTier.ELITE),
@@ -289,7 +293,7 @@ public final class NativeMekanismRegistries {
                                         .DIMENSION_MINER_TILE,
                                 MagicLang.DIMENSION_MINER)
                         .withGui(() -> DIMENSION_MINER_CONTAINER)
-                        .withEnergyConfig(() -> 800L, () -> 4_000_000L)
+                        .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.RESOURCE_GATHERING, () -> 4_000_000L)
                         .withSideConfig(TransmissionType.ITEM,
                                 TransmissionType.ENERGY);
         if (DIMENSION_MINER_STACK_UPGRADE == null) {
@@ -311,7 +315,7 @@ public final class NativeMekanismRegistries {
                                 MagicLang.ULTIMATE_SPIRIT_FACTORY,
                                 FactoryType.CRUSHING)
                         .withGui(() -> SPIRIT_FACTORY_CONTAINER)
-                        .withEnergyConfig(() -> 3_600L, () -> 9_000_000L)
+                        .withEnergyConfig(() -> (long) MagicMachineEnergyProfiles.MATERIAL_PROCESSING, () -> 9_000_000L)
                         .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
                         .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY)
                         .with(new AttributeTier<>(FactoryTier.ULTIMATE));

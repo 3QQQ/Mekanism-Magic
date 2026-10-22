@@ -1,0 +1,7 @@
+{
+  "neoforge:conditions": [{"type": "neoforge:mod_loaded", "modid": "ae2"}],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [{"item": "minecraft:paper"}, {"item": "minecraft:amethyst_shard"}],
+  "result": {"id": "mekanism_magic:magic_resource_marker", "count": 1}
+}

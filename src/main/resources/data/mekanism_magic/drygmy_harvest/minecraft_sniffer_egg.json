@@ -1,0 +1,7 @@
+{
+  "entities": [
+    "minecraft:sniffer"
+  ],
+  "kind": "sniffer_egg",
+  "adult": true
+}

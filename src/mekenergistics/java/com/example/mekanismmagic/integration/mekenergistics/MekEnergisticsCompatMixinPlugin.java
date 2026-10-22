@@ -25,6 +25,12 @@ public final class MekEnergisticsCompatMixinPlugin
             "com.beipuo.mekenergistics.blockentity.support."
                     + "AbstractMeAeSupport",
             "com.beipuo.mekenergistics.blockentity.support."
+                    + "MeNetworkEnergyHelper",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MeUpgradeRecipeMachineRuntime",
+            "com.beipuo.mekenergistics.blockentity.api."
+                    + "MeAeSupportOwner",
+            "com.beipuo.mekenergistics.blockentity.support."
                     + "AbstractMeAeSupport$1",
             "com.beipuo.mekenergistics.blockentity.support."
                     + "MeSmartPatternMultiplication",
@@ -45,7 +51,16 @@ public final class MekEnergisticsCompatMixinPlugin
             "com.beipuo.mekenergistics.upgrade.MeUpgradeMachineProfile",
             "com.beipuo.mekenergistics.upgrade."
                     + "MeUpgradeRecipeMachineAdapter",
-            "com.beipuo.mekenergistics.upgrade.MeUpgradeType"
+            "com.beipuo.mekenergistics.upgrade.MeUpgradeType",
+            "com.beipuo.mekenergistics.upgrade.MeUpgradeContainer",
+            "com.beipuo.mekenergistics.upgrade.MeUpgradeStateOwner",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MeUpgradeRecipeMachineRuntime",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MeUpgradeRecipeMachineRuntime$1",
+            "com.beipuo.mekenergistics.upgrade.MeMekanismUpgrades",
+            "com.beipuo.mekenergistics.upgrade."
+                    + "MeUpgradeConflictPolicy$Result"
     };
     private static volatile Boolean compatibleAbi;
 
@@ -79,6 +94,14 @@ public final class MekEnergisticsCompatMixinPlugin
                         + "support.MeSmartPatternMultiplication";
                 String pending = "com.beipuo.mekenergistics.blockentity."
                         + "support.MeSmartPatternMultiplication$PendingPattern";
+                String upgrades = "com.beipuo.mekenergistics.upgrade.";
+                String container = upgrades + "MeUpgradeContainer";
+                String owner = upgrades + "MeUpgradeStateOwner";
+                String runtime = upgrades + "MeUpgradeRecipeMachineRuntime";
+                String runtimeOwner = runtime + "$1";
+                String result = upgrades + "MeUpgradeConflictPolicy$Result";
+                String nativeUpgrade = "mekanism.common.tile.component."
+                        + "TileComponentUpgrade";
                 compatibleAbi = fieldPresent(feeder, "val$layout",
                         "Lcom/beipuo/mekenergistics/blockentity/support/io/"
                                 + "MeInputLayout;")
@@ -99,6 +122,8 @@ public final class MekEnergisticsCompatMixinPlugin
                         "(J)[Lappeng/api/stacks/KeyCounter;")
                         && fieldPresent(support, "ownerTile",
                         "Lmekanism/common/tile/base/TileEntityMekanism;")
+                        && methodPresent(support, "drainOutputPorts",
+                        "(Lcom/beipuo/mekenergistics/blockentity/api/AeOutputMode;Ljava/util/List;)Z")
                         && fieldPresent(support,
                         "smartPatternMultiplication",
                         "Lcom/beipuo/mekenergistics/blockentity/support/"
@@ -144,7 +169,62 @@ public final class MekEnergisticsCompatMixinPlugin
                         && methodPresent(support, "alertAeTicker", "()V")
                         && methodPresent(support,
                         "refundToNetworkOrBuffer",
-                        "(Lappeng/api/stacks/AEKey;J)V");
+                        "(Lappeng/api/stacks/AEKey;J)V")
+                        && methodPresent(
+                        "com.beipuo.mekenergistics.blockentity.support."
+                                + "MeNetworkEnergyHelper",
+                        "extractNetworkFe",
+                        "(Lappeng/api/networking/IGrid;"
+                                + "Lappeng/api/networking/security/"
+                                + "IActionSource;JLmekanism/api/Action;)J")
+                        && fieldPresent(upgrades
+                                + "MeUpgradeRecipeMachineRuntime",
+                        "tile",
+                        "Lmekanism/common/tile/base/TileEntityMekanism;")
+                        && methodPresent(upgrades
+                                + "MeUpgradeRecipeMachineRuntime",
+                        "createNodeIfActive", "(Z)V")
+                        && methodPresent(upgrades
+                                + "MeUpgradeRecipeMachineRuntime",
+                        "destroyNode", "()V")
+                        && methodPresent(upgrades
+                                + "MeUpgradeRecipeMachineRuntime",
+                        "tick", "(ZZ)Z")
+                        && methodPresent(
+                        "com.beipuo.mekenergistics.api.upgrade."
+                                + "MePatternAutomation",
+                        "registeredBlockIds", "()Ljava/util/Set;")
+                        && fieldPresent(container, "owner",
+                        "Lcom/beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeStateOwner;")
+                        && fieldPresent(runtime, "tile",
+                        "Lmekanism/common/tile/base/"
+                                + "TileEntityMekanism;")
+                        && fieldPresent(runtimeOwner, "this$0",
+                        "Lcom/beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeRecipeMachineRuntime;")
+                        && methodPresent(container, "canInstall",
+                        "(Lcom/beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeType;I)Lcom/beipuo/"
+                                + "mekenergistics/upgrade/"
+                                + "MeUpgradeConflictPolicy$Result;")
+                        && methodPresent(owner, "supportsUpgrade",
+                        "(Lcom/beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeType;)Z")
+                        && methodPresent(upgrades + "MeMekanismUpgrades",
+                        "toType", "(Lmekanism/api/Upgrade;)Lcom/"
+                                + "beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeType;")
+                        && methodPresent(result, "unsupported",
+                        "()Lcom/beipuo/mekenergistics/upgrade/"
+                                + "MeUpgradeConflictPolicy$Result;")
+                        && fieldPresent(nativeUpgrade, "tile",
+                        "Lmekanism/common/tile/base/"
+                                + "TileEntityMekanism;")
+                        && methodPresent(nativeUpgrade, "supports",
+                        "(Lmekanism/api/Upgrade;)Z")
+                        && methodPresent(nativeUpgrade, "addUpgrades",
+                        "(Lmekanism/api/Upgrade;I)I");
             }
             return compatibleAbi;
         }
@@ -208,6 +288,26 @@ public final class MekEnergisticsCompatMixinPlugin
                                     String mixinClassName) {
         if (!loaded()) {
             return false;
+        }
+        if (targetClassName.endsWith("ExtraNatureAltarFactoryBlockEntity")
+                && !classPresent("com.jerry.mekextras.common.tile.factory.TileEntityExtraItemToItemFactory")) {
+            return false;
+        }
+        if (targetClassName.equals("com.jerry.mekextras.common.item.ItemExtraTierInstaller")
+                && !classPresent(targetClassName)) {
+            return false;
+        }
+        if (mixinClassName.endsWith(
+                "MekEnergisticsNatureAltarPatternMixin")
+                || mixinClassName.endsWith(
+                "MekEnergisticsNaturePatternCacheMixin")
+                || mixinClassName.endsWith(
+                "MekEnergisticsNatureFactoryAutomationMixin")) {
+            return classPresent(
+                    "de.ellpeck.naturesaura.recipes.AltarRecipe")
+                    && classPresent(
+                    "com.example.mekanismmagic.integration.ae2."
+                            + "Ae2NatureAltarPattern");
         }
         return true;
     }

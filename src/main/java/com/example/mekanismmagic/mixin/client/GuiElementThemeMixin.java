@@ -48,7 +48,12 @@ abstract class GuiElementThemeMixin {
                 : SpecialColors.TEXT_INACTIVE_BUTTON.argb();
     }
 
-    /** Keeps labels readable when the themed button switches to cyan. */
+    @Inject(method = "displayButtonTextShadow", at = @At("HEAD"), cancellable = true)
+    private void mekanismMagic$flatButtonLabel(CallbackInfoReturnable<Boolean> callback) {
+        if (MagicGuiTextures.isThemeActive()) callback.setReturnValue(false);
+    }
+
+    /** Keeps labels readable on the ice-blue hover surface. */
     @Inject(method = "getButtonTextColor", at = @At("RETURN"),
             cancellable = true)
     private void mekanismMagic$hoveredButtonText(

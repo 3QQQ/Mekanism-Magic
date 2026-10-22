@@ -13,6 +13,11 @@ public interface CatalystIdentifierSelectionHost {
     /** Current physical or virtual catalyst selection. */
     ItemStack selectedCatalystIdentifier();
 
+    /** True only when the current recipe has no catalysts or its real signed identifier is retained. */
+    default boolean hasCatalystIdentifierForRecipe(ResourceLocation recipeId) {
+        return false;
+    }
+
     /**
      * Transactional preflight for a context change. Factories override this
      * to keep a shared catalyst stable while any lane still owns work.
@@ -25,7 +30,7 @@ public interface CatalystIdentifierSelectionHost {
     default String catalystIdentifierIdForRecipe(
             ResourceLocation recipeId) {
         Level level = getLevel();
-        if (level == null || recipeId == null) {
+        if (level == null || recipeId == null || !hasCatalystIdentifierForRecipe(recipeId)) {
             return "";
         }
         var identifier = ArsNouveauRecipeBridge.createIdentifierForRecipe(

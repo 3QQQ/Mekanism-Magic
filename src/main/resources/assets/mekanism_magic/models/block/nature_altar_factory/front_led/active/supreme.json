@@ -1,0 +1,20 @@
+{
+  "credit": "Emissive embedded Mekanism Extras factory tier indicator",
+  "ambientocclusion": false,
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "mekanism_extras:block/factory/led",
+    "led": "mekanism_extras:block/factory/led"
+  },
+  "elements": [
+    {
+      "name": "embedded_tier_indicator_supreme_active",
+      "from": [5, 2.3, 0.02], "to": [11, 2.9, 0.18],
+      "faces": {
+        "north": {"uv": [0, 1, 6, 2], "texture": "#led"},
+        "up": {"uv": [0, 1, 6, 2], "rotation": 180, "texture": "#led"}
+      },
+      "neoforge_data": {"block_light": 15, "sky_light": 15}
+    }
+  ]
+}

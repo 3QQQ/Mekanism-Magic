@@ -1,0 +1,25 @@
+{
+  "parent": "minecraft:block/block",
+  "credit": "Mekanism Magic - four-channel essence condenser",
+  "textures": {
+    "particle": "forbidden_arcanus:block/obsidiansteel_block",
+    "steel": "forbidden_arcanus:block/obsidiansteel_block",
+    "stone": "forbidden_arcanus:block/polished_darkstone",
+    "metal": "forbidden_arcanus:block/deorum_block",
+    "aureal": "minecraft:block/yellow_terracotta",
+    "souls": "minecraft:block/purple_terracotta",
+    "blood": "minecraft:block/red_terracotta",
+    "experience": "minecraft:block/lime_terracotta",
+    "glow": "minecraft:block/black_concrete"
+  },
+  "elements": [
+    {"name":"foundation","from":[1,0,1],"to":[15,3,15],"faces":{"north":{"texture":"#steel"},"south":{"texture":"#steel"},"east":{"texture":"#steel"},"west":{"texture":"#steel"},"up":{"texture":"#stone"},"down":{"texture":"#steel"}}},
+    {"name":"central_chamber","from":[5,3,5],"to":[11,11,11],"faces":{"north":{"texture":"#stone"},"south":{"texture":"#stone"},"east":{"texture":"#stone"},"west":{"texture":"#stone"},"up":{"texture":"#glow"},"down":{"texture":"#steel"}}},
+    {"name":"aureal_vial","from":[2,3,2],"to":[4,12,4],"faces":{"north":{"texture":"#aureal"},"south":{"texture":"#aureal"},"east":{"texture":"#aureal"},"west":{"texture":"#aureal"},"up":{"texture":"#metal"},"down":{"texture":"#steel"}}},
+    {"name":"souls_vial","from":[12,3,2],"to":[14,12,4],"faces":{"north":{"texture":"#souls"},"south":{"texture":"#souls"},"east":{"texture":"#souls"},"west":{"texture":"#souls"},"up":{"texture":"#metal"},"down":{"texture":"#steel"}}},
+    {"name":"blood_vial","from":[2,3,12],"to":[4,12,14],"faces":{"north":{"texture":"#blood"},"south":{"texture":"#blood"},"east":{"texture":"#blood"},"west":{"texture":"#blood"},"up":{"texture":"#metal"},"down":{"texture":"#steel"}}},
+    {"name":"experience_vial","from":[12,3,12],"to":[14,12,14],"faces":{"north":{"texture":"#experience"},"south":{"texture":"#experience"},"east":{"texture":"#experience"},"west":{"texture":"#experience"},"up":{"texture":"#metal"},"down":{"texture":"#steel"}}},
+    {"name":"energy_ring","from":[4,11,4],"to":[12,12,12],"faces":{"north":{"texture":"#metal"},"south":{"texture":"#metal"},"east":{"texture":"#metal"},"west":{"texture":"#metal"},"up":{"texture":"#metal"},"down":{"texture":"#steel"}}},
+    {"name":"core_lens","from":[6,12,6],"to":[10,13,10],"faces":{"north":{"texture":"#glow"},"south":{"texture":"#glow"},"east":{"texture":"#glow"},"west":{"texture":"#glow"},"up":{"texture":"#glow"},"down":{"texture":"#stone"}}}
+  ]
+}

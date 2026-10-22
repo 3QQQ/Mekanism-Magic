@@ -14,10 +14,26 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+
 def arsMachineContentEnabled = project.findProperty(
         'mekanism_magic.ars_machine_content')?.toString()?.toBoolean() ?: true
 
 repositories {
+    // These pinned optional APIs live on Modrinth. Do not spend minutes
+    // probing unrelated mod repositories for their metadata/artifacts.
+    exclusiveContent {
+        forRepository {
+            maven { name = 'OptionalNetworkApis'; url = uri('https://api.modrinth.com/maven') }
+        }
+        filter {
+            includeModule('maven.modrinth', 'jade')
+            includeModule('maven.modrinth', 'appflux')
+            includeModule('maven.modrinth', 'glodium')
+            includeModule('maven.modrinth', 'SRTE8mLr')
+            includeModule('maven.modrinth', 'ordsPcFz')
+            includeModule('maven.modrinth', 'ugIdhQx4')
+        }
+    }
     maven { name = 'LocalMirror'; url = uri("${projectDir}/.local-repo") }
     maven { name = 'NeoForge'; url = uri('https://maven.neoforged.net/releases') }
     maven { name = 'ModMaven'; url = uri('https://modmaven.dev') }
@@ -26,7 +42,17 @@ repositories {
         name = 'GeckoLib'
         url = uri('https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/')
     }
+    maven {
+        name = 'Modrinth'
+        url = uri('https://api.modrinth.com/maven')
+        content { includeGroup('maven.modrinth') }
+    }
     mavenCentral()
+    maven {
+        name = 'CurseMaven'
+        url = uri('https://cursemaven.com')
+        content { includeGroup('curse.maven') }
+    }
 }
 
 neoForge {
@@ -34,6 +60,10 @@ neoForge {
     runs {
         client {
             client()
+            // Keep optional visual acceptance worlds/configs separate from the user's dev world.
+            if (project.hasProperty('mekanism_magic.client_run_directory')) {
+                gameDirectory = file(project.property('mekanism_magic.client_run_directory').toString())
+            }
             if (project.hasProperty('quickPlayWorld')) {
                 programArguments.addAll '--quickPlaySingleplayer',
                         project.property('quickPlayWorld').toString()
@@ -68,6 +98,10 @@ sourceSets.main.resources {
         srcDir('src/arsDev/resources')
     }
 }
+
+// Jade discovers its isolated plugin only when Jade itself is installed.
+// No common registration or client class links to the optional API.
+sourceSets.main.java.srcDir('src/jade/java')
 
 // Mekanism Extras is an optional binary-only integration. Keep its source out
 // of release builds unless the supplied development jar is present, so a clean
@@ -121,11 +155,17 @@ if (compileMekEnergistics) {
 if (compileAe2) {
     sourceSets.main.java.srcDir('src/ae2/java')
     sourceSets.main.resources.srcDir('src/ae2/resources')
+} else {
+    sourceSets.test.java.exclude('**/MagicResourceRenderingSelfTest.java')
 }
 
 configurations {
     localRuntime
     runtimeClasspath.extendsFrom(localRuntime)
+    forbiddenReference {
+        canBeConsumed = false
+        canBeResolved = true
+    }
 }
 
 def compatRuntimeEnabled = project.findProperty('mekanism_magic.compat_runtime')?.toString()?.toBoolean() ?: false
@@ -137,6 +177,12 @@ def mekExtrasRuntimeEnabled = compatRuntimeEnabled ||
 def mekmmRuntimeEnabled = compatRuntimeEnabled ||
         (project.findProperty('mekanism_magic.mekmm_runtime')?.toString()?.toBoolean() ?: false)
 def arsRuntimeEnabled = project.findProperty('mekanism_magic.ars_runtime')?.toString()?.toBoolean() ?: false
+def naturesAuraRuntimeEnabled = project.findProperty(
+        'mekanism_magic.naturesaura_runtime')?.toString()?.toBoolean() ?: false
+def forbiddenRuntimeEnabled = project.findProperty(
+        'mekanism_magic.forbidden_runtime')?.toString()?.toBoolean() ?: false
+def forbiddenCoordinate = "maven.modrinth:forbidden-arcanus:${forbidden_arcanus_maven_version}"
+def valhelsiaCoordinate = "curse.maven:valhelsia-core-416935:${valhelsia_core_curse_file}"
 def mekEnergisticsRuntimeEnabled = project.findProperty(
         'mekanism_magic.mekenergistics_runtime')?.toString()?.toBoolean() ?: false
 def ae2RuntimeEnabled = project.findProperty(
@@ -145,10 +191,17 @@ def arsEnergistiqueRuntimeEnabled = project.findProperty(
         'mekanism_magic.arseng_runtime')?.toString()?.toBoolean() ?: false
 
 dependencies {
+    compileOnly("maven.modrinth:jade:${jade_maven_version}") { transitive = false }
     compileOnly "mekanism:Mekanism:1.21.1-${mekanism_version}"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
     compileOnly "com.hollingsworth.ars_nouveau:ars_nouveau-1.21.1:${ars_nouveau_maven_version}"
     compileOnly "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_compile_version}"
+    compileOnly "maven.modrinth:natures-aura:${natures_aura_version}"
+    // Pinned public artifacts, never the user's Downloads directory or jarJar.
+    compileOnly(forbiddenCoordinate) { transitive = false }
+    compileOnly(valhelsiaCoordinate) { transitive = false }
+    forbiddenReference(forbiddenCoordinate) { transitive = false }
+    forbiddenReference(valhelsiaCoordinate) { transitive = false }
     compileOnly files(
             mekanismExtrasJar,
             mekenergisticsJar,
@@ -169,6 +222,14 @@ dependencies {
         localRuntime files(
                 "libs/ars_nouveau-1.21.1-${ars_nouveau_version}.jar"
         )
+    }
+    if (naturesAuraRuntimeEnabled) {
+        localRuntime "maven.modrinth:natures-aura:${natures_aura_version}"
+        localRuntime "vazkii.patchouli:Patchouli:${patchouli_version}"
+    }
+    if (forbiddenRuntimeEnabled) {
+        localRuntime(forbiddenCoordinate) { transitive = false }
+        localRuntime(valhelsiaCoordinate) { transitive = false }
     }
     if (mekExtrasRuntimeEnabled) {
         localRuntime files(
@@ -193,6 +254,19 @@ dependencies {
         }
         localRuntime files(arsEnergistiqueJar)
     }
+    if (project.findProperty('mekanism_magic.jade_runtime')?.toString()?.toBoolean()) {
+        localRuntime("maven.modrinth:jade:${jade_maven_version}") { transitive = false }
+    }
+    if (project.findProperty('mekanism_magic.appflux_runtime')?.toString()?.toBoolean()) {
+        localRuntime("maven.modrinth:appflux:${appflux_maven_version}") { transitive = false }
+        localRuntime("maven.modrinth:glodium:${glodium_maven_version}") { transitive = false }
+    }
+    if (project.findProperty('mekanism_magic.packaged_faa_runtime')?.toString()?.toBoolean()) {
+        // Immutable published versions. FishLib 1.0.6 is already bundled by PFAA.
+        localRuntime('maven.modrinth:SRTE8mLr:mCPrTJSO') { transitive = false }
+        localRuntime('maven.modrinth:ordsPcFz:pp2cY80Q') { transitive = false }
+        localRuntime('maven.modrinth:ugIdhQx4:ErYy5Im9') { transitive = false }
+    }
 
     // Keep the executable compatibility self-tests offline while still
     // compiling them against the same remapped game/API classpath as main.
@@ -204,6 +278,79 @@ dependencies {
     testRuntimeOnly("mekanism:Mekanism:1.21.1-${mekanism_version}") {
         transitive = false
     }
+    testRuntimeOnly "maven.modrinth:natures-aura:${natures_aura_version}"
+    // Only the recipe API is needed for headless slot-contract tests, never a JEI client runtime.
+    testRuntimeOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
+
+}
+
+// Independent optional-mod matrices: these test classes never enter the JAR
+// or the normal client. In particular, absent tests have no F&A runtime JAR.
+sourceSets {
+    forbiddenGameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.forbiddenGameTestRuntimeClasspath
+    }
+    forbiddenAbsentGameTest {
+        java.srcDir('src/forbiddenGameTest/java')
+        java.include '**/ForbiddenAbsentGameTests.java', '**/RetiredEssenceMachineChunkGameTests.java'
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath = (output + sourceSets.main.runtimeClasspath + configurations.forbiddenAbsentGameTestRuntimeClasspath).filter { entry ->
+            def name = entry.name.toLowerCase(Locale.ROOT)
+            !['forbidden-arcanus', 'valhelsia-core', 'packaged_faa', 'packagedfaa',
+              'srte8mlr', 'ugidhqx4', 'ordspcfz'].any { name.contains(it) }
+        }
+    }
+}
+dependencies {
+    forbiddenGameTestRuntimeOnly(forbiddenCoordinate) { transitive = false }
+    forbiddenGameTestRuntimeOnly(valhelsiaCoordinate) { transitive = false }
+}
+neoForge {
+    mods {
+        "${mod_id}_forbidden_gametest" {
+            sourceSet(sourceSets.main)
+            sourceSet(sourceSets.forbiddenGameTest)
+        }
+        "${mod_id}_forbidden_absent_gametest" {
+            sourceSet(sourceSets.main)
+            sourceSet(sourceSets.forbiddenAbsentGameTest)
+        }
+    }
+    runs {
+        forbiddenGameTestServer {
+            type = 'gameTestServer'
+            sourceSet = sourceSets.forbiddenGameTest
+            loadedMods = [mods."${mod_id}_forbidden_gametest"]
+            gameDirectory = file('run-forbidden-gametest')
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+        }
+        forbiddenAbsentGameTestServer {
+            type = 'gameTestServer'
+            sourceSet = sourceSets.forbiddenAbsentGameTest
+            loadedMods = [mods."${mod_id}_forbidden_absent_gametest"]
+            gameDirectory = file('run-forbidden-absent-gametest')
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+        }
+    }
+}
+
+// Opt-in runtime GameTests for the real AE2 + Mek Energistics boundary.
+// A mod-loader startup exception can exit the launcher with code zero.
+// These isolated matrices require an actual, fresh positive test report.
+['runForbiddenGameTestServer': 'run-forbidden-gametest',
+ 'runForbiddenAbsentGameTestServer': 'run-forbidden-absent-gametest'].each { taskName, directory ->
+    tasks.named(taskName).configure {
+        long startedAt
+        doFirst { startedAt = System.currentTimeMillis() }
+        doLast {
+            File result = file("${directory}/logs/latest.log")
+            if (!result.isFile() || result.lastModified() < startedAt
+                    || !(result.getText('UTF-8') =~ /All [1-9][0-9]* required tests passed/).find()) {
+                throw new GradleException("${taskName} did not complete a fresh passing GameTest run")
+            }
+        }
+    }
 }
 
 // Opt-in runtime GameTests for the real AE2 + Mek Energistics boundary.
@@ -211,6 +358,32 @@ dependencies {
 // CI checkout without the supplied optional integration jars simply omits
 // this local-only run configuration.
 if (compileMekEnergistics && compileAe2) {
+    configurations {
+        jeiGameTestApi {
+            canBeConsumed = false
+            canBeResolved = true
+        }
+    }
+    // Standalone JEI API jars need a game-library manifest in NeoForge
+    // 1.21.1. Boot-classpath libraries cannot see Minecraft MenuType classes.
+    // This test-only wrapper contains the unchanged official API, never JEI UI.
+    def jeiGameTestLibrary = tasks.register('prepareJeiGameTestApi', Jar) {
+        archiveFileName = 'jei-api-gametest-library.jar'
+        destinationDirectory = layout.buildDirectory.dir('tmp/jei-gametest-api')
+        from({ configurations.jeiGameTestApi.collect { zipTree(it) } })
+        exclude 'META-INF/MANIFEST.MF', 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        manifest { attributes 'FMLModType': 'GAMELIBRARY' }
+    }
+    def entityContainerTestJars = [
+            'ApothicEnchanting-1.21.1-1.5.3.jar',
+            'ApothicAttributes-1.21.1-2.9.1.jar',
+            'Placebo-1.21.1-9.9.1.jar',
+            'industrialforegoing-1.21-3.6.38.jar',
+            'titanium-1.21-4.0.43.jar',
+            'justdirethings-1.5.7.jar',
+            'enderio-8.2.11-beta.jar'
+    ].collect { file("libs/${it}") }
     sourceSets {
         gameTest {
             compileClasspath += sourceSets.main.output
@@ -219,6 +392,91 @@ if (compileMekEnergistics && compileAe2) {
             // several supplied reference jars are mutually incompatible.
             runtimeClasspath = output + sourceSets.main.runtimeClasspath
             runtimeClasspath += configurations.gameTestRuntimeClasspath
+        }
+    }
+
+    sourceSets {
+        nativeAeAbsentGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/NativeAeOptionalAbsenceGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = (output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath).filter { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                !['appliedenergistics', 'mekenergistics', 'applied-mekanistics', 'arseng', 'appliedflux', 'jade'].any { name.contains(it) }
+            }
+        }
+        machineNetworkGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/ImbuementCatalystPresenceGameTests.java',
+                    '**/ArsImbuementFactoryCatalystPresenceGameTests.java',
+                    '**/ArsImbuementContinuityGameTests.java',
+                    '**/ArsCatalystFreeMachineGameTests.java',
+                    '**/CatalystFreeImbuementAeGameTests.java',
+                    '**/MachineAeResourceGameTests.java', '**/MekEnergisticsUpgradeEligibilityGameTests.java',
+                    '**/JadeMachineDataGameTests.java',
+                    '**/MachinePanelGameTests.java', '**/RetainedModuleGameTests.java',
+                    '**/AuraGeneratorTypeSelectionGameTests.java',
+                    '**/Ae2PatternEncodingTestSupport.java', '**/PatternEncodingMenuSmokeGameTests.java',
+                    '**/Ae2AddonMachineJeiGameTests.java', '**/Ae2AuraBottleContainerGameTests.java',
+                    '**/Ae2EssenceIntegrationGameTests.java', '**/MachineAeDirectExportGameTests.java',
+                    '**/MachineAeOutputTransactionGameTests.java', '**/MachineAeFunctionControlsGameTests.java',
+                    '**/Ae2AuraBottlingGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+        }
+        externalProviderGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/ExternalPatternProviderGameTests.java', '**/ExternalNaturePatternPlanningGameTests.java',
+                    '**/AnimalSpawnerExternalPatternGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+        }
+        machineItemGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/MachineItemContainerGameTests.java', '**/RitualSpawnEggPersistenceGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+        }
+        entityContainerGameTest {
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+            runtimeClasspath += files(entityContainerTestJars)
+        }
+        natureOnlyGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/MagicPipeAuraGameTests.java', '**/OfferingIntegrationGameTests.java', '**/NatureAuraIntegrationGameTests.java',
+                    '**/TreeRitualIntegrationGameTests.java', '**/AnimalSpawnerIntegrationGameTests.java',
+                    '**/InternalNatureTestSupport.java',
+                    '**/NatureAltarExtrasGameTests.java', '**/Ae2AuraInterfaceGameTests.java',
+                    '**/NatureAltarCatalystCatalogGameTests.java', '**/NatureAltarDynamicCatalystGameTests.java',
+                    '**/FeAuraConverterGameTests.java', '**/AuraFuelGeneratorGameTests.java', '**/AuraGeneratorTypeSelectionGameTests.java',
+                    '**/NatureMachineEnergyGameTests.java', '**/MachinePanelGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+        }
+        energyGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/NativeDimensionMinerRedstoneGameTests.java', '**/DrygmyRedstoneGameTests.java', '**/DrygmySpawnEggGameTests.java',
+                    '**/ArsImbuementAutomationGameTests.java', '**/ArsImbuementContinuityGameTests.java', '**/MiniRitualCraftingGameTests.java',
+                    '**/CatalystFreeImbuementAeGameTests.java', '**/ArsCatalystFreeMachineGameTests.java',
+                    '**/ArsOccultEnergyProfileGameTests.java', '**/ArsOccultFactoryEnergyGameTests.java',
+                    '**/SpiritJeiGroupingGameTests.java',
+                    '**/NativeDimensionMinerSafetyGameTests.java', '**/DrygmyPersistenceGameTests.java',
+                    '**/DrygmyFluidPersistenceGameTests.java', '**/NatureMachineEnergyGameTests.java',
+                    '**/RetainedModuleGameTests.java', '**/MachinePanelGameTests.java'
+            if (occultismRuntimeEnabled) {
+                java.include '**/MiniPentacleCaptureGameTests.java'
+            }
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
+        }
+        magicStorageGameTest {
+            java.srcDir('src/gameTest/java')
+            java.include '**/MagicStorageCellGameTests.java', '**/MagicStorageInterfaceNetworkGameTests.java',
+                    '**/Ae2EssenceIntegrationGameTests.java', '**/MachineAeDirectExportGameTests.java',
+                    '**/MachineAeOutputTransactionGameTests.java', '**/MachineAeFunctionControlsGameTests.java'
+            compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+            runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.gameTestRuntimeClasspath
         }
     }
 
@@ -237,17 +495,127 @@ if (compileMekEnergistics && compileAe2) {
     ].findAll { it.exists() }
 
     dependencies {
+        // Native multiblock fixtures are test-only; main keeps Occultism optional.
+        if (project.findProperty('mekanism_magic.harvest_test_mods')?.toString()?.toBoolean()) {
+            def harvestTestJars = [
+                    file('libs/earthmobsmod-1.21.1-19.3.0.jar'),
+                    file('libs/bagus_lib-1.21.1-13.25.1.jar'),
+                    file('libs/productivebees-1.21.1-13.13.5.jar')
+            ]
+            if (harvestTestJars.any { !it.exists() }) {
+                throw new GradleException('Optional live-harvest tests require the supplied EarthMobs, Bagus Lib and ProductiveBees jars.')
+            }
+            gameTestRuntimeOnly files(harvestTestJars)
+        }
+        gameTestCompileOnly files("libs/occultism-1.21.1-neoforge-${occultism_version}.jar",
+                'run/mods/modonomicon-1.21.1-neoforge-1.120.4.jar')
+        // Interface-only JEI API for real terminal/handler validation on the
+        // dedicated GameTest server; no client JEI mod is loaded there.
+        jeiGameTestApi "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
+        gameTestRuntimeOnly files(jeiGameTestLibrary)
+        energyGameTestCompileOnly files("libs/occultism-1.21.1-neoforge-${occultism_version}.jar",
+                'run/mods/modonomicon-1.21.1-neoforge-1.120.4.jar')
         gameTestRuntimeOnly files(spiritGameTestSupportJars)
+        gameTestRuntimeOnly "maven.modrinth:natures-aura:${natures_aura_version}"
+        gameTestRuntimeOnly "vazkii.patchouli:Patchouli:${patchouli_version}"
     }
 
     neoForge {
         mods {
+            "${mod_id}_native_ae_absent_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.nativeAeAbsentGameTest)
+            }
+            "${mod_id}_machine_network_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.machineNetworkGameTest)
+            }
+            "${mod_id}_external_provider_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.externalProviderGameTest)
+            }
+            "${mod_id}_entity_container_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.entityContainerGameTest)
+            }
+            "${mod_id}_machine_item_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.machineItemGameTest)
+            }
+            "${mod_id}_nature_only_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.natureOnlyGameTest)
+            }
+            "${mod_id}_energy_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.energyGameTest)
+            }
+            "${mod_id}_magic_storage_gametest" {
+                sourceSet(sourceSets.main)
+                sourceSet(sourceSets.magicStorageGameTest)
+            }
             "${mod_id}_gametest" {
                 sourceSet(sourceSets.main)
                 sourceSet(sourceSets.gameTest)
             }
         }
         runs {
+            nativeAeAbsentGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.nativeAeAbsentGameTest
+                loadedMods = [mods."${mod_id}_native_ae_absent_gametest"]
+                gameDirectory = file('run-native-ae-absent-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            machineNetworkGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.machineNetworkGameTest
+                loadedMods = [mods."${mod_id}_machine_network_gametest"]
+                gameDirectory = file('run-machine-network-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            externalProviderGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.externalProviderGameTest
+                loadedMods = [mods."${mod_id}_external_provider_gametest"]
+                gameDirectory = file('run-external-provider-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            entityContainerGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.entityContainerGameTest
+                loadedMods = [mods."${mod_id}_entity_container_gametest"]
+                gameDirectory = file('run-entity-container-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            machineItemGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.machineItemGameTest
+                loadedMods = [mods."${mod_id}_machine_item_gametest"]
+                gameDirectory = file('run-machine-item-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            natureOnlyGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.natureOnlyGameTest
+                loadedMods = [mods."${mod_id}_nature_only_gametest"]
+                gameDirectory = file('run-nature-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            energyGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.energyGameTest
+                loadedMods = [mods."${mod_id}_energy_gametest"]
+                gameDirectory = file('run-energy-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
+            magicStorageGameTestServer {
+                type = 'gameTestServer'
+                sourceSet = sourceSets.magicStorageGameTest
+                loadedMods = [mods."${mod_id}_magic_storage_gametest"]
+                gameDirectory = file('run-magic-storage-gametest')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
+            }
             spiritGameTestServer {
                 type = 'gameTestServer'
                 sourceSet = sourceSets.gameTest
@@ -256,6 +624,16 @@ if (compileMekEnergistics && compileAe2) {
                 // The tests currently borrow a built-in vanilla template.
                 systemProperty 'neoforge.enabledGameTestNamespaces',
                         'minecraft'
+            }
+        }
+    }
+
+    tasks.named('runEntityContainerGameTestServer').configure {
+        doFirst {
+            def missing = entityContainerTestJars.findAll { !it.exists() }
+            if (!missing.isEmpty()) {
+                throw new GradleException('Entity container tests require supplied optional mod jars: '
+                        + missing.collect { it.name }.join(', '))
             }
         }
     }
@@ -271,6 +649,56 @@ if (compileMekEnergistics && compileAe2) {
     neoForge.runs.named('data') {
         loadedMods = [neoForge.mods."${mod_id}"]
     }
+}
+
+tasks.register('validateForbiddenIntegrationBoundary') {
+    group = 'verification'
+    description = 'Checks pinned F&A ABI samples and confines optional implementation references.'
+    inputs.files(configurations.forbiddenReference)
+    inputs.files(sourceSets.main.allJava)
+    inputs.property('forbiddenVersion', forbidden_arcanus_version)
+    inputs.property('coreVersion', valhelsia_core_version)
+    doLast {
+        if (forbidden_arcanus_version != '2.6.1' || valhelsia_core_version != '1.1.5') {
+            throw new GradleException('Update and verify the exact Forbidden ABI bridge before changing its versions')
+        }
+        def expected = [
+                'maven.modrinth:forbidden-arcanus:fNjxgZPH': '8D5EF1557FCDD0BA9FE98C38458751BCBECB118C30924DAA6FBDEA0A54BF5785',
+                'curse.maven:valhelsia-core-416935:6296775': '8364C248EA4B8975327BC6CC36478ECDC1567110A6C8A47CE6B43E648EDD1127'
+        ]
+        def artifacts = configurations.forbiddenReference.resolvedConfiguration.resolvedArtifacts
+        if (artifacts.size() != 2) throw new GradleException('Expected precisely two pinned Forbidden reference artifacts')
+        artifacts.each { artifact ->
+            def id = artifact.moduleVersion.id.toString()
+            def digest = java.security.MessageDigest.getInstance('SHA-256').digest(artifact.file.bytes).encodeHex().toString().toUpperCase(java.util.Locale.ROOT)
+            if (expected[id] != digest) throw new GradleException("Unverified Forbidden ABI artifact: ${id}")
+        }
+        sourceSets.main.allJava.each { sourceFile ->
+            def relative = project.relativePath(sourceFile).replace('\\', '/')
+            def source = sourceFile.getText('UTF-8')
+            if ((source.contains('com.stal111.forbidden_arcanus') || source.contains('net.valhelsia.'))
+                    && !relative.contains('/integration/forbiddenarcanus/')) {
+                throw new GradleException("Forbidden implementation reference escaped its optional module: ${relative}")
+            }
+        }
+        logger.lifecycle('Forbidden ABI sample hashes and optional package boundary verified')
+    }
+}
+
+tasks.register('testUpgradeSerialization', JavaExec) {
+    group = 'verification'
+    description = 'Reproduces duplicate upgrade names at the vanilla lookup threshold and checks save/ID compatibility.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.upgrade.UpgradeSerializationSelfTest'
+}
+
+tasks.register('testForbiddenCompatibility', JavaExec) {
+    group = 'verification'
+    description = 'Checks the exact optional Forbidden/Valhelsia version gate without their implementation classes.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.ForbiddenCompatibilitySelfTest'
 }
 
 tasks.register('testPipezCompat', JavaExec) {
@@ -289,6 +717,14 @@ tasks.register('testSourceLinkState', JavaExec) {
     mainClass = 'com.example.mekanismmagic.integration.arsnouveau.SourceLinkStateSelfTest'
 }
 
+tasks.register('testSideConfigDefaultPage', JavaExec) {
+    group = 'verification'
+    description = 'Checks item-first opening pages and preserves other mods and page ordering.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.gui.SideConfigDefaultPageSelfTest'
+}
+
 tasks.register('testMagicSourceNetworkStorage', JavaExec) {
     group = 'verification'
     description = 'Runs long-capacity Source network conservation tests.'
@@ -303,6 +739,198 @@ tasks.register('testDrygmyLootPolicy', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.example.mekanismmagic.integration.arsnouveau.DrygmyLootPolicySelfTest'
+}
+
+tasks.register('testOfferingBatchPolicy', JavaExec) {
+    group = 'verification'
+    description = 'Checks whole-batch offering input and durable output conservation.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.OfferingBatchPolicySelfTest'
+}
+
+tasks.register('testSafeAuraContainer', JavaExec) {
+    group = 'verification'
+    description = 'Runs offline Nature Aura storage conservation tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.SafeAuraContainerSelfTest'
+}
+
+tasks.register('testProcessingEnergyUsage', JavaExec) {
+    group = 'verification'
+    description = 'Checks actual processing debit/refund metering independently of animation and battery charging.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.common.energy.ProcessingEnergyUsageSelfTest'
+}
+
+tasks.register('testMagicMachineEnergyProfiles', JavaExec) {
+    group = 'verification'
+    description = 'Checks the fixed Mek default power tiers and per-lane unit basis.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.common.energy.MagicMachineEnergyProfilesSelfTest'
+}
+
+tasks.register('testForbiddenJeiRecipeReconciler', JavaExec) {
+    group = 'verification'
+    description = 'Checks JEI reload identity, replacement and removal without a client runtime.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.forbiddenarcanus.client.ForbiddenJeiRecipeReconcilerSelfTest'
+}
+
+tasks.register('testForbiddenJeiLayout', JavaExec) {
+    group = 'verification'
+    description = 'Checks all three Forbidden recipe layouts and apparatus/output separation.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.forbiddenarcanus.client.ForbiddenJeiLayoutSelfTest'
+}
+
+tasks.register('testForbiddenJeiSlotContract', JavaExec) {
+    group = 'verification'
+    description = 'Calls the actual JEI category slot builders with API proxies; no window or GL renderer.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.forbiddenarcanus.client.ForbiddenJeiSlotContractSelfTest'
+}
+
+tasks.register('testArsImbuementJeiContract', JavaExec) {
+    group = 'verification'
+    description = 'Checks catalyst-free JEI input shape and incremental Ars page reloads.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.arsnouveau.client.ArsImbuementJeiContractSelfTest'
+}
+
+tasks.register('testSpiritJeiGrouping', JavaExec) {
+    group = 'verification'
+    description = 'Checks profession categories, real JEI slots, unique display IDs and grouped reloads without GL.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.jei.SpiritJeiGroupingSelfTest'
+}
+
+tasks.register('testMagicResourceRendering', JavaExec) {
+    group = 'verification'
+    description = 'Checks native magic resource visuals and real monitor vertex emission without a GL window.'
+    dependsOn tasks.named('testClasses')
+    onlyIf { compileAe2 }
+    classpath = sourceSets.test.runtimeClasspath + files(ae2Jar)
+    mainClass = 'com.example.mekanismmagic.integration.ae2.storage.MagicResourceRenderingSelfTest'
+}
+
+tasks.register('testNatureInternalJei', JavaExec) {
+    group = 'verification'
+    description = 'Checks internal Nature processing JEI slots, egg subtypes and the no-world bytecode boundary.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.client.NatureInternalJeiSelfTest'
+}
+
+tasks.register('testMachineTitles', JavaExec) {
+    group = 'verification'
+    description = 'Checks all localized machine/container title pairs and shared ordinary/factory headers.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    workingDir = projectDir
+    mainClass = 'com.example.mekanismmagic.client.MachineTitlesSelfTest'
+}
+
+tasks.register('testGuiResourcePack', JavaExec) {
+    group = 'verification'
+    description = 'Checks optional GUI resource-pack enable, replacement, invalid JSON and disable behavior.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    workingDir = projectDir
+    mainClass = 'com.example.mekanismmagic.client.gui.GuiResourcePackSelfTest'
+}
+
+tasks.register('testRetainedModules', JavaExec) {
+    group = 'verification'
+    description = 'Checks retained-sidebar geometry, original-slot wiring and catalyst selector guards.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.RetainedModuleSelfTest'
+}
+
+tasks.register('testRitualSpawnEggIdentity', JavaExec) {
+    group = 'verification'
+    description = 'Checks ritual spawn-egg names, semantic JEI variants, colors and recipe-list reloads.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.jei.RitualSpawnEggIdentitySelfTest'
+}
+
+def machinePanelAccessAgentJar = tasks.register('machinePanelAccessAgentJar', Jar) {
+    dependsOn tasks.named('testClasses')
+    from(sourceSets.test.output) {
+        include 'com/example/mekanismmagic/client/MachinePanelAccessAgent*.class'
+    }
+    destinationDirectory = layout.buildDirectory.dir('test-agents')
+    archiveFileName = 'machine-panel-access.jar'
+    manifest { attributes('Premain-Class': 'com.example.mekanismmagic.client.MachinePanelAccessAgent') }
+}
+
+tasks.register('testMachinePanels', JavaExec) {
+    group = 'verification'
+    description = 'Checks readable integrated-machine data cards and their off-screen render bounds in both themes.'
+    dependsOn tasks.named('testClasses'), machinePanelAccessAgentJar
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.MachinePanelsSelfTest'
+    doFirst { jvmArgs("-javaagent:" + machinePanelAccessAgentJar.get().archiveFile.get().asFile.absolutePath) }
+}
+
+tasks.register('testMachineSidebar', JavaExec) {
+    group = 'verification'
+    description = 'Checks native and optional sidebar tab spacing, real hitboxes and resize alignment.'
+    dependsOn tasks.named('testClasses'), machinePanelAccessAgentJar
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.client.MachineSidebarSelfTest'
+    doFirst { jvmArgs("-javaagent:" + machinePanelAccessAgentJar.get().archiveFile.get().asFile.absolutePath) }
+}
+tasks.named('check') { dependsOn tasks.named('testMachineSidebar') }
+
+tasks.register('testNatureMachineEnergyMath', JavaExec) {
+    group = 'verification'
+    description = 'Checks FE/J batch rounding and spawn-interval-aware upgrade costs.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.NatureMachineEnergyMathSelfTest'
+}
+
+tasks.register('testNatureAltarRecipe', JavaExec) {
+    group = 'verification'
+    description = 'Runs offline Nature altar selection and cost tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.NatureAltarRecipeSelfTest'
+}
+
+tasks.register('testNaturalAuraPipeConservation', JavaExec) {
+    group = 'verification'
+    description = 'Runs Natural Aura pipe conservation and split tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.NaturalAuraPipeConservationSelfTest'
+}
+
+tasks.register('testNatureAltarAutomationBatchPolicy', JavaExec) {
+    group = 'verification'
+    description = 'Runs Nature altar batch allocation and rollback tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.NatureAltarAutomationBatchPolicySelfTest'
+}
+
+tasks.register('testNatureAltarFactorySemantics', JavaExec) {
+    group = 'verification'
+    description = 'Runs Nature altar factory context and upgrade tests.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.naturesaura.NatureAltarFactorySemanticsSelfTest'
 }
 
 tasks.register('testBoundedSlotMatcher', JavaExec) {
@@ -397,6 +1025,8 @@ processResources {
             mekanism_extras_integration: compileMekanismExtras,
             mekenergistics_integration: compileMekEnergistics,
             ae2_integration        : compileAe2,
+            natures_aura_integration: true,
+            forbidden_arcanus_integration: true,
             // The optional bridge is guarded by a runtime Mixin plugin. Keep
             // the config in builds that include the API so a released jar
             // automatically adapts when Mek Energistics is added later.
@@ -431,10 +1061,35 @@ apply from: 'gradle/machine-contracts.gradle'
 
 tasks.named('check') {
     dependsOn tasks.named('validateMachineContracts'),
+            tasks.named('testUpgradeSerialization'),
+            tasks.named('validateForbiddenIntegrationBoundary'),
+            tasks.named('testForbiddenCompatibility'),
+            tasks.named('testForbiddenJeiRecipeReconciler'),
+            tasks.named('testForbiddenJeiLayout'),
+            tasks.named('testForbiddenJeiSlotContract'),
+            tasks.named('testArsImbuementJeiContract'),
+            tasks.named('testSpiritJeiGrouping'),
+            tasks.named('testMagicResourceRendering'),
+            tasks.named('testNatureInternalJei'),
+            tasks.named('testMachineTitles'),
+            tasks.named('testGuiResourcePack'),
+            tasks.named('testRetainedModules'),
+            tasks.named('testRitualSpawnEggIdentity'),
+            tasks.named('testMachinePanels'),
             tasks.named('testPipezCompat'),
             tasks.named('testSourceLinkState'),
+            tasks.named('testSideConfigDefaultPage'),
             tasks.named('testMagicSourceNetworkStorage'),
             tasks.named('testDrygmyLootPolicy'),
+            tasks.named('testSafeAuraContainer'),
+            tasks.named('testProcessingEnergyUsage'),
+            tasks.named('testMagicMachineEnergyProfiles'),
+            tasks.named('testNatureMachineEnergyMath'),
+            tasks.named('testOfferingBatchPolicy'),
+            tasks.named('testNatureAltarRecipe'),
+            tasks.named('testNaturalAuraPipeConservation'),
+            tasks.named('testNatureAltarAutomationBatchPolicy'),
+            tasks.named('testNatureAltarFactorySemantics'),
             tasks.named('testBoundedSlotMatcher'),
             tasks.named('testPersistentInputMutationGuard'),
             tasks.named('testOccultismRitualModes'),
@@ -466,6 +1121,10 @@ tasks.register('validatePackagedIntegrations') {
     inputs.property('compileMekEnergistics', compileMekEnergistics)
     inputs.property('compileAe2', compileAe2)
     inputs.property('requireFullIntegrations', requireFullIntegrations)
+    def harvestDefinitions = fileTree('src/main/resources/data/mekanism_magic/drygmy_harvest') {
+        include '**/*.json'
+    }
+    inputs.files(harvestDefinitions)
 
     doLast {
         boolean requireFull = requireFullIntegrations.get()
@@ -487,6 +1146,146 @@ tasks.register('validatePackagedIntegrations') {
         }
 
         List<String> requiredEntries = [
+                'com/example/mekanismmagic/integration/jade/MekanismMagicJadePlugin.class',
+                'com/example/mekanismmagic/integration/jade/MagicMachineJadeProvider.class',
+                'com/example/mekanismmagic/integration/jade/MachineJadeData.class',
+                'com/example/mekanismmagic/integration/common/network/MachineAeResourceHooks.class',
+                'com/example/mekanismmagic/integration/common/network/MachineAeResourceRatePolicy.class',
+                'com/example/mekanismmagic/integration/common/network/MachineAeNodeOwnershipHooks.class',
+                'com/example/mekanismmagic/blockentity/NativeMachineUpgradeData.class',
+                'com/example/mekanismmagic/client/gui/MachineAeTooltips.class',
+                'com/example/mekanismmagic/client/gui/MachineSettingsSections.class',
+                'com/example/mekanismmagic/client/gui/MachineSettingsSections$Section.class',
+                'com/example/mekanismmagic/client/gui/GuiMachineSettingsTab.class',
+                'com/example/mekanismmagic/client/gui/GuiMachineSettingsWindow.class',
+                'com/example/mekanismmagic/client/gui/MagicMachineFrame.class',
+                'com/example/mekanismmagic/client/gui/FactoryInputRow.class',
+                'com/example/mekanismmagic/client/gui/GuiMachineProgress.class',
+                'com/example/mekanismmagic/container/MachineArrowLayout.class',
+                'com/example/mekanismmagic/container/MachineFrameLayout.class',
+                'com/example/mekanismmagic/mixin/client/GuiMachineFrameMixin.class',
+                'com/example/mekanismmagic/client/gui/MachineAeSettingsSection.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/NatureMachineSettingsSection.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/NatureMachineLayout.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/NatureMachineGroups.class',
+                'com/example/mekanismmagic/mixin/client/GuiMachineSettingsMixin.class',
+                'com/example/mekanismmagic/mixin/client/GuiSideConfigurationDefaultPageMixin.class',
+                'com/example/mekanismmagic/container/MachinePanelLayout.class',
+                'com/example/mekanismmagic/client/gui/GuiMachineReadout.class',
+                'com/example/mekanismmagic/client/gui/GuiMachineInstrument.class',
+                'com/example/mekanismmagic/container/DockedPanelLayout.class',
+                'com/example/mekanismmagic/container/DockedPanelLayout$Rect.class',
+                'com/example/mekanismmagic/item/RitualSpawnEggIdentity.class',
+                'com/example/mekanismmagic/integration/jei/RitualSpawnEggSubtypeInterpreter.class',
+                'com/example/mekanismmagic/integration/jei/RitualSpawnEggJeiVariants.class',
+                'com/example/mekanismmagic/container/RetainedSlotAccess.class',
+                'com/example/mekanismmagic/container/RetainedSlotProfiles.class',
+                'com/example/mekanismmagic/container/RetainedModuleLayout.class',
+                'com/example/mekanismmagic/client/gui/RetainedItemModule.class',
+                'com/example/mekanismmagic/mixin/RetainedSlotMixin.class',
+                'mekanism_magic.mixins.json',
+                'com/example/mekanismmagic/integration/occultism/SpiritRecipeGroup.class',
+                'com/example/mekanismmagic/integration/jei/SpiritJeiRecipeTypes.class',
+                'com/example/mekanismmagic/integration/common/energy/ProcessingEnergyUsage.class',
+                'com/example/mekanismmagic/integration/common/energy/MagicMachineEnergyProfiles.class',
+                'com/example/mekanismmagic/integration/common/energy/MeteredMachineEnergyContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/NatureMachineEnergyMath.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusContentModule.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusRegistries.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusEnabledCondition.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ClibanoProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ClibanoRecipeSelector.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ClibanoProcessorContainer.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusForgeProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusForge261Bridge.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusForge261Bridge$RitualRecipeView.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusRecipeSelector.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/HephaestusForgeProcessorContainer.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/HephaestusForgeProcessorScreen.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/HephaestusForgeRenderer.class',
+                'assets/mekanism_magic/blockstates/hephaestus_forge_processor.json',
+                'assets/mekanism_magic/models/block/hephaestus_forge_processor.json',
+                'assets/mekanism_magic/models/item/hephaestus_forge_processor.json',
+                'data/mekanism_magic/recipe/hephaestus_forge_processor.json',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ClibanoProcessorScreen.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ForbiddenArcanusClient.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenRecipeDisplayCatalog.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ForbiddenArcanusJeiIntegration.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/EssencePreparationDisplay.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/EssencePreparationJeiCategory.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/EssenceCondenserBlockEntity.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/EssenceCondenserContainer.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/EssenceCondenserScreen.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/NativeEssenceVessel261Bridge.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/EssenceFluidCodec.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/EssenceBankFluidTank.class',
+                'com/example/mekanismmagic/integration/common/resource/EssenceResources.class',
+                'com/example/mekanismmagic/integration/common/resource/EssenceResourceHost.class',
+                'com/example/mekanismmagic/integration/common/resource/EssenceResourceCapabilities.class',
+                'com/example/mekanismmagic/integration/common/cleanup/RetiredEssenceMachines.class',
+                'com/example/mekanismmagic/mixin/ChunkSerializerRetiredEssenceMixin.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/pipe/MagicPipeEssenceIntegration.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/pipe/MagicPipeEssenceTransmitter.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/pipe/MagicPipeEssenceChannel.class',
+                'com/example/mekanismmagic/integration/ae2/Ae2EssenceInterfaceStorage.class',
+                'com/example/mekanismmagic/integration/ae2/Ae2EssenceNetworkAccess.class',
+                'assets/mekanism_magic/blockstates/essence_condenser.json',
+                'assets/mekanism_magic/models/block/essence_condenser.json',
+                'assets/mekanism_magic/models/item/essence_condenser.json',
+                'data/mekanism_magic/recipe/essence_condenser.json',
+                'data/mekanism_magic/recipe/magic_source_pipe_from_essence.json',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ClibanoJeiCategory.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/HephaestusForgeJeiCategory.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ForbiddenJeiCategory.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ForbiddenJeiLayout.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/client/ForbiddenJeiRecipeReconciler.class',
+                'assets/mekanism_magic/blockstates/clibano_processor.json',
+                'assets/mekanism_magic/models/block/clibano_processor.json',
+                'assets/mekanism_magic/models/item/clibano_processor.json',
+                'data/mekanism_magic/recipe/clibano_processor.json',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanus261Bridge.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusRecipeCatalog.class',
+                'com/example/mekanismmagic/integration/forbiddenarcanus/ForbiddenArcanusEntityContainerAdapter.class',
+                'com/example/mekanismmagic/integration/common/entity/component/ComponentEntityContainerSupport.class',
+                'com/example/mekanismmagic/integration/common/entity/SimulationEntitySamples.class',
+                'com/example/mekanismmagic/integration/common/entity/component/EnderLeadEntityContainerAdapter.class',
+                'com/example/mekanismmagic/integration/common/entity/component/IndustrialForegoingEntityContainerAdapter.class',
+                'com/example/mekanismmagic/integration/common/entity/component/JustDireThingsEntityContainerAdapter.class',
+                'com/example/mekanismmagic/integration/common/entity/component/EnderIoEntityContainerAdapter.class',
+                'com/example/mekanismmagic/client/gui/SideConfigDefaultPage.class',
+                'com/example/mekanismmagic/integration/arsnouveau/DrygmyHarvestCatalog.class',
+                'com/example/mekanismmagic/integration/arsnouveau/DrygmyVanillaHarvest.class',
+                'com/example/mekanismmagic/mixin/client/GuiSideConfigurationDefaultPageMixin.class',
+                'mekanism_magic.client.mixins.json',
+                'com/example/mekanismmagic/integration/common/network/MagicPipeRegistries.class',
+                'com/example/mekanismmagic/integration/common/network/MagicPipeResourceHooks.class',
+                'com/example/mekanismmagic/integration/common/network/PipeSourceStorage.class',
+                'com/example/mekanismmagic/integration/arsnouveau/ArsSourcePipeAdapter.class',
+                'com/example/mekanismmagic/integration/naturesaura/MagicPipeAuraIntegration.class',
+                'com/example/mekanismmagic/integration/naturesaura/MagicPipeAuraChannel.class',
+                'com/example/mekanismmagic/integration/naturesaura/AuraSideModeHost.class',
+                'com/example/mekanismmagic/integration/naturesaura/NatureAuraScreenLayout.class',
+                'com/example/mekanismmagic/integration/naturesaura/AuraSideConfigControls.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/AuraIntegratedSideConfig.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/AuraSideConfigurationWindow.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/AuraSideConfigurationTab.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/GuiAuraBar.class',
+                'com/example/mekanismmagic/integration/naturesaura/OfferingProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/NatureAuraGeneratorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/FeAuraConverterBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/AuraFuelGeneratorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/NatureAuraFuelCatalog.class',
+                'com/example/mekanismmagic/integration/naturesaura/FeAuraConverterContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/AuraFuelGeneratorContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/FeAuraConverterScreen.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/AuraFuelGeneratorScreen.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/AuraFuelJeiCategory.class',
+                'com/example/mekanismmagic/integration/naturesaura/TreeRitualProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/AnimalSpawnerProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/AnimalSpawnEggs.class',
+                'assets/mekanism_magic/models/item/animal_spawn_egg.json',
+                'assets/mekanism_magic/models/block/tree_ritual_processor.json',
+                'assets/mekanism_magic/models/block/animal_spawner_processor.json',
                 'META-INF/mekanism_magic_features.properties',
                 'com/example/mekanismmagic/integration/occultism/'
                         + 'OccultismRitualMachineMode.class',
@@ -494,6 +1293,13 @@ tasks.register('validatePackagedIntegrations') {
                         + 'OccultismSpiritJobPolicy.class',
                 'com/example/mekanismmagic/integration/occultism/'
                         + 'OccultismSpiritPatternValidator.class',
+                'com/example/mekanismmagic/integration/occultism/OccultismMachineItemIdentity.class',
+                'com/example/mekanismmagic/integration/occultism/MiniPentacleCapture.class',
+                'com/example/mekanismmagic/integration/occultism/MiniPentacleClaims.class',
+                'data/mekanism_magic/recipe/mini_ritual_blank.json',
+                'com/example/mekanismmagic/integration/arsnouveau/ArsApparatusRecipeViews.class',
+                'com/example/mekanismmagic/integration/arsnouveau/client/ArsApparatusJeiCategory.class',
+                'com/example/mekanismmagic/integration/arsnouveau/client/ArsApparatusJeiReagents.class',
                 'com/example/mekanismmagic/integration/occultism/'
                         + 'MiniPentacleDeployment.class',
                 'com/example/mekanismmagic/integration/common/network/'
@@ -517,18 +1323,107 @@ tasks.register('validatePackagedIntegrations') {
                         + 'VitalicProductionMixin.class',
                 'com/example/mekanismmagic/integration/arsnouveau/mixin/'
                         + 'AlchemicalProductionMixin.class',
-                'ars_source_production.mixins.json'
+                'ars_source_production.mixins.json',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NaturesAuraContentModule.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraRecipeBridge.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraRecipeBridge$AltarRecipeView.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraRecipeScanner.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarContextItem.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarSelectionPolicy.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'SafeAuraContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NaturesAuraRegistries.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'AuraFieldInterfaceBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'AuraFieldInterfaceContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraMachineBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraStorageComponent.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarProcessorBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarProcessorContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarFactoryBlockEntity.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarFactoryContainer.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarFactoryRecipe.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'AuraAwareNatureAltarCachedRecipe.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarFactoryUpgradeData.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarAutomationHost.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarAutomationBatchPolicy.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarContextCountPolicy.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarLockedContextPolicy.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAltarFactoryLanePolicy.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'DynamicNaturalAuraView.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NatureAuraMachineConfig.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NaturalAuraBuffer.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NaturalAuraMergeGuard.class',
+                'com/example/mekanismmagic/integration/naturesaura/'
+                        + 'NaturalAuraPipeSemantics.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'AuraFieldInterfaceScreen.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'GuiAuraBar.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NatureAltarProcessorScreen.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NatureAltarFactoryScreen.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NatureAltarJeiCategory.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NatureAltarContextSubtypeInterpreter.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NaturesAuraJeiIntegration.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NaturesAuraRecipeViewerTypes.class',
+                'com/example/mekanismmagic/integration/naturesaura/client/'
+                        + 'NaturesAuraClient.class'
         ]
         if (compileMekanismExtras || requireFull) {
             requiredEntries.addAll([
                     'com/example/mekanismmagic/integration/mekextras/'
                             + 'MekanismExtrasSpiritFactories.class',
                     'com/example/mekanismmagic/integration/mekextras/'
-                            + 'MekanismExtrasImbuementFactories.class'
+                            + 'MekanismExtrasImbuementFactories.class',
+                    'com/example/mekanismmagic/integration/mekextras/MekanismExtrasNatureAltarFactories.class',
+                    'com/example/mekanismmagic/integration/mekextras/ExtraNatureAltarFactoryBlockEntity.class',
+                    'com/example/mekanismmagic/integration/mekextras/client/ExtraNatureAltarFactoryScreen.class'
             ])
         }
         if (compileMekEnergistics || requireFull) {
             requiredEntries.addAll([
+                    'com/example/mekanismmagic/integration/mekenergistics/MekEnergisticsUpgradeEligibility.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsNativeUpgradeEligibilityMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsUpgradeContainerEligibilityMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsRuntimeUpgradeOwnerMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsRuntimeTileAccessor.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsAeSupplyGateMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsAeOutputGateMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/MekEnergisticsAeNodeHandoffMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/client/MekEnergisticsPatternTabFrameMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/mixin/client/MekEnergisticsInterfaceTabFrameMixin.class',
                     'com/example/mekanismmagic/integration/mekenergistics/'
                             + 'MekEnergisticsCompat.class',
                     'com/example/mekanismmagic/integration/mekenergistics/'
@@ -550,12 +1445,48 @@ tasks.register('validatePackagedIntegrations') {
                     'com/example/mekanismmagic/integration/mekenergistics/'
                             + 'mixin/MekEnergisticsBoundedSmartFeederMixin.class',
                     'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsNatureAltarPatternMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'MekEnergisticsNaturePatternCacheRefresher.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsNaturePatternCacheMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
+                            + 'mixin/MekEnergisticsNatureFactoryAutomationMixin.class',
+                    'com/example/mekanismmagic/integration/mekenergistics/'
                             + 'mixin/MekEnergisticsTierInstallerStateMixin.class',
                     'mekenergistics_compat.mixins.json'
             ])
         }
         if (compileAe2 || requireFull) {
             requiredEntries.addAll([
+                    'com/example/mekanismmagic/integration/ae2/Ae2AddonMachineJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2AuraBottlingService.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2AuraBottlingProvider.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2AuraBottleContainerStrategy.class',
+                    'com/example/mekanismmagic/integration/ae2/mixin/Ae2AuraBottleContainerUnitMixin.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2MachineResourceProvider.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2MachineResourceAccess.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2MachineOutputAccess.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2AppliedFluxEnergySource.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicStorageCells.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicCellContents.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicStorageCellInventory.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicStorageCellItem.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicResourceKey.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicResourceKeys.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicResourceMarkerItem.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicStorageCellClient.class',
+                    'com/example/mekanismmagic/integration/ae2/storage/MagicResourceKeyRenderHandler.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2AuraInterfaceStorage.class',
+                    'com/example/mekanismmagic/integration/ae2/mixin/Ae2MagicMarkerStorageGuardMixin.class',
+                    'assets/mekanism_magic/models/item/magic_resource_marker.json',
+                    'data/mekanism_magic/recipe/magic_resource_marker.json',
+                    'com/example/mekanismmagic/integration/ae2/Ae2ExactMachineJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2RitualJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2ArsApparatusJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2IdentifierImbuementPattern.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2IdentifierImbuementJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/Ae2ImbuementPatternEncoding.class',
                     'com/example/mekanismmagic/integration/ae2/'
                             + 'Ae2ArsCompat.class',
                     'com/example/mekanismmagic/integration/ae2/'
@@ -564,25 +1495,99 @@ tasks.register('validatePackagedIntegrations') {
                             + 'Ae2SourceInterfaceStorage.class',
                     'com/example/mekanismmagic/integration/ae2/'
                             + 'Ae2CompatMixinPlugin.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2NatureAltarPattern.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2NatureAltarJeiTransfer.class',
+                    'com/example/mekanismmagic/integration/ae2/'
+                            + 'Ae2NaturePatternCacheRefresher.class',
+                    'com/example/mekanismmagic/integration/ae2/mixin/'
+                            + 'Ae2NaturePatternDecoderMixin.class',
+                    'com/example/mekanismmagic/integration/ae2/mixin/'
+                            + 'Ae2NaturePatternProviderRefreshMixin.class',
                     'ae2_compat.mixins.json'
             ])
+            [1, 4, 16, 64, 256].each { size ->
+                requiredEntries.addAll([
+                        "assets/mekanism_magic/models/item/magic_storage_cell_${size}k.json".toString(),
+                        "assets/mekanism_magic/models/block/drive/magic_storage_cell_${size}k.json".toString(),
+                        "data/mekanism_magic/recipe/magic_storage_cell_${size}k.json".toString()
+                ])
+            }
         }
 
         File jarFile = archive.get().asFile
+        harvestDefinitions.each { definition ->
+            requiredEntries.add('data/mekanism_magic/drygmy_harvest/'
+                    + file('src/main/resources/data/mekanism_magic/drygmy_harvest')
+                    .toPath().relativize(definition.toPath()).toString().replace('\\', '/'))
+        }
         Set<String> packagedEntries = new HashSet<>()
         java.util.zip.ZipFile zip = new java.util.zip.ZipFile(jarFile)
         try {
             zip.entries().each { packagedEntries.add(it.name) }
+            def retainedMixinEntry = zip.getEntry('mekanism_magic.mixins.json')
+            if (retainedMixinEntry == null) throw new GradleException('Missing core mixin configuration')
+            def retainedMixins = zip.getInputStream(retainedMixinEntry).withCloseable {
+                new groovy.json.JsonSlurper().parse(it)
+            }
+            if (!retainedMixins.mixins.contains('RetainedSlotMixin')) {
+                throw new GradleException('Retained sidebar Slot hook is not enabled in the packaged configuration')
+            }
+            def featureEntry = zip.getEntry('META-INF/mekanism_magic_features.properties')
+            Properties features = new Properties()
+            if (featureEntry == null) throw new GradleException('Missing packaged feature flags')
+            zip.getInputStream(featureEntry).withCloseable { features.load(it) }
+            if (features.getProperty('forbidden_arcanus_integration') != 'true') {
+                throw new GradleException('Forbidden & Arcanus integration feature flag is missing or disabled')
+            }
         } finally {
             zip.close()
         }
         List<String> missing = requiredEntries.findAll {
             !packagedEntries.contains(it)
         }
+        if (packagedEntries.any { it.startsWith('com/stal111/') || it.startsWith('net/valhelsia/')
+                || it.startsWith('data/forbidden_arcanus/') || it.startsWith('assets/forbidden_arcanus/')
+                || it.startsWith('assets/valhelsia_core/') || it.startsWith('data/valhelsia_core/')
+                || (it.endsWith('.jar') && (it.contains('forbidden') || it.contains('valhelsia'))) }) {
+            throw new GradleException('Third-party Forbidden & Arcanus / Valhelsia contents must not be redistributed in this JAR')
+        }
         if (!missing.isEmpty()) {
             throw new GradleException(
                     "Packaged integration contract failed for ${jarFile.name}; "
                             + 'missing entries: ' + missing.join(', '))
+        }
+        if (['com/example/mekanismmagic/client/gui/GuiAeSupplyTab.class',
+             'com/example/mekanismmagic/client/gui/GuiAeSideConfigControl.class',
+             'com/example/mekanismmagic/client/gui/GuiAeConfigurationTab.class',
+             'com/example/mekanismmagic/client/gui/GuiAeConfigurationWindow.class',
+             'com/example/mekanismmagic/client/gui/AeConfigurationLayout.class',
+             'com/example/mekanismmagic/client/gui/GuiThemeToggleTab.class',
+             'com/example/mekanismmagic/mixin/client/GuiMachineAeConfigurationMixin.class',
+             'com/example/mekanismmagic/integration/naturesaura/client/GuiAuraTypeModeButton.class',
+             'com/example/mekanismmagic/integration/naturesaura/client/NatureAltarRecipeButton.class',
+             'com/example/mekanismmagic/integration/ae2/Ae2AuraBottleRequestPayload.class',
+             'com/example/mekanismmagic/integration/ae2/mixin/Ae2StorageMenuSerialAccessor.class',
+             'com/example/mekanismmagic/integration/ae2/mixin/Ae2AuraBottleTerminalScreenMixin.class']
+                .any { packagedEntries.contains(it) }) {
+            throw new GradleException('Obsolete external AE tab or custom bottling packet/UI hooks must not be packaged')
+        }
+        if (packagedEntries.any { entry ->
+            entry.startsWith('com/example/mekanismmagic/client/gui/MekIndustrialScreen')
+                    || entry.startsWith('com/example/mekanismmagic/client/gui/GuiMekMachineReadout')
+        }) {
+            throw new GradleException('Canceled native-gray GUI implementation must not be packaged')
+        }
+        def retiredEssenceNames = ['SoulExtractorProcessor', 'SimulatedBloodExtractor', 'ExperienceBottler',
+                                   'SoulExtraction261Bridge', 'SimulatedBlood261Bridge', 'PlayerExperienceMath']
+        def retiredEssenceIds = ['soul_extractor_processor', 'simulated_blood_extractor', 'experience_bottler']
+        if (packagedEntries.any { entry ->
+            (entry.endsWith('.class') && retiredEssenceNames.any { entry.tokenize('/').last().startsWith(it) })
+                    || (entry.endsWith('.json') && retiredEssenceIds.any { entry.tokenize('/').last() == it + '.json'
+                    || entry.tokenize('/').last() == it + '_active.json' })
+        }) {
+            throw new GradleException('Retired independent essence machines must not be packaged; only registry migration aliases remain')
         }
     }
 }

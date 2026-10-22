@@ -5,7 +5,11 @@
   "plugin": "com.example.mekanismmagic.integration.ae2.Ae2CompatMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "Ae2PatternDecoderMixin"
+    "Ae2MagicMarkerStorageGuardMixin",
+    "Ae2AuraBottleContainerUnitMixin",
+    "Ae2PatternDecoderMixin",
+    "Ae2NaturePatternDecoderMixin",
+    "Ae2NaturePatternProviderRefreshMixin"
   ],
   "injectors": {
     "defaultRequire": 1

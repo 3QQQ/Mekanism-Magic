@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "entities": [
+    "minecraft:villager"
+  ],
+  "kind": "villager_gift"
+}

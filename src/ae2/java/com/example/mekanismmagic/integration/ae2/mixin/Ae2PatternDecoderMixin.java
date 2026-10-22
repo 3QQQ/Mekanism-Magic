@@ -20,10 +20,11 @@ public abstract class Ae2PatternDecoderMixin {
         Ae2IdentifierImbuementPattern pattern =
                 Ae2IdentifierImbuementPattern.tryDecode(definition, level);
         if (pattern != null || Ae2IdentifierImbuementPattern
-                .containsCatalystIdentifier(definition)) {
+                .containsCatalystIdentifier(definition)
+                || Ae2IdentifierImbuementPattern.containsPatternRecipeMarker(definition)) {
             // Returning null is intentional for an invalid/ambiguous
-            // identifier pattern. It prevents AE's normal processing decoder
-            // from treating the non-consumable identifier as a material.
+            // identifier/marked-input pattern. It prevents AE's stock decoder
+            // from requesting a non-consumable identifier or transient NBT as material.
             cir.setReturnValue(pattern);
         }
     }

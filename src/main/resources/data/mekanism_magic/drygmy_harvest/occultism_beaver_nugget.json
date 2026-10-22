@@ -1,0 +1,13 @@
+{
+  "required_mods": [
+    "occultism"
+  ],
+  "entities": [
+    "occultism:beaver_familiar"
+  ],
+  "kind": "item",
+  "item": "occultism:beaver_nugget",
+  "nbt": {
+    "hasBlacksmithUpgrade": true
+  }
+}

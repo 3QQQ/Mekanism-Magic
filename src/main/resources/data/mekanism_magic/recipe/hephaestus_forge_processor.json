@@ -1,0 +1,35 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "mekanism_magic:forbidden_arcanus_enabled"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DGD",
+    "CSC",
+    "DAD"
+  ],
+  "key": {
+    "D": {
+      "item": "forbidden_arcanus:deorum_ingot"
+    },
+    "G": {
+      "item": "forbidden_arcanus:arcane_crystal_block"
+    },
+    "C": {
+      "item": "mekanism:elite_control_circuit"
+    },
+    "S": {
+      "item": "mekanism:steel_casing"
+    },
+    "A": {
+      "item": "forbidden_arcanus:arcane_polished_darkstone"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:hephaestus_forge_processor",
+    "count": 1
+  }
+}

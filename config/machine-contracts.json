@@ -4,6 +4,7 @@
     "requireExplicitFactorySideConfig": true,
     "requirePreservedMachineDrops": true,
     "requireAutomationAwareBasicSlots": true,
+    "requireMachineTitles": true,
     "persistentPendingState": [
       "spirit_processor",
       "dimension_miner",
@@ -24,10 +25,31 @@
       "absolute_imbuement_factory",
       "supreme_imbuement_factory",
       "cosmic_imbuement_factory",
-      "infinite_imbuement_factory"
+      "infinite_imbuement_factory",
+      "nature_altar_processor",
+      "basic_nature_altar_factory",
+      "advanced_nature_altar_factory",
+      "elite_nature_altar_factory",
+      "ultimate_nature_altar_factory",
+      "absolute_nature_altar_factory",
+      "supreme_nature_altar_factory",
+      "cosmic_nature_altar_factory",
+      "infinite_nature_altar_factory",
+      "offering_processor",
+      "tree_ritual_processor",
+      "animal_spawner_processor",
+      "aura_fuel_generator",
+      "clibano_processor",
+      "hephaestus_forge_processor",
+      "essence_condenser"
     ],
-    "directAeOutput": ["dimension_miner", "drygmy_simulator"],
-    "nativeAeProvider": ["imbuement_processor"],
+    "directAeOutput": [
+      "dimension_miner",
+      "drygmy_simulator"
+    ],
+    "nativeAeProvider": [
+      "imbuement_processor"
+    ],
     "customUpgradeState": [
       "basic_spirit_factory",
       "advanced_spirit_factory",
@@ -45,7 +67,16 @@
       "absolute_imbuement_factory",
       "supreme_imbuement_factory",
       "cosmic_imbuement_factory",
-      "infinite_imbuement_factory"
+      "infinite_imbuement_factory",
+      "nature_altar_processor",
+      "basic_nature_altar_factory",
+      "advanced_nature_altar_factory",
+      "elite_nature_altar_factory",
+      "ultimate_nature_altar_factory",
+      "absolute_nature_altar_factory",
+      "supreme_nature_altar_factory",
+      "cosmic_nature_altar_factory",
+      "infinite_nature_altar_factory"
     ],
     "mekEPatternAutomation": [
       "basic_imbuement_factory",
@@ -57,6 +88,15 @@
       "cosmic_imbuement_factory",
       "infinite_imbuement_factory",
       "enchanting_apparatus_processor",
+      "nature_altar_processor",
+      "basic_nature_altar_factory",
+      "advanced_nature_altar_factory",
+      "elite_nature_altar_factory",
+      "ultimate_nature_altar_factory",
+      "absolute_nature_altar_factory",
+      "supreme_nature_altar_factory",
+      "cosmic_nature_altar_factory",
+      "infinite_nature_altar_factory",
       "spirit_processor",
       "ritual_engine",
       "mini_ritual_assembler",
@@ -71,41 +111,405 @@
     ]
   },
   "entries": [
-    { "id": "spirit_processor", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "dimension_miner", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "basic_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "advanced_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "elite_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "ultimate_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "absolute_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "supreme_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "cosmic_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "infinite_spirit_factory", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "ritual_engine", "profile": "machine", "requiredMods": ["occultism"] },
-    { "id": "mini_ritual_assembler", "profile": "machine", "requiredMods": ["occultism"] },
-
-    { "id": "source_generator", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "source_converter", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "catalyst_identifier_assembler", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "imbuement_processor", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "basic_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "advanced_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "elite_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "ultimate_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "absolute_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "supreme_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "cosmic_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "infinite_imbuement_factory", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "enchanting_apparatus_processor", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-    { "id": "drygmy_simulator", "profile": "machine", "requiredMods": ["ars_nouveau"] },
-
-    { "id": "magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "advanced_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "elite_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "ultimate_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "absolute_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "supreme_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "cosmic_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] },
-    { "id": "infinite_magic_source_pipe", "profile": "pipe", "requiredMods": ["ars_nouveau"] }
+    {
+      "id": "essence_condenser",
+      "profile": "machine",
+      "requiredMods": [
+        "forbidden_arcanus",
+        "valhelsia_core"
+      ],
+      "rendering": "blockstate"
+    },
+    {
+      "id": "hephaestus_forge_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "forbidden_arcanus",
+        "valhelsia_core"
+      ]
+    },
+    {
+      "id": "clibano_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "forbidden_arcanus",
+        "valhelsia_core"
+      ],
+      "rendering": "blockstate"
+    },
+    {
+      "id": "spirit_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "dimension_miner",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "basic_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "advanced_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "elite_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "ultimate_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "absolute_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "supreme_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "cosmic_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "infinite_spirit_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "ritual_engine",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "mini_ritual_assembler",
+      "profile": "machine",
+      "requiredMods": [
+        "occultism"
+      ]
+    },
+    {
+      "id": "source_generator",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "source_converter",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "catalyst_identifier_assembler",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "imbuement_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "basic_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "advanced_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "elite_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "ultimate_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "absolute_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "supreme_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "cosmic_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "infinite_imbuement_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "enchanting_apparatus_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "drygmy_simulator",
+      "profile": "machine",
+      "requiredMods": [
+        "ars_nouveau"
+      ]
+    },
+    {
+      "id": "magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "advanced_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "elite_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "ultimate_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "absolute_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "supreme_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "cosmic_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "infinite_magic_source_pipe",
+      "profile": "pipe",
+      "requiredMods": [],
+      "anyRequiredMods": [
+        "ars_nouveau",
+        "naturesaura",
+        "forbidden_arcanus"
+      ]
+    },
+    {
+      "id": "aura_field_interface",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ],
+      "rendering": "blockstate"
+    },
+    {
+      "id": "fe_aura_converter",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ],
+      "rendering": "blockstate"
+    },
+    {
+      "id": "aura_fuel_generator",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ],
+      "rendering": "blockstate"
+    },
+    {
+      "id": "nature_altar_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "basic_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "advanced_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "elite_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "ultimate_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "absolute_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura",
+        "mekanism_extras"
+      ]
+    },
+    {
+      "id": "supreme_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura",
+        "mekanism_extras"
+      ]
+    },
+    {
+      "id": "cosmic_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura",
+        "mekanism_extras"
+      ]
+    },
+    {
+      "id": "infinite_nature_altar_factory",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura",
+        "mekanism_extras"
+      ]
+    },
+    {
+      "id": "offering_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "tree_ritual_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    },
+    {
+      "id": "animal_spawner_processor",
+      "profile": "machine",
+      "requiredMods": [
+        "naturesaura"
+      ]
+    }
   ]
 }

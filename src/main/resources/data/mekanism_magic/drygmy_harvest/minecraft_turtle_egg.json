@@ -1,0 +1,7 @@
+{
+  "entities": [
+    "minecraft:turtle"
+  ],
+  "kind": "turtle_egg",
+  "adult": true
+}

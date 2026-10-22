@@ -8,6 +8,8 @@ import com.example.mekanismmagic.integration.common.network
 import com.example.mekanismmagic.integration.common.network
         .MachineNetworkLifecycleHooks;
 import com.example.mekanismmagic.integration.common.network
+        .MachineAeResourceHooks;
+import com.example.mekanismmagic.integration.common.network
         .MagicSourceExternalEndpointHooks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -27,14 +29,15 @@ public final class Ae2DirectOutputCompat {
         MachineNetworkLifecycleHooks.register(
                 Ae2DirectOutputProvider.LIFECYCLE_HOOK);
         MachineDirectOutputHooks.register(Ae2DirectOutputProvider.HOOK);
-        if (ModCompatibility.loaded(
-                ModCompatibility.ARS_ENERGISTIQUE)) {
-            MagicSourceExternalEndpointHooks.register(
-                    (level, pos, side) -> level.getCapability(
-                            AECapabilities.GENERIC_INTERNAL_INV,
-                            pos, side) != null);
-        }
+        MachineAeResourceHooks.register(Ae2MachineResourceAccess.INSTANCE);
+        Ae2AppliedFluxEnergySource.register();
+        MagicSourceExternalEndpointHooks.register(
+                (level, pos, side) -> level.getCapability(
+                        AECapabilities.GENERIC_INTERNAL_INV,
+                        pos, side) != null);
         modBus.addListener(Ae2DirectOutputCompat::registerCapabilities);
+        modBus.addListener(Ae2MachineResourceProvider::registerCapabilities);
+        modBus.addListener(Ae2ExternalPatternMachine::registerCapabilities);
     }
 
     private static void registerCapabilities(

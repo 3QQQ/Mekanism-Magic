@@ -88,6 +88,10 @@ tasks.register('validateMachineContracts') {
                     != entry.requiredMods.size()) {
                 errors << "Catalog entry '${id}' contains duplicate requiredMods."
             }
+            if (entry.anyRequiredMods != null && (!(entry.anyRequiredMods instanceof List)
+                    || !entry.anyRequiredMods.every { it instanceof String && it ==~ /[a-z][a-z0-9_]*/ })) {
+                errors << "Catalog entry '${id}' has invalid anyRequiredMods alternatives."
+            }
             if (entry.rendering != null
                     && !(entry.rendering in ['block_entity', 'blockstate'])) {
                 errors << "Catalog entry '${id}' has invalid rendering '${entry.rendering}'."
@@ -108,6 +112,9 @@ tasks.register('validateMachineContracts') {
         }
         if (behaviorChecks.requireAutomationAwareBasicSlots != true) {
             errors << 'behaviorChecks must require automation-aware BasicInventorySlot extraction.'
+        }
+        if (behaviorChecks.requireMachineTitles != true) {
+            errors << 'behaviorChecks must require matching localized machine names and GUI titles.'
         }
         List<String> behaviorListKeys = [
                 'persistentPendingState', 'directAeOutput',
@@ -321,7 +328,8 @@ tasks.register('validateMachineContracts') {
             [
                     ~/(?s)\bBLOCKS\s*\.\s*register\s*\(\s*"([a-z0-9_]+)"/,
                     ~/(?s)\bregisterImbuementFactoryBlock\s*\(\s*"([a-z0-9_]+)"/,
-                    ~/(?s)\bregisterMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/
+                    ~/(?s)\bregisterMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\bregisterNaturalAuraPipeBlock\s*\(\s*"([a-z0-9_]+)"/
             ].each { pattern ->
                 def matcher = source =~ pattern
                 matcher.each { match -> registeredIds << match[1] }
@@ -333,7 +341,8 @@ tasks.register('validateMachineContracts') {
             [
                     ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*BLOCKS\s*\.\s*register\s*\(\s*"([a-z0-9_]+)"/,
                     ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerImbuementFactoryBlock\s*\(\s*"([a-z0-9_]+)"/,
-                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerMagicSourcePipeBlock\s*\(\s*"([a-z0-9_]+)"/,
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_BLOCK)\s*=\s*registerNaturalAuraPipeBlock\s*\(\s*"([a-z0-9_]+)"/
             ].each { pattern ->
                 def matcher = source =~ pattern
                 matcher.each { match ->
@@ -347,7 +356,7 @@ tasks.register('validateMachineContracts') {
                     }
                 }
             }
-            if (javaFile.name == 'MekanismExtrasImbuementFactories.java') {
+            if (javaFile.name in ['MekanismExtrasImbuementFactories.java', 'MekanismExtrasNatureAltarFactories.java']) {
                 def matcher = source =~
                         ~/(?s)(?<!\.)\bregister\s*\(\s*"([a-z0-9_]+)"/
                 matcher.each { match -> registeredIds << match[1] }
@@ -360,7 +369,7 @@ tasks.register('validateMachineContracts') {
             }
 
             def tileMatcher = source =~
-                    ~/(?s)\b([A-Z][A-Z0-9_]*_TILE)\s*=\s*(?:TILES\s*\.\s*mekBuilder|factoryTile|registerMagicSourcePipeTile|tile)\s*\(\s*([A-Z][A-Z0-9_]*_BLOCK)\b/
+                    ~/(?s)\b([A-Z][A-Z0-9_]*_TILE)\s*=\s*(?:TILES\s*\.\s*mekBuilder|factoryTile|registerMagicSourcePipeTile|registerNaturalAuraPipeTile|tile)\s*\(\s*([A-Z][A-Z0-9_]*_BLOCK)\b/
             tileMatcher.each { match ->
                 String qualifiedBlock =
                         "${ownerClass}.${match[2]}".toString()
@@ -398,16 +407,21 @@ tasks.register('validateMachineContracts') {
         // still guarding the hand-maintained integration edges that cannot
         // be inferred from block models or loot JSON.
         Set<String> expectedPersistentState = catalogIds.findAll { String id ->
-            id == 'dimension_miner' || id == 'drygmy_simulator'
+            id == 'dimension_miner' || id == 'drygmy_simulator' || id == 'offering_processor' || id == 'tree_ritual_processor'
+                    || id == 'animal_spawner_processor'
+                    || id == 'aura_fuel_generator' || id == 'clibano_processor' || id == 'hephaestus_forge_processor'
+                    || id == 'essence_condenser'
                     || id == 'spirit_processor'
                     || id == 'imbuement_processor'
+                    || id == 'nature_altar_processor'
                     || id.contains('spirit_factory')
                     || id.contains('imbuement_factory')
+                    || id.contains('nature_altar_factory')
         } as Set<String>
         if ((behaviorIds.persistentPendingState ?: [])
                 != expectedPersistentState) {
-            errors << 'behaviorChecks.persistentPendingState is out of sync; expected: '
-                    + new TreeSet<>(expectedPersistentState).join(', ')
+            errors << ('behaviorChecks.persistentPendingState is out of sync; expected: '
+                    + new TreeSet<>(expectedPersistentState).join(', '))
         }
         [
                 'src/main/java/com/example/mekanismmagic/blockentity/NativeDimensionMinerBlockEntity.java',
@@ -432,7 +446,9 @@ tasks.register('validateMachineContracts') {
                 'src/main/java/com/example/mekanismmagic/blockentity/NativeSpiritFactoryBlockEntity.java',
                 'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraSpiritFactoryBlockEntity.java',
                 'src/main/java/com/example/mekanismmagic/integration/arsnouveau/ImbuementFactoryBlockEntity.java',
-                'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraImbuementFactoryBlockEntity.java'
+                'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraImbuementFactoryBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/naturesaura/NatureAltarFactoryBlockEntity.java',
+                'src/main/java/com/example/mekanismmagic/integration/mekextras/ExtraNatureAltarFactoryBlockEntity.java'
         ]
         if (!factoryIds.isEmpty()) {
             explicitFactoryImplementations.each { String path ->
@@ -456,7 +472,8 @@ tasks.register('validateMachineContracts') {
         }
 
         Set<String> expectedCustomUpgradeState = catalogIds.findAll { String id ->
-            id == 'imbuement_processor' || id.endsWith('_factory')
+            id == 'imbuement_processor' || id == 'nature_altar_processor'
+                    || id.endsWith('_factory')
         } as Set<String>
         if ((behaviorIds.customUpgradeState ?: [])
                 != expectedCustomUpgradeState) {
@@ -480,6 +497,16 @@ tasks.register('validateMachineContracts') {
                 'getUpgradeData(')) {
             errors << 'Imbuement processor does not provide its custom factory upgrade payload.'
         }
+        File natureProcessor = file(
+                'src/main/java/com/example/mekanismmagic/integration/naturesaura/NatureAltarProcessorBlockEntity.java')
+        if (!natureProcessor.isFile()
+                || !natureProcessor.getText('UTF-8').contains(
+                'getUpgradeData(')
+                || !natureProcessor.getText('UTF-8').contains(
+                'parseUpgradeData(')) {
+            errors << 'Nature altar processor upgrade-state contract is incomplete.'
+        }
+
         String aeRegistrationSource = [
                 file('src/ae2/java/com/example/mekanismmagic/integration/ae2/Ae2DirectOutputCompat.java'),
                 file('src/ae2/java/com/example/mekanismmagic/integration/ae2/Ae2ArsCompat.java')
@@ -522,7 +549,7 @@ tasks.register('validateMachineContracts') {
             if (tileConstant == null) {
                 errors << "Machine '${id}' (${blockConstant}) is not referenced by " +
                         'TILES.mekBuilder, factoryTile, registerMagicSourcePipeTile, ' +
-                        'or tile; ' +
+                        'registerNaturalAuraPipeTile or tile; ' +
                         'the placed block would have no block entity.'
                 return
             }
@@ -601,6 +628,21 @@ tasks.register('validateMachineContracts') {
             }
             if (!(zhLang instanceof Map) || !zhLang.containsKey(langKey)) {
                 errors << "Missing zh_cn translation '${langKey}'."
+            }
+            if (entry.profile == 'machine') {
+                String titleKey = "container.mekanism_magic.${id}".toString()
+                [en_us: enLang, zh_cn: zhLang].each { String locale, Object translations ->
+                    Object name = translations instanceof Map ? translations[langKey] : null
+                    Object title = translations instanceof Map ? translations[titleKey] : null
+                    if (!(name instanceof String) || name.trim().isEmpty()
+                            || name != name.trim() || name in ['Machine', 'Processor', '机器', '处理机']
+                            || name.startsWith('block.') || name.startsWith('container.')) {
+                        errors << "Invalid or placeholder ${locale} machine name '${langKey}'."
+                    }
+                    if (!(title instanceof String) || title != name) {
+                        errors << "${locale} GUI title '${titleKey}' must exist and match '${langKey}'."
+                    }
+                }
             }
             if (!pickaxeIds.contains(registryId)) {
                 errors << "${registryId} is missing from minecraft:mineable/pickaxe."

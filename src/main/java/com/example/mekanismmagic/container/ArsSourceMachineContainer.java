@@ -33,11 +33,11 @@ public final class ArsSourceMachineContainer<
     protected int getInventoryYOffset() {
         if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
                 .DrygmySimulatorBlockEntity) {
-            return 126;
+            return MachinePanelLayout.inventoryY(MachinePanelLayout.DRYGMY_HEIGHT);
         }
         if (tile instanceof com.example.mekanismmagic.integration.arsnouveau
                 .EnchantingApparatusProcessorBlockEntity) {
-            return 126;
+            return MachinePanelLayout.inventoryY(MachinePanelLayout.ARS_THREE_BY_THREE_HEIGHT);
         }
         return 84;
     }

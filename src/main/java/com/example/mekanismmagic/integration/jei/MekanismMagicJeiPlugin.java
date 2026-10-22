@@ -3,12 +3,14 @@ package com.example.mekanismmagic.integration.jei;
 import com.example.mekanismmagic.MekanismMagic;
 import com.example.mekanismmagic.NativeMekanismRegistries;
 import com.example.mekanismmagic.integration.occultism.OccultismRecipeBridge;
+import com.example.mekanismmagic.integration.occultism.SpiritRecipeGroup;
 import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.recipe.UltimateMiniRitualRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.registration.IAdvancedRegistration;
 import mezz.jei.api.registration.IExtraIngredientRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -36,8 +38,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             RecipeType.create(MekanismMagic.MOD_ID, "ritual",
                     OccultismRecipeBridge.RitualJeiData.class);
     public static final RecipeType<OccultismRecipeBridge.SpiritJeiData> SPIRIT_TYPE =
-            RecipeType.create(MekanismMagic.MOD_ID, "spirit",
-                    OccultismRecipeBridge.SpiritJeiData.class);
+            SpiritJeiRecipeTypes.type(SpiritRecipeGroup.SPIRIT_FIRE);
     public static final RecipeType<OccultismRecipeBridge.MinerJeiData> MINER_TYPE =
             RecipeType.create(MekanismMagic.MOD_ID, "miner",
                     OccultismRecipeBridge.MinerJeiData.class);
@@ -53,6 +54,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             registeredSpirits = List.of();
     private static volatile List<OccultismRecipeBridge.MinerJeiData>
             registeredMiners = List.of();
+    private static volatile List<ItemStack> registeredRitualEggs = List.of();
     private static volatile IJeiRuntime runtime;
     private static volatile long displayedRecipeRevision = Long.MIN_VALUE;
     private static volatile long displayedSpiritRevision = Long.MIN_VALUE;
@@ -71,9 +73,29 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             registration.registerSubtypeInterpreter(
                     MekanismMagic.MINI_RITUAL.get(),
                     MiniRitualSubtypeInterpreter.INSTANCE);
+            registration.registerSubtypeInterpreter(
+                    MekanismMagic.RITUAL_SPAWN_EGG.get(), RitualSpawnEggSubtypeInterpreter.INSTANCE);
         }
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             invokeOptionalJeiSubtypeRegistration(registration);
+        }
+        if (ModCompatibility.naturesAuraLoaded()) {
+            invokeOptionalNatureJeiSubtypeRegistration(registration);
+        }
+    }
+
+    @Override
+    public void registerAdvanced(IAdvancedRegistration registration) {
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            try {
+                Class.forName("com.example.mekanismmagic.integration."
+                                + "arsnouveau.client.ArsNouveauJeiIntegration")
+                        .getMethod("registerAdvanced", IAdvancedRegistration.class)
+                        .invoke(null, registration);
+            } catch (ReflectiveOperationException | LinkageError failure) {
+                throw new IllegalStateException(
+                        "Failed to register optional Ars JEI lookups", failure);
+            }
         }
     }
 
@@ -89,6 +111,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                             .map(OccultismRecipeBridge.PentacleJeiData::output)
                             .map(net.minecraft.world.item.ItemStack::copy)
                             .toList());
+            registration.addExtraItemStacks(ritualEggVariants(OccultismRecipeBridge.ritualJeiRecipes(Minecraft.getInstance().level)));
         }
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             invokeOptionalJeiExtraRegistration(registration);
@@ -102,15 +125,20 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                             registration.getJeiHelpers().getGuiHelper()),
                     new RitualJeiCategory(
                             registration.getJeiHelpers().getGuiHelper()),
-                    new SpiritJeiCategory(
-                            registration.getJeiHelpers().getGuiHelper()),
                     new MinerJeiCategory(
                             registration.getJeiHelpers().getGuiHelper()),
                     new UltimateMiniRitualJeiCategory(
                             registration.getJeiHelpers().getGuiHelper()));
+            registerSpiritCategories(registration);
         }
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             invokeOptionalJeiCategoryRegistration(registration);
+        }
+        if (ModCompatibility.naturesAuraLoaded()) {
+            invokeOptionalNatureJeiCategoryRegistration(registration);
+        }
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+            invokeOptionalForbiddenJei("registerCategories", IRecipeCategoryRegistration.class, registration);
         }
     }
 
@@ -118,6 +146,12 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         if (ModCompatibility.arsNouveauMachineContentEnabled()) {
             invokeOptionalJeiRecipeRegistration(registration);
+        }
+        if (ModCompatibility.naturesAuraLoaded()) {
+            invokeOptionalNatureJeiRecipeRegistration(registration);
+        }
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+            invokeOptionalForbiddenJei("registerRecipes", IRecipeRegistration.class, registration);
         }
         if (!ModCompatibility.occultismLoaded()) {
             return;
@@ -142,6 +176,8 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             List<OccultismRecipeBridge.RitualJeiData> rituals =
                     OccultismRecipeBridge.ritualJeiRecipes(
                             Minecraft.getInstance().level);
+            registeredRitualEggs = ritualEggVariants(rituals);
+            RitualSpawnEggJeiVariants.reconcile(registration.getIngredientManager(), List.of(), registeredRitualEggs);
             List<OccultismRecipeBridge.SpiritJeiData> spirits =
                     OccultismRecipeBridge.spiritJeiRecipes(
                             Minecraft.getInstance().level);
@@ -154,7 +190,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             registeredMiners = List.copyOf(miners);
             registration.addRecipes(MINI_RITUAL_TYPE, pentacles);
             registration.addRecipes(RITUAL_TYPE, rituals);
-            registration.addRecipes(SPIRIT_TYPE, spirits);
+            registerSpiritRecipes(registration, spirits);
             registration.addRecipes(MINER_TYPE, miners);
             List<UltimateMiniRitualRecipe> ultimateRecipes =
                     Minecraft.getInstance().level.getRecipeManager()
@@ -170,12 +206,28 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         }
     }
 
+    static void registerSpiritCategories(IRecipeCategoryRegistration registration) {
+        var gui = registration.getJeiHelpers().getGuiHelper();
+        for (var group : SpiritRecipeGroup.values()) {
+            registration.addRecipeCategories(new SpiritJeiCategory(gui, group));
+        }
+    }
+
+    static void registerSpiritRecipes(IRecipeRegistration registration,
+                                      List<OccultismRecipeBridge.SpiritJeiData> spirits) {
+        SpiritRecipeGroup.partition(spirits).forEach((group, rows) ->
+                registration.addRecipes(SpiritJeiRecipeTypes.type(group), rows));
+    }
+
     @Override
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
         runtime = jeiRuntime;
         displayedRecipeRevision = OccultismRecipeBridge.recipeRevision();
         displayedSpiritRevision =
                 OccultismRecipeBridge.spiritProcessingRevision();
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+            invokeOptionalForbiddenJei("onRuntimeAvailable", IJeiRuntime.class, jeiRuntime);
+        }
     }
 
     @Override
@@ -186,8 +238,20 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         registeredRituals = List.of();
         registeredSpirits = List.of();
         registeredMiners = List.of();
+        registeredRitualEggs = List.of();
         displayedRecipeRevision = Long.MIN_VALUE;
         displayedSpiritRevision = Long.MIN_VALUE;
+        if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+            try {
+                Class.forName("com.example.mekanismmagic.integration.arsnouveau.client.ArsNouveauJeiIntegration")
+                        .getMethod("onRuntimeUnavailable").invoke(null);
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Failed to clear Ars JEI runtime state", failure);
+            }
+        }
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+            invokeOptionalForbiddenJei("onRuntimeUnavailable", null, null);
+        }
     }
 
     /**
@@ -248,9 +312,13 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                     MINI_RITUAL_TYPE, registeredPentacles,
                     freshPentacles,
                     MekanismMagicJeiPlugin::samePentacleRecipe);
+            var freshRituals = OccultismRecipeBridge.ritualJeiRecipes(level);
+            var freshEggs = ritualEggVariants(freshRituals);
+            RitualSpawnEggJeiVariants.reconcile(activeRuntime.getIngredientManager(), registeredRitualEggs, freshEggs);
+            registeredRitualEggs = freshEggs;
             registeredRituals = reconcileRecipes(recipes,
                     RITUAL_TYPE, registeredRituals,
-                    OccultismRecipeBridge.ritualJeiRecipes(level),
+                    freshRituals,
                     MekanismMagicJeiPlugin::sameRitualRecipe);
             registeredMiners = reconcileRecipes(recipes,
                     MINER_TYPE, registeredMiners,
@@ -259,12 +327,27 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             displayedRecipeRevision = recipeRevision;
         }
         if (recipesChanged || spiritsChanged) {
-            registeredSpirits = reconcileRecipes(recipes,
-                    SPIRIT_TYPE, registeredSpirits,
-                    OccultismRecipeBridge.spiritJeiRecipes(level),
-                    MekanismMagicJeiPlugin::sameSpiritRecipe);
+            registeredSpirits = reconcileSpiritRecipes(recipes,
+                    registeredSpirits, OccultismRecipeBridge.spiritJeiRecipes(level));
             displayedSpiritRevision = spiritRevision;
         }
+    }
+
+    static List<ItemStack> ritualEggVariants(List<OccultismRecipeBridge.RitualJeiData> rituals) {
+        return RitualSpawnEggJeiVariants.collect(rituals.stream().map(OccultismRecipeBridge.RitualJeiData::output).toList());
+    }
+
+    static List<OccultismRecipeBridge.SpiritJeiData> reconcileSpiritRecipes(
+            IRecipeManager manager, List<OccultismRecipeBridge.SpiritJeiData> previous,
+            List<OccultismRecipeBridge.SpiritJeiData> fresh) {
+        var oldGroups = SpiritRecipeGroup.partition(previous);
+        var newGroups = SpiritRecipeGroup.partition(fresh);
+        List<OccultismRecipeBridge.SpiritJeiData> reconciled = new ArrayList<>(fresh.size());
+        for (var group : SpiritRecipeGroup.values()) {
+            reconciled.addAll(reconcileRecipes(manager, SpiritJeiRecipeTypes.type(group),
+                    oldGroups.get(group), newGroups.get(group), MekanismMagicJeiPlugin::sameSpiritRecipe));
+        }
+        return List.copyOf(reconciled);
     }
 
     private static <T> List<T> reconcileRecipes(
@@ -344,6 +427,10 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         return first.pentacleId().equals(second.pentacleId())
                 && first.chalkColors().equals(second.chalkColors())
                 && sameStacks(first.materials(), second.materials())
+                && first.materialAlternatives().size() == second.materialAlternatives().size()
+                && java.util.stream.IntStream.range(0, first.materialAlternatives().size())
+                .allMatch(index -> sameStacks(first.materialAlternatives().get(index),
+                        second.materialAlternatives().get(index)))
                 && sameStack(first.output(), second.output());
     }
 
@@ -441,11 +528,26 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
             invokeOptionalJeiRegistration(registration,
                     "arsnouveau.client.ArsNouveauJeiIntegration");
         }
+        if (ModCompatibility.naturesAuraLoaded()) {
+            invokeOptionalJeiRegistration(registration,
+                    "naturesaura.client.NaturesAuraJeiIntegration");
+        }
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()) {
+            invokeOptionalForbiddenJei("registerCatalysts", IRecipeCatalystRegistration.class, registration);
+        }
     }
 
     @Override
     public void registerRecipeTransferHandlers(
             IRecipeTransferRegistration registration) {
+        if (ModCompatibility.loaded("ae2")) {
+            if (ModCompatibility.occultismLoaded()) {
+                registerExactTransfer(registration, "Ae2RitualJeiTransfer");
+            }
+            if (ModCompatibility.arsNouveauMachineContentEnabled()) {
+                registerExactTransfer(registration, "Ae2ArsApparatusJeiTransfer");
+            }
+        }
         if (ModCompatibility.arsNouveauMachineContentEnabled()
                 && ModCompatibility.loaded("ae2")) {
             try {
@@ -474,6 +576,78 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                         failure);
             }
         }
+        if (ModCompatibility.naturesAuraLoaded()
+                && ModCompatibility.loaded("ae2")) {
+            registerAddonMachineTransfer(registration, "registerNature");
+            try {
+                Class.forName("com.example.mekanismmagic.integration."
+                                + "ae2.Ae2NatureAltarJeiTransfer")
+                        .getMethod("register",
+                                IRecipeTransferRegistration.class)
+                        .invoke(null, registration);
+            } catch (ClassNotFoundException missing) {
+                // AE2 is optional. Only report a missing compiled bridge when
+                // the runtime actually contains AE2 and would use it.
+                if (net.neoforged.fml.ModList.get().isLoaded("ae2")) {
+                    MekanismMagic.LOGGER.error(
+                            "AE2 is loaded but the natural altar JEI "
+                                    + "transfer bridge is missing", missing);
+                }
+            } catch (LinkageError incompatible) {
+                MekanismMagic.LOGGER.error(
+                        "AE2 natural altar pattern transfer is incompatible "
+                                + "with the installed AE2/JEI version",
+                        incompatible);
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException(
+                        "Failed to register AE2 natural altar pattern "
+                                + "transfer", failure);
+            }
+        }
+        if (ModCompatibility.forbiddenArcanusIntegrationEnabled()
+                && ModCompatibility.loaded("ae2")) {
+            registerAddonMachineTransfer(registration, "registerForbidden");
+        }
+    }
+
+    private static void registerAddonMachineTransfer(IRecipeTransferRegistration registration, String method) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2.Ae2AddonMachineJeiTransfer")
+                    .getMethod(method, IRecipeTransferRegistration.class).invoke(null, registration);
+        } catch (ClassNotFoundException | LinkageError unavailable) {
+            MekanismMagic.LOGGER.error("AE2 addon-machine JEI transfer is unavailable: {}", method, unavailable);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Failed to register AE2 addon-machine JEI transfer " + method, failure);
+        }
+    }
+
+    private static void registerExactTransfer(IRecipeTransferRegistration registration, String type) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration.ae2." + type)
+                    .getMethod("register", IRecipeTransferRegistration.class).invoke(null, registration);
+        } catch (ClassNotFoundException | LinkageError unavailable) {
+            MekanismMagic.LOGGER.error("Exact AE recipe transfer is unavailable: {}", type, unavailable);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Failed to register exact AE recipe transfer " + type, failure);
+        }
+    }
+
+    /** Invoked reflectively by the optional Ars client recipe-update listener. */
+    public static void requestArsRuntimeRefresh() {
+        Minecraft.getInstance().execute(() -> {
+            IJeiRuntime active = runtime;
+            if (active == null || Minecraft.getInstance().level == null
+                    || !ModCompatibility.arsNouveauMachineContentEnabled()) {
+                return;
+            }
+            try {
+                Class.forName("com.example.mekanismmagic.integration.arsnouveau.client.ArsNouveauJeiIntegration")
+                        .getMethod("refreshApparatusRecipes", IRecipeManager.class)
+                        .invoke(null, active.getRecipeManager());
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Failed to refresh apparatus JEI recipes", failure);
+            }
+        });
     }
 
     private static void registerOccultismCatalysts(
@@ -486,19 +660,19 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                 RITUAL_TYPE);
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.SPIRIT_BLOCK.asItem(),
-                SPIRIT_TYPE);
+                SpiritJeiRecipeTypes.all());
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.BASIC_SPIRIT_FACTORY_BLOCK.asItem(),
-                SPIRIT_TYPE);
+                SpiritJeiRecipeTypes.all());
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.ADVANCED_SPIRIT_FACTORY_BLOCK.asItem(),
-                SPIRIT_TYPE);
+                SpiritJeiRecipeTypes.all());
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.ELITE_SPIRIT_FACTORY_BLOCK.asItem(),
-                SPIRIT_TYPE);
+                SpiritJeiRecipeTypes.all());
         registration.addRecipeCatalyst(
                 NativeMekanismRegistries.ULTIMATE_SPIRIT_FACTORY_BLOCK.asItem(),
-                SPIRIT_TYPE);
+                SpiritJeiRecipeTypes.all());
         addOptionalSpiritFactoryCatalyst(registration,
                 "absolute_spirit_factory");
         addOptionalSpiritFactoryCatalyst(registration,
@@ -523,6 +697,21 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         } catch (ReflectiveOperationException | LinkageError failure) {
             throw new IllegalStateException(
                     "Failed to register optional JEI catalysts", failure);
+        }
+    }
+
+    /** No Forbidden DTO, RecipeType or implementation class is linked before the exact version gate. */
+    private static void invokeOptionalForbiddenJei(String method, Class<?> parameterType, Object argument) {
+        try {
+            Class<?> integration = Class.forName("com.example.mekanismmagic.integration."
+                    + "forbiddenarcanus.client.ForbiddenArcanusJeiIntegration");
+            if (parameterType == null) {
+                integration.getMethod(method).invoke(null);
+            } else {
+                integration.getMethod(method, parameterType).invoke(null, argument);
+            }
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException("Failed optional Forbidden & Arcanus JEI callback: " + method, failure);
         }
     }
 
@@ -585,6 +774,51 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
         }
     }
 
+    private static void invokeOptionalNatureJeiCategoryRegistration(
+            IRecipeCategoryRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "naturesaura.client.NaturesAuraJeiIntegration")
+                    .getMethod("registerCategories",
+                            IRecipeCategoryRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Nature's Aura JEI "
+                            + "categories", failure);
+        }
+    }
+
+    private static void invokeOptionalNatureJeiSubtypeRegistration(
+            ISubtypeRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "naturesaura.client.NaturesAuraJeiIntegration")
+                    .getMethod("registerSubtypes",
+                            ISubtypeRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Nature's Aura JEI "
+                            + "subtypes", failure);
+        }
+    }
+
+    private static void invokeOptionalNatureJeiRecipeRegistration(
+            IRecipeRegistration registration) {
+        try {
+            Class.forName("com.example.mekanismmagic.integration."
+                            + "naturesaura.client.NaturesAuraJeiIntegration")
+                    .getMethod("registerRecipes",
+                            IRecipeRegistration.class)
+                    .invoke(null, registration);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            throw new IllegalStateException(
+                    "Failed to register optional Nature's Aura JEI recipes",
+                    failure);
+        }
+    }
+
     private static void addOptionalSpiritFactoryCatalyst(
             IRecipeCatalystRegistration registration, String path) {
         net.minecraft.world.item.Item item =
@@ -592,7 +826,7 @@ public final class MekanismMagicJeiPlugin implements IModPlugin {
                         ResourceLocation.fromNamespaceAndPath(
                                 MekanismMagic.MOD_ID, path));
         if (item != net.minecraft.world.item.Items.AIR) {
-            registration.addRecipeCatalyst(item, SPIRIT_TYPE);
+            registration.addRecipeCatalyst(item, SpiritJeiRecipeTypes.all());
         }
     }
 }

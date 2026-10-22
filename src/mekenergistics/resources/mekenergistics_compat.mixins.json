@@ -6,16 +6,30 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MekEnergisticsAutomationMixin",
+    "MekEnergisticsAeSupplyGateMixin",
+    "MekEnergisticsAeOutputGateMixin",
+    "MekEnergisticsAeNodeHandoffMixin",
     "MekEnergisticsBoundedSmartFeederMixin",
     "MekEnergisticsExtraSpiritFactoryProfileMixin",
     "MekEnergisticsImbuementPatternMixin",
     "MekEnergisticsInstallerGuardMixin",
+    "MekEnergisticsNatureAltarPatternMixin",
+    "MekEnergisticsNaturePatternCacheMixin",
+    "MekEnergisticsNatureFactoryAutomationMixin",
     "MekEnergisticsNativeAeOutputGuardMixin",
+    "MekEnergisticsNativeUpgradeEligibilityMixin",
     "MekEnergisticsOccultismPatternMixin",
     "MekEnergisticsPendingPatternContextMixin",
+    "MekEnergisticsRuntimeTileAccessor",
+    "MekEnergisticsRuntimeUpgradeOwnerMixin",
     "MekEnergisticsTargetResolverGuardMixin",
     "MekEnergisticsSpiritFactoryInstallerMixin",
-    "MekEnergisticsTierInstallerStateMixin"
+    "MekEnergisticsTierInstallerStateMixin",
+    "MekEnergisticsUpgradeContainerEligibilityMixin"
+  ],
+  "client": [
+    "client.MekEnergisticsPatternTabFrameMixin",
+    "client.MekEnergisticsInterfaceTabFrameMixin"
   ],
   "injectors": {
     "defaultRequire": 1

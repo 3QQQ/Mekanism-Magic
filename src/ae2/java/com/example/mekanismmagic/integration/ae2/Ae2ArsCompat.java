@@ -1,12 +1,16 @@
 package com.example.mekanismmagic.integration.ae2;
 
 import com.example.mekanismmagic.MekanismMagic;
-import com.example.mekanismmagic.integration.ModCompatibility;
 import com.example.mekanismmagic.integration.arsnouveau.ArsNouveauRegistries;
 import com.example.mekanismmagic.integration.arsnouveau.ArsSourceNetworkAccess;
 import com.example.mekanismmagic.integration.arsnouveau.ImbuementProcessorBlockEntity;
+import com.example.mekanismmagic.integration.arsnouveau.FeSourceConverterBlockEntity;
+import com.example.mekanismmagic.integration.arsnouveau.AeSourceFastPullHost;
 import com.example.mekanismmagic.integration.common.network.MachineNetworkLifecycleHooks;
+import com.example.mekanismmagic.integration.common.network.MachineAeResourceHooks;
+import com.example.mekanismmagic.integration.common.network.MachineAeResourceRatePolicy;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
+import com.hollingsworth.arsnouveau.api.source.ISourceTile;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -25,10 +29,63 @@ public final class Ae2ArsCompat {
         registered = true;
         MachineNetworkLifecycleHooks.register(
                 Ae2ImbuementProvider.LIFECYCLE_HOOK);
-        if (ModCompatibility.loaded(ModCompatibility.ARS_ENERGISTIQUE)) {
-            ArsSourceNetworkAccess.register(
-                    Ae2ArsSourceNetworkAccess.INSTANCE);
-        }
+        ArsSourceNetworkAccess.register(
+                Ae2ArsSourceNetworkAccess.INSTANCE);
+        Ae2MachineResourceAccess.register(new Ae2MachineResourceAccess.ResourceExtension() {
+            @Override
+            public int mask(net.minecraft.world.level.block.entity.BlockEntity tile) {
+                return inputMask(tile) | outputMask(tile);
+            }
+
+            @Override
+            public int inputMask(net.minecraft.world.level.block.entity.BlockEntity tile) {
+                return tile instanceof ISourceTile source && source.getMaxSource() > 0
+                        && !(tile instanceof FeSourceConverterBlockEntity)
+                        ? MachineAeResourceHooks.SOURCE : 0;
+            }
+
+            @Override
+            public int outputMask(net.minecraft.world.level.block.entity.BlockEntity tile) {
+                return tile instanceof FeSourceConverterBlockEntity ? MachineAeResourceHooks.SOURCE : 0;
+            }
+
+            @Override
+            public void tick(net.minecraft.world.level.block.entity.BlockEntity tile,
+                             appeng.api.networking.IGrid grid,
+                             appeng.api.networking.security.IActionSource source) {
+                if (tile instanceof FeSourceConverterBlockEntity) return;
+                if (tile instanceof AeSourceFastPullHost fast
+                        && tile instanceof ISourceTile target) {
+                    int request = fast.mekanismMagicAeFastSourceBudget();
+                    if (request > 0) {
+                        // This path queries only the already-connected AE
+                        // endpoint; it never accelerates nearby-jar scans.
+                        Ae2ArsSourceNetworkAccess.INSTANCE.pullInto(
+                                tile, target, request);
+                    }
+                }
+            }
+
+            @Override
+            public void export(net.minecraft.world.level.block.entity.BlockEntity tile,
+                               appeng.api.networking.IGrid grid,
+                               appeng.api.networking.security.IActionSource source) {
+                if (!(tile instanceof FeSourceConverterBlockEntity converter)
+                        || !(tile.getLevel() instanceof net.minecraft.server.level.ServerLevel)
+                        || grid == null || source == null) return;
+                var key = Ae2SourceInterfaceStorage.sourceKey();
+                if (key == null) return;
+                int maximum = converter.extractProducedSource(
+                        Math.min(MachineAeResourceRatePolicy.MAX_AURA_PER_TICK,
+                                converter.getTransferRate()), true);
+                if (maximum <= 0) return;
+                Ae2MachineOutputAccess.exportResource(tile, grid, source,
+                        key, maximum, MachineAeResourceHooks.SOURCE,
+                        amount -> converter.extractProducedSource(
+                                (int) amount, false),
+                        amount -> converter.refundProducedSource((int) amount));
+            }
+        });
         modBus.addListener(Ae2ArsCompat::registerCapabilities);
     }
 
@@ -50,13 +107,9 @@ public final class Ae2ArsCompat {
 
     private static void registerMissingSourceInterfaceAdapters(
             RegisterCapabilitiesEvent event) {
-        if (!ModCompatibility.loaded(
-                ModCompatibility.ARS_ENERGISTIQUE)) {
-            return;
-        }
         int registered = 0;
         for (var block : BuiltInRegistries.BLOCK) {
-            // Ars Energistique performs the same registry-wide scan, but
+            // Ars Energistique, when present, performs the same scan, but
             // add-ons can register their generic inventories later in mod
             // order. Complete only the registrations that were missed. This
             // intentionally is not restricted to known interface IDs so new

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,active=false": {"model": "mekanism_magic:block/aura_field_interface"},
+    "facing=south,active=false": {"model": "mekanism_magic:block/aura_field_interface", "y": 180},
+    "facing=east,active=false": {"model": "mekanism_magic:block/aura_field_interface", "y": 90},
+    "facing=west,active=false": {"model": "mekanism_magic:block/aura_field_interface", "y": -90},
+    "facing=north,active=true": {"model": "mekanism_magic:block/aura_field_interface_active"},
+    "facing=south,active=true": {"model": "mekanism_magic:block/aura_field_interface_active", "y": 180},
+    "facing=east,active=true": {"model": "mekanism_magic:block/aura_field_interface_active", "y": 90},
+    "facing=west,active=true": {"model": "mekanism_magic:block/aura_field_interface_active", "y": -90}
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ILI",
+    "WSW",
+    "ICI"
+  ],
+  "key": {
+    "I": {
+      "item": "naturesaura:infused_iron"
+    },
+    "L": {
+      "item": "naturesaura:ancient_log"
+    },
+    "W": {
+      "item": "naturesaura:wood_stand"
+    },
+    "S": {
+      "item": "mekanism:steel_casing"
+    },
+    "C": {
+      "item": "mekanism:advanced_control_circuit"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:tree_ritual_processor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "naturesaura"
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 package com.example.mekanismmagic.integration.ae2;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IInWorldGridNodeHost;
@@ -10,13 +12,16 @@ import appeng.api.networking.energy.IEnergySource;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.features.IPlayerRegistry;
+import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKey;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
 import appeng.api.util.AECableType;
 import com.example.mekanismmagic.blockentity.NativeMagicMachineBlockEntity;
 import com.example.mekanismmagic.integration.common.network
         .MachineDirectOutputHooks;
+import com.example.mekanismmagic.integration.common.network.MachineAeResourceHooks;
 import com.example.mekanismmagic.integration.common.network
         .MachineNetworkLifecycleHooks;
 import mekanism.api.Action;
@@ -27,6 +32,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -59,8 +65,8 @@ public final class Ae2DirectOutputProvider
     private IManagedGridNode node;
     private final IActionSource actionSource;
     private CompoundTag retainedNodeData;
-    private final Map<AEItemKey, Long> retryAfterByKey = new HashMap<>();
-    private final Set<AEItemKey> attemptedKeysThisTick = new HashSet<>();
+    private final Map<AEKey, Long> retryAfterByKey = new HashMap<>();
+    private final Set<AEKey> attemptedKeysThisTick = new HashSet<>();
     private long insertBudgetGameTime = Long.MIN_VALUE;
     private int poweredInsertsThisTick;
 
@@ -149,7 +155,8 @@ public final class Ae2DirectOutputProvider
 
     private boolean exportOutputs() {
         NativeMagicMachineBlockEntity tile = tile();
-        if (tile == null || tile.isRemoved()) {
+        if (tile == null || tile.isRemoved()
+                || !MachineAeResourceHooks.isOutputEnabled(tile, MachineAeResourceHooks.OUTPUT_ITEMS)) {
             return false;
         }
         if (tile.getLevel() == null || tile.getLevel().isClientSide()) {
@@ -224,28 +231,43 @@ public final class Ae2DirectOutputProvider
 
     private MachineDirectOutputHooks.DirectInsertResult
     insertDirectDetailed(ItemStack template, long amount) {
-        NativeMagicMachineBlockEntity tile = tile();
-        if (tile == null || tile.isRemoved() || template.isEmpty()
-                || amount <= 0 || tile.getLevel() == null
-                || tile.getLevel().isClientSide()) {
+        if (template.isEmpty() || amount <= 0) {
             return new MachineDirectOutputHooks.DirectInsertResult(
                     0L, MachineDirectOutputHooks.DirectNetworkStatus.OFFLINE,
                     false, Long.MAX_VALUE);
+        }
+        return insertKeyDirectDetailed(AEItemKey.of(template), amount);
+    }
+
+    private MachineDirectOutputHooks.DirectInsertResult
+    insertFluidDirectDetailed(FluidStack template, long amountMb) {
+        if (template.isEmpty() || amountMb <= 0) {
+            return new MachineDirectOutputHooks.DirectInsertResult(
+                    0L, MachineDirectOutputHooks.DirectNetworkStatus.OFFLINE,
+                    false, Long.MAX_VALUE);
+        }
+        return insertKeyDirectDetailed(AEFluidKey.of(template), amountMb);
+    }
+
+    private IGrid activeGrid(NativeMagicMachineBlockEntity tile) {
+        if (tile == null || tile.isRemoved() || tile.getLevel() == null
+                || tile.getLevel().isClientSide()) {
+            return null;
         }
         createNodeIfNeeded();
-        if (!node.isActive()) {
-            return new MachineDirectOutputHooks.DirectInsertResult(
-                    0L, MachineDirectOutputHooks.DirectNetworkStatus.OFFLINE,
-                    false, Long.MAX_VALUE);
-        }
-        var grid = node.getGrid();
+        return node.isActive() ? node.getGrid() : null;
+    }
+
+    private MachineDirectOutputHooks.DirectInsertResult
+    insertKeyDirectDetailed(AEKey key, long amount) {
+        NativeMagicMachineBlockEntity tile = tile();
+        IGrid grid = activeGrid(tile);
         if (grid == null) {
             return new MachineDirectOutputHooks.DirectInsertResult(
                     0L, MachineDirectOutputHooks.DirectNetworkStatus.OFFLINE,
                     false, Long.MAX_VALUE);
         }
         long gameTime = tile.getLevel().getGameTime();
-        AEItemKey key = AEItemKey.of(template);
         if (key == null) {
             return new MachineDirectOutputHooks.DirectInsertResult(
                     0L, MachineDirectOutputHooks.DirectNetworkStatus.BLOCKED,
@@ -255,6 +277,28 @@ public final class Ae2DirectOutputProvider
                 grid.getEnergyService(),
                 grid.getStorageService().getInventory(),
                 key, amount, gameTime);
+    }
+
+    private long simulateFluidAcceptance(
+            FluidStack template, long amountMb) {
+        if (template.isEmpty() || amountMb <= 0
+                || !MachineAeResourceHooks.isOutputEnabled(tile(), MachineAeResourceHooks.OUTPUT_FLUIDS)) {
+            return 0L;
+        }
+        IGrid grid = activeGrid(tile());
+        if (grid == null) {
+            return 0L;
+        }
+        AEFluidKey key = AEFluidKey.of(template);
+        if (key == null) {
+            return 0L;
+        }
+        // Simulation deliberately does not consume the execution budget or
+        // update per-key backoff. It neither reserves capacity nor adds fluid.
+        return Math.min(amountMb, Math.max(0L,
+                StorageHelper.poweredInsert(grid.getEnergyService(),
+                        grid.getStorageService().getInventory(), key,
+                        amountMb, actionSource, Actionable.SIMULATE)));
     }
 
     private MachineDirectOutputHooks.DirectNetworkStatus networkStatus() {
@@ -277,8 +321,17 @@ public final class Ae2DirectOutputProvider
 
     private MachineDirectOutputHooks.DirectInsertResult
     insertIntoNetworkDetailed(
-            IEnergySource energy, MEStorage storage, AEItemKey key,
+            IEnergySource energy, MEStorage storage, AEKey key,
             long amount, long gameTime) {
+        NativeMagicMachineBlockEntity tile = tile();
+        int kind = key instanceof AEFluidKey ? MachineAeResourceHooks.OUTPUT_FLUIDS
+                : MachineAeResourceHooks.OUTPUT_ITEMS;
+        boolean settlingPaidFluid = kind == MachineAeResourceHooks.OUTPUT_FLUIDS
+                && tile != null && tile.mekanismMagicSettlingPaidNetworkOutput();
+        if (!settlingPaidFluid && !MachineAeResourceHooks.isOutputEnabled(tile, kind)) {
+            return new MachineDirectOutputHooks.DirectInsertResult(0L,
+                    networkStatus(), false, gameTime + 1);
+        }
         if (amount <= 0) {
             return new MachineDirectOutputHooks.DirectInsertResult(
                     0L, MachineDirectOutputHooks.DirectNetworkStatus.ONLINE,
@@ -449,6 +502,26 @@ public final class Ae2DirectOutputProvider
                     : new MachineDirectOutputHooks.DirectInsertResult(
                     0L, MachineDirectOutputHooks.DirectNetworkStatus
                     .UNAVAILABLE, false, Long.MAX_VALUE);
+        }
+
+        @Override
+        public MachineDirectOutputHooks.DirectInsertResult
+        insertFluidDetailed(NativeMagicMachineBlockEntity tile,
+                            FluidStack template, long amountMb) {
+            return supports(tile)
+                    ? forTile(tile).insertFluidDirectDetailed(
+                            template, amountMb)
+                    : new MachineDirectOutputHooks.DirectInsertResult(
+                    0L, MachineDirectOutputHooks.DirectNetworkStatus
+                    .UNAVAILABLE, false, Long.MAX_VALUE);
+        }
+
+        @Override
+        public long simulateFluidAcceptance(
+                NativeMagicMachineBlockEntity tile,
+                FluidStack template, long amountMb) {
+            return supports(tile) ? forTile(tile)
+                    .simulateFluidAcceptance(template, amountMb) : 0L;
         }
 
         @Override

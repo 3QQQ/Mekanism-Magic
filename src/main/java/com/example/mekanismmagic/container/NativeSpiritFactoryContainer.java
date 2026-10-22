@@ -18,11 +18,12 @@ public final class NativeSpiritFactoryContainer
 
     @Override
     protected int getInventoryYOffset() {
-        return 85;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.FACTORY_HEIGHT);
     }
 
     @Override
     protected int getInventoryXOffset() {
-        return getTileEntity().tier == mekanism.common.tier.FactoryTier.ULTIMATE ? 26 : 8;
+        return MachinePanelLayout.inventoryX(getTileEntity().tier
+                == mekanism.common.tier.FactoryTier.ULTIMATE ? 210 : 176);
     }
 }

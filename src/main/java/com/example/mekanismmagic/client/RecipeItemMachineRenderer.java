@@ -47,6 +47,22 @@ final class RecipeItemMachineRenderer {
     private static final ItemPlacement DIMENSION_PLACEMENT =
             new ItemPlacement(0.5F, 0.445F, 0.50F,
                     0.72F, 0.18F, 0.18F, 0.27F, false);
+    private static final ItemPlacement NATURE_ALTAR_PLACEMENT =
+            naturePlacement(NatureMachineVisualLayout.ALTAR);
+    private static final ItemPlacement OFFERING_PLACEMENT =
+            naturePlacement(NatureMachineVisualLayout.OFFERING);
+    private static final ItemPlacement TREE_RITUAL_PLACEMENT =
+            naturePlacement(NatureMachineVisualLayout.TREE);
+    private static final ItemPlacement ANIMAL_SPAWNER_PLACEMENT =
+            naturePlacement(NatureMachineVisualLayout.ANIMAL_ITEMS);
+    private static final ItemPlacement NATURE_ALTAR_FACTORY_PLACEMENT =
+            new ItemPlacement(0.5F,
+                    NatureAltarFactoryVisualLayout.ITEM_Y,
+                    NatureAltarFactoryVisualLayout.CENTER_Z,
+                    NatureAltarFactoryVisualLayout.INTAKE_Z,
+                    NatureAltarFactoryVisualLayout.OUTPUT_Z,
+                    NatureAltarFactoryVisualLayout.ITEM_ORBIT_RADIUS,
+                    NatureAltarFactoryVisualLayout.ITEM_SCALE, true);
 
     void render(TileEntityMekanism tile,
                 MagicMachineAnimationRenderer.Kind kind,
@@ -69,8 +85,9 @@ final class RecipeItemMachineRenderer {
         float time = level.getGameTime() + partialTick
                 + (tile.getBlockPos().asLong() & 31L) * 0.19F;
         if (placement.factory) {
-            renderFactory(entries, placement, time, tile, poseStack,
-                    bufferSource, packedLight, cameraDistanceSquared);
+            renderFactory(entries, placement, kind, time, tile,
+                    poseStack, bufferSource, packedLight,
+                    cameraDistanceSquared);
         } else {
             renderMachine(entries, placement, time, tile, poseStack,
                     bufferSource, packedLight, cameraDistanceSquared);
@@ -114,7 +131,8 @@ final class RecipeItemMachineRenderer {
 
     private static void renderFactory(
             List<RecipeItemDisplayState.Entry> entries,
-            ItemPlacement placement, float time,
+            ItemPlacement placement,
+            MagicMachineAnimationRenderer.Kind kind, float time,
             TileEntityMekanism tile, PoseStack poseStack,
             MultiBufferSource bufferSource, int light,
             double cameraDistanceSquared) {
@@ -125,14 +143,20 @@ final class RecipeItemMachineRenderer {
         for (int index = 0; index < visible; index++) {
             RecipeItemDisplayState.Entry entry = entries.get(index);
             float phaseTime = time + index * 11.7F;
+            float laneX = kind == MagicMachineAnimationRenderer.Kind
+                    .NATURE_ALTAR_FACTORY
+                    ? NatureAltarFactoryVisualLayout.laneX(index)
+                    : FACTORY_LANES[index];
             if (!entry.output().isEmpty()) {
-                renderTransformation(entry, FACTORY_LANES[index],
+                renderTransformation(entry, laneX,
                         placement, phaseTime, tile, poseStack,
                         bufferSource, light, entry.lane());
             } else {
-                renderOrbiting(entry.input(), FACTORY_LANES[index],
+                renderOrbiting(entry.input(), laneX,
                         placement.centerY, placement.centerZ,
-                        0.022F, phaseTime * 2.2F,
+                        kind == MagicMachineAnimationRenderer.Kind.NATURE_ALTAR_FACTORY
+                                ? placement.orbitRadius : 0.022F,
+                        phaseTime * 2.2F,
                         placement.scale, tile, poseStack,
                         bufferSource, light, entry.lane());
             }
@@ -241,8 +265,21 @@ final class RecipeItemMachineRenderer {
             case IMBUEMENT_FACTORY -> IMBUEMENT_FACTORY_PLACEMENT;
             case SPIRIT_FACTORY -> SPIRIT_FACTORY_PLACEMENT;
             case DIMENSION -> DIMENSION_PLACEMENT;
+            case NATURE_ALTAR -> NATURE_ALTAR_PLACEMENT;
+            case OFFERING -> OFFERING_PLACEMENT;
+            case TREE_RITUAL -> TREE_RITUAL_PLACEMENT;
+            case ANIMAL_SPAWNER -> ANIMAL_SPAWNER_PLACEMENT;
+            case NATURE_ALTAR_FACTORY ->
+                    NATURE_ALTAR_FACTORY_PLACEMENT;
             default -> null;
         };
+    }
+
+    private static ItemPlacement naturePlacement(
+            NatureMachineVisualLayout.WorkArea area) {
+        return new ItemPlacement(area.centerX(), area.itemY(),
+                area.centerZ(), area.intakeZ(), area.outputZ(),
+                area.orbitRadius(), area.itemScale(), false);
     }
 
     private record ItemPlacement(float centerX, float centerY,

@@ -16,11 +16,11 @@ public final class NativeMiniRitualAssemblerContainer
 
     @Override
     protected int getInventoryXOffset() {
-        return 25;
+        return MachinePanelLayout.inventoryX(MachinePanelLayout.MINI_RITUAL_WIDTH);
     }
 
     @Override
     protected int getInventoryYOffset() {
-        return 126;
+        return MachinePanelLayout.inventoryY(MachinePanelLayout.MINI_RITUAL_HEIGHT);
     }
 }

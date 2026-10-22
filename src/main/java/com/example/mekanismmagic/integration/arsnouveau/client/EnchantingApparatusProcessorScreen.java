@@ -2,6 +2,7 @@ package com.example.mekanismmagic.integration.arsnouveau.client;
 
 import com.example.mekanismmagic.integration.arsnouveau.EnchantingApparatusProcessorBlockEntity;
 import com.example.mekanismmagic.integration.arsnouveau.ArsThreeByThreeMachineLayout;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import net.minecraft.network.chat.Component;
@@ -14,7 +15,7 @@ public final class EnchantingApparatusProcessorScreen
             MekanismTileContainer<
                     EnchantingApparatusProcessorBlockEntity> container,
             Inventory inventory, Component title) {
-        super(container, inventory, title, 208);
+        super(container, inventory, title, MachinePanelLayout.ARS_THREE_BY_THREE_HEIGHT);
         imageWidth = ArsThreeByThreeMachineLayout.IMAGE_WIDTH;
         inventoryLabelX = ArsThreeByThreeMachineLayout.INVENTORY_LABEL_X;
     }
@@ -62,8 +63,6 @@ public final class EnchantingApparatusProcessorScreen
     @Override
     protected IRecipeViewerRecipeType<?>[] recipeViewerTypes() {
         return new IRecipeViewerRecipeType<?>[]{
-                ArsRecipeViewerTypes.ENCHANTING_APPARATUS,
-                ArsRecipeViewerTypes.ENCHANTMENT,
-                ArsRecipeViewerTypes.ARMOR_UPGRADE};
+                ArsRecipeViewerTypes.ENCHANTING_APPARATUS};
     }
 }

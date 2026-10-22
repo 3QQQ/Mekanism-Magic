@@ -63,6 +63,9 @@ public final class MagicSourcePipeRenderer
             ResourceLocation.fromNamespaceAndPath(
                     "mekanism_magic", "block/magic_source_flow_v_reverse");
     private static final int SOURCE_TEXTURE_RGB = 0xFFFFFF;
+    private static final ResourceLocation AURA_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath("mekanism", "liquid/energy");
+    private static final Map<MagicSourceTransmitter, FillState> AURA_SCALES = new WeakHashMap<>();
     private static final Int2ObjectMap<Int2ObjectMap<Model3D>>
             CACHED_SOURCE = new Int2ObjectArrayMap<>(14);
     private static final Map<MagicSourceNetwork, FillState>
@@ -78,6 +81,7 @@ public final class MagicSourcePipeRenderer
     /** Discards every object that may retain sprites from the old atlas. */
     public static void invalidateSpriteCache() {
         CACHED_SOURCE.clear();
+        AURA_SCALES.clear();
         DISPLAYED_SCALES.clear();
         CONNECTION_STATES.clear();
     }
@@ -96,42 +100,50 @@ public final class MagicSourcePipeRenderer
         }
         MagicSourceTransmitter pipe = tile.getTransmitter();
         MagicSourceNetwork network = pipe.getTransmitterNetwork();
-        boolean forceWorkingAnimation =
-                MagicClientConfig.forceWorkingAnimations();
-        // A single seamless animated sprite spans every contents cuboid.
-        // Keeping all motion in this one layer avoids translucent overlaps
-        // and bright seams at the boundary between neighbouring pipes.
-        TextureAtlasSprite textureU = MekanismRenderer.getSprite(
-                SOURCE_TEXTURE_U);
-        TextureAtlasSprite textureV = MekanismRenderer.getSprite(
-                SOURCE_TEXTURE_V);
-        TextureAtlasSprite textureUReverse = MekanismRenderer.getSprite(
-                SOURCE_TEXTURE_U_REVERSE);
-        TextureAtlasSprite textureVReverse = MekanismRenderer.getSprite(
-                SOURCE_TEXTURE_V_REVERSE);
-        if (network == null && !forceWorkingAnimation
-                || textureU == null || textureV == null
-                || textureUReverse == null || textureVReverse == null) {
+        float renderTime = (tile.getLevel() == null ? 0 : tile.getLevel().getGameTime()) + partialTick;
+        float auraScale = animatedAuraScale(pipe, renderTime);
+        boolean force = MagicClientConfig.forceWorkingAnimations();
+        float sourceScale = network == null ? 0 : animatedScale(network, renderTime);
+        if (force) {
+            if (com.example.mekanismmagic.integration.ModCompatibility.arsNouveauMachineContentEnabled()) {
+                sourceScale = Math.max(TEST_DISPLAY_SCALE, sourceScale);
+            }
+            if (com.example.mekanismmagic.integration.ModCompatibility.naturesAuraLoaded()) {
+                auraScale = Math.max(TEST_DISPLAY_SCALE, auraScale);
+            }
+        }
+        if (auraScale > 0.001F) {
+            TextureAtlasSprite aura = MekanismRenderer.getSprite(AURA_TEXTURE);
+            // Separate radii keep both resource channels visible without coplanar faces.
+            renderChannel(tile, partialTick, matrix, renderer, light, overlayLight,
+                    aura, aura, aura, aura, 0.60F + 0.35F * auraScale,
+                    pipe.extension().renderColor(), 92);
+        }
+        if (sourceScale > 0.001F) {
+            renderChannel(tile, partialTick, matrix, renderer, light, overlayLight,
+                    MekanismRenderer.getSprite(SOURCE_TEXTURE_U),
+                    MekanismRenderer.getSprite(SOURCE_TEXTURE_V),
+                    MekanismRenderer.getSprite(SOURCE_TEXTURE_U_REVERSE),
+                    MekanismRenderer.getSprite(SOURCE_TEXTURE_V_REVERSE),
+                    auraScale > 0.001F ? Math.min(0.45F, sourceScale) : sourceScale,
+                    SOURCE_TEXTURE_RGB, 136);
+        }
+    }
+
+    private void renderChannel(MagicSourcePipeBlockEntity tile, float partialTick,
+                               PoseStack matrix, MultiBufferSource renderer, int light, int overlayLight,
+                               TextureAtlasSprite textureU, TextureAtlasSprite textureV,
+                               TextureAtlasSprite textureUReverse, TextureAtlasSprite textureVReverse,
+                               float displayedScale, int rgb, int baseAlpha) {
+        if (textureU == null || textureV == null || textureUReverse == null || textureVReverse == null) {
             return;
         }
-        float renderTime = (tile.getLevel() == null
-                ? 0 : tile.getLevel().getGameTime()) + partialTick;
-        float displayedScale = network == null
-                ? TEST_DISPLAY_SCALE : animatedScale(network, renderTime);
-        if (forceWorkingAnimation) {
-            displayedScale = Math.max(TEST_DISPLAY_SCALE, displayedScale);
-        }
-        if (displayedScale <= 0.001F) {
-            return;
-        }
-        int stage = Math.max(3, Math.min(STAGES - 1,
-                Math.round(displayedScale * (STAGES - 1))));
+        MagicSourceTransmitter pipe = tile.getTransmitter();
+        float renderTime = (tile.getLevel() == null ? 0 : tile.getLevel().getGameTime()) + partialTick;
+        int stage = Math.max(3, Math.min(STAGES - 1, Math.round(displayedScale * (STAGES - 1))));
         float basePulse = (Mth.sin(renderTime * 0.09F) + 1F) * 0.5F;
-        int glow = MekanismRenderer.calculateGlowLight(light,
-                8 + Math.round(displayedScale * 4F + basePulse * 2F));
-        int sourceColor = colorWithAlpha(SOURCE_TEXTURE_RGB,
-                136 + Math.round(displayedScale * 48F
-                        + basePulse * 48F));
+        int glow = MekanismRenderer.calculateGlowLight(light, 8 + Math.round(displayedScale * 4F + basePulse * 2F));
+        int sourceColor = colorWithAlpha(rgb, baseAlpha + Math.round(displayedScale * 36F + basePulse * 32F));
         int nonNormalSideMask = 0;
         int connectionFingerprint = 0;
         boolean hasHorizontalSide = false;
@@ -215,12 +227,26 @@ public final class MagicSourcePipeRenderer
         }
         MagicSourceNetwork network =
                 tile.getTransmitter().getTransmitterNetwork();
+        FillState auraState = AURA_SCALES.get(tile.getTransmitter());
+        if (tile.getTransmitter().extension().renderScale() > 0
+                || auraState != null && auraState.scale > 0.001F) {
+            return true;
+        }
         if (network == null) {
             return false;
         }
         FillState state = DISPLAYED_SCALES.get(network);
         return network.currentScale > 0
                 || state != null && state.scale > 0.001F;
+    }
+
+    private static float animatedAuraScale(MagicSourceTransmitter pipe, float time) {
+        float target = Mth.clamp(pipe.extension().renderScale(), 0, 1);
+        FillState state = AURA_SCALES.computeIfAbsent(pipe, ignored -> new FillState(target, time));
+        float elapsed = Mth.clamp(time - state.lastRenderTime, 0, 5);
+        state.lastRenderTime = time;
+        state.scale = Mth.approach(state.scale, target, elapsed * (target > state.scale ? FILL_SPEED : DRAIN_SPEED));
+        return state.scale;
     }
 
     private static float animatedScale(
@@ -317,7 +343,7 @@ public final class MagicSourcePipeRenderer
         }
         Int2ObjectMap<Model3D> modelMap =
                 CACHED_SOURCE.computeIfAbsent(
-                        sideOrdinal,
+                        sideOrdinal + (textureU.contents().name().equals(AURA_TEXTURE) ? 16 : 0),
                         ignored -> new Int2ObjectOpenHashMap<>());
         Model3D model = modelMap.get(stage);
         if (model != null) {

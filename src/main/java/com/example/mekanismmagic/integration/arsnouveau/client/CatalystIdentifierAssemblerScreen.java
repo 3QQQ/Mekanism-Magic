@@ -3,6 +3,7 @@ package com.example.mekanismmagic.integration.arsnouveau.client;
 import com.example.mekanismmagic.client.screen.NativeMagicMachineScreen;
 import com.example.mekanismmagic.integration.arsnouveau.CatalystIdentifierAssemblerBlockEntity;
 import com.example.mekanismmagic.integration.arsnouveau.ArsThreeByThreeMachineLayout;
+import com.example.mekanismmagic.container.MachinePanelLayout;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import net.minecraft.network.chat.Component;
@@ -14,7 +15,7 @@ public final class CatalystIdentifierAssemblerScreen extends NativeMagicMachineS
     public CatalystIdentifierAssemblerScreen(
             MekanismTileContainer<CatalystIdentifierAssemblerBlockEntity> container,
             Inventory inventory, Component title) {
-        super(container, inventory, title, 208);
+        super(container, inventory, title, MachinePanelLayout.ARS_THREE_BY_THREE_HEIGHT);
         imageWidth = ArsThreeByThreeMachineLayout.IMAGE_WIDTH;
         inventoryLabelX = ArsThreeByThreeMachineLayout.INVENTORY_LABEL_X;
     }

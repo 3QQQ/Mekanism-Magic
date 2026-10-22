@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IGI",
+    "COC",
+    "ISI"
+  ],
+  "key": {
+    "I": {
+      "item": "naturesaura:infused_iron"
+    },
+    "G": {
+      "item": "naturesaura:gold_leaf"
+    },
+    "C": {
+      "item": "mekanism:basic_control_circuit"
+    },
+    "O": {
+      "item": "naturesaura:offering_table"
+    },
+    "S": {
+      "item": "mekanism:steel_casing"
+    }
+  },
+  "result": {
+    "id": "mekanism_magic:offering_processor",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "naturesaura"
+    }
+  ]
+}

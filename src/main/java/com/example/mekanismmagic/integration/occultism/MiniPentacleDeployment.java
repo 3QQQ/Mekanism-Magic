@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /** Atomic unfold/retract support for a configured miniature pentacle. */
 public final class MiniPentacleDeployment {
@@ -42,6 +43,7 @@ public final class MiniPentacleDeployment {
             "mini_pentacle_deployed_rotation";
     private static final String DEPLOYED_BLOCKS =
             "mini_pentacle_deployed_blocks";
+    private static final String DEPLOYED_LEASE = "mini_pentacle_deployed_lease";
     private static final String POSITION = "position";
     private static final String PREVIOUS_STATE = "previous_state";
     private static final String PLACED_STATE = "placed_state";
@@ -51,6 +53,8 @@ public final class MiniPentacleDeployment {
             "owned_by_miniature";
     private static final int MAX_DEPLOYED_BLOCKS = 1_024;
     private static final int MAX_ANCHOR_DISTANCE_SQUARED = 48 * 48;
+    private static final int REMOVE_FLAGS = Block.UPDATE_CLIENTS
+            | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     private MiniPentacleDeployment() {
     }
@@ -58,6 +62,10 @@ public final class MiniPentacleDeployment {
     public enum Status {
         PLACED(true),
         RECOVERED(true),
+        CAPTURED(true),
+        NO_PENTACLE(false),
+        STRUCTURE_IN_USE(false),
+        CLAIMED(false),
         NOT_CONFIGURED(false),
         ALREADY_DEPLOYED(false),
         NOT_DEPLOYED(false),
@@ -122,6 +130,30 @@ public final class MiniPentacleDeployment {
             ServerLevel level, ServerPlayer player,
             ItemStack miniature, BlockPos anchor,
             Rotation rotation) {
+        MiniPentacleClaims claims = MiniPentacleClaims.get(level);
+        if (!claims.begin()) {
+            return new Result(Status.CHANGED, 0);
+        }
+        boolean previousCapture = level.captureBlockSnapshots;
+        try {
+            // Own the placement event and commit boundary, so a cancelled
+            // outer Item#useOn cannot leave a world lease behind.
+            level.captureBlockSnapshots = false;
+            return deployInternal(level, player, miniature, anchor, rotation, claims);
+        } finally {
+            level.captureBlockSnapshots = previousCapture;
+            claims.end();
+        }
+    }
+
+    private static Result deployInternal(
+            ServerLevel level, ServerPlayer player,
+            ItemStack miniature, BlockPos anchor, Rotation rotation,
+            MiniPentacleClaims claims) {
+        ItemStack expectedItem = miniature.copy();
+        if (!heldUnchanged(player, miniature, expectedItem)) {
+            return new Result(Status.CHANGED, 0);
+        }
         if (isDeployed(miniature)) {
             return new Result(Status.ALREADY_DEPLOYED, 0);
         }
@@ -137,6 +169,8 @@ public final class MiniPentacleDeployment {
 
         List<Mutation> applied = new ArrayList<>();
         try {
+            Map<BlockPos, MiniPentacleCapture.LayoutBlock> capturedLayout =
+                    MiniPentacleCapture.layout(level, miniature, anchor, rotation);
             Object simulated = invoke(projection.get().multiblock(),
                     "simulate", level, anchor, rotation, false, false);
             if (!(simulated instanceof Pair<?, ?> pair)
@@ -155,6 +189,9 @@ public final class MiniPentacleDeployment {
                         || matcher == null) {
                     return new Result(Status.INVALID_STRUCTURE, 0);
                 }
+                if (!loadedWithNeighbors(level, position)) {
+                    return new Result(Status.UNLOADED, 0);
+                }
                 if (!booleanValue(matcher, "countsTowardsTotalBlocks")) {
                     continue;
                 }
@@ -168,7 +205,14 @@ public final class MiniPentacleDeployment {
                     return new Result(Status.NO_PERMISSION, 0);
                 }
                 BlockState previous = level.getBlockState(position);
-                if (booleanValue(result, "test", level, rotation)) {
+                MiniPentacleCapture.LayoutBlock captured = capturedLayout.get(position);
+                if (!capturedLayout.isEmpty() && captured == null) {
+                    return new Result(Status.INVALID_STRUCTURE, 0);
+                }
+                if (booleanValue(result, "test", level, rotation)
+                        && (captured == null || (previous.equals(captured.state())
+                        && (captured.data() == null || blockEntityDataMatches(
+                        level, position, captured.data()))))) {
                     CompoundTag guardedBlockEntity = blockEntityData(
                             level, position);
                     if (!safeGuardBlockEntity(
@@ -189,8 +233,8 @@ public final class MiniPentacleDeployment {
                 if (!previous.isAir()) {
                     return new Result(Status.OBSTRUCTED, 0);
                 }
-                BlockState placed = displayedState(
-                        matcher, rotation);
+                BlockState placed = captured == null ? displayedState(
+                        matcher, rotation) : captured.state();
                 if (placed == null) {
                     return new Result(Status.INVALID_STRUCTURE, 0);
                 }
@@ -213,8 +257,14 @@ public final class MiniPentacleDeployment {
                     .noneMatch(Mutation::ownedByMiniature)) {
                 return new Result(Status.STRUCTURE_ALREADY_PRESENT, 0);
             }
+            if (!capturedLayout.isEmpty() && !capturedLayout.keySet().equals(mutations.keySet())) {
+                return new Result(Status.INVALID_STRUCTURE, 0);
+            }
 
             List<Mutation> ordered = new ArrayList<>(mutations.values());
+            if (claims.claimed(mutations.keySet())) {
+                return new Result(Status.CLAIMED, 0);
+            }
             ordered.sort(Comparator
                     .comparingInt((Mutation mutation) ->
                             mutation.position().getY())
@@ -224,6 +274,14 @@ public final class MiniPentacleDeployment {
                             mutation.position().getZ()));
             applied = new ArrayList<>(ordered.size());
             for (Mutation mutation : ordered) {
+                if (!heldUnchanged(player, miniature, expectedItem)
+                        || !level.getBlockState(mutation.position())
+                        .equals(mutation.previous())
+                        || !blockEntityDataMatches(level, mutation.position(),
+                        mutation.placedBlockEntity())) {
+                    rollbackPlacement(level, applied);
+                    return new Result(Status.CHANGED, 0);
+                }
                 if (!mutation.ownedByMiniature()) {
                     continue;
                 }
@@ -234,6 +292,16 @@ public final class MiniPentacleDeployment {
                         mutation.placed(), Block.UPDATE_ALL)) {
                     rollbackPlacement(level, applied);
                     return new Result(Status.FAILED, 0);
+                }
+                MiniPentacleCapture.LayoutBlock captured = capturedLayout.get(mutation.position());
+                if (captured != null && captured.data() != null) {
+                    BlockEntity entity = level.getBlockEntity(mutation.position());
+                    if (entity == null) {
+                        rollbackPlacement(level, applied);
+                        return new Result(Status.FAILED, 0);
+                    }
+                    entity.loadWithComponents(captured.data().copy(), level.registryAccess());
+                    entity.setChanged();
                 }
                 if (!mutation.placed().canSurvive(
                         level, mutation.position())
@@ -248,6 +316,50 @@ public final class MiniPentacleDeployment {
                 rollbackPlacement(level, applied);
                 return new Result(Status.FAILED, 0);
             }
+            List<Mutation> beforeEvent = ordered.stream().map(mutation -> new Mutation(
+                    mutation.position(), mutation.previous(),
+                    level.getBlockState(mutation.position()), null, mutation.snapshot(),
+                    blockEntityData(level, mutation.position()), mutation.ownedByMiniature())).toList();
+            BlockEvent.EntityMultiPlaceEvent placeEvent =
+                    new BlockEvent.EntityMultiPlaceEvent(applied.stream()
+                            .map(Mutation::snapshot).toList(),
+                            level.getBlockState(anchor.below()), player);
+            if (NeoForge.EVENT_BUS.post(placeEvent).isCanceled()) {
+                rollbackPlacement(level, applied);
+                return new Result(Status.NO_PERMISSION, 0);
+            }
+            if (!heldUnchanged(player, miniature, expectedItem)
+                    || !booleanValue(projection.get().multiblock(),
+                    "validate", level, anchor, rotation)) {
+                rollbackPlacement(level, applied);
+                return new Result(Status.CHANGED, 0);
+            }
+            for (Mutation mutation : beforeEvent) {
+                if (!level.getBlockState(mutation.position()).equals(mutation.placed())
+                        || !safeGuardBlockEntity(level.getBlockEntity(mutation.position()),
+                        blockEntityData(level, mutation.position()))
+                        || !blockEntityDataMatches(level, mutation.position(),
+                        mutation.placedBlockEntity())) {
+                    rollbackPlacement(level, applied);
+                    return new Result(Status.CHANGED, 0);
+                }
+            }
+            for (Mutation mutation : ordered) {
+                BlockState current = level.getBlockState(mutation.position());
+                // Glass panes and bars acquire connection properties while
+                // their neighbours are placed. Item quantities must stay exact.
+                if (current.getBlock() != mutation.placed().getBlock()
+                        || (current.hasProperty(net.minecraft.world.level.block.CandleBlock.CANDLES)
+                        && !current.getValue(net.minecraft.world.level.block.CandleBlock.CANDLES)
+                        .equals(mutation.placed().getValue(
+                                net.minecraft.world.level.block.CandleBlock.CANDLES)))
+                        || (!mutation.ownedByMiniature()
+                        && !blockEntityDataMatches(level, mutation.position(),
+                        mutation.placedBlockEntity()))) {
+                    rollbackPlacement(level, applied);
+                    return new Result(Status.CHANGED, 0);
+                }
+            }
             List<Mutation> recorded = ordered.stream()
                     .map(mutation -> new Mutation(
                              mutation.position(), mutation.previous(),
@@ -256,7 +368,9 @@ public final class MiniPentacleDeployment {
                              level, mutation.position()),
                              mutation.ownedByMiniature()))
                      .toList();
-            saveDeployment(miniature, level, anchor, rotation, recorded);
+            UUID lease = UUID.randomUUID();
+            saveDeployment(miniature, level, anchor, rotation, recorded, lease);
+            claims.claim(lease, mutations.keySet());
             return new Result(Status.PLACED, applied.size());
         } catch (ReflectiveOperationException | RuntimeException failure) {
             rollbackPlacement(level, applied);
@@ -267,6 +381,24 @@ public final class MiniPentacleDeployment {
     public static Result recover(
             ServerLevel level, ServerPlayer player,
             ItemStack miniature, BlockPos clickedPosition) {
+        MiniPentacleClaims claims = MiniPentacleClaims.get(level);
+        if (!claims.begin()) {
+            return new Result(Status.CHANGED, 0);
+        }
+        try {
+            return recoverInternal(level, player, miniature, clickedPosition, claims);
+        } finally {
+            claims.end();
+        }
+    }
+
+    private static Result recoverInternal(
+            ServerLevel level, ServerPlayer player,
+            ItemStack miniature, BlockPos clickedPosition, MiniPentacleClaims claims) {
+        ItemStack expectedItem = miniature.copy();
+        if (!heldUnchanged(player, miniature, expectedItem)) {
+            return new Result(Status.CHANGED, 0);
+        }
         CustomData customData = miniature.get(DataComponents.CUSTOM_DATA);
         if (customData == null || customData.isEmpty()
                 || !isDeployed(miniature)) {
@@ -297,8 +429,7 @@ public final class MiniPentacleDeployment {
             }
             BlockPos position = BlockPos.of(entry.getLong(POSITION));
             if (position.distSqr(anchor) > MAX_ANCHOR_DISTANCE_SQUARED
-                    || !level.isInWorldBounds(position)
-                    || !level.hasChunkAt(position)) {
+                    || !loadedWithNeighbors(level, position)) {
                 return new Result(Status.UNLOADED, 0);
             }
             targetMatches |= clickedPosition.equals(position);
@@ -336,6 +467,12 @@ public final class MiniPentacleDeployment {
         if (!targetMatches) {
             return new Result(Status.WRONG_TARGET, 0);
         }
+        UUID lease = root.hasUUID(DEPLOYED_LEASE) ? root.getUUID(DEPLOYED_LEASE) : null;
+        List<BlockPos> protectedPositions = mutations.stream().map(Mutation::position).toList();
+        if (lease == null ? claims.legacyInvalid(protectedPositions)
+                : !claims.owns(lease, protectedPositions)) {
+            return new Result(Status.CLAIMED, 0);
+        }
         for (Mutation mutation : mutations) {
             if (!mutation.ownedByMiniature()) {
                 continue;
@@ -347,7 +484,8 @@ public final class MiniPentacleDeployment {
             }
         }
         for (Mutation mutation : mutations) {
-            if (!level.getBlockState(mutation.position())
+            if (!heldUnchanged(player, miniature, expectedItem)
+                    || !level.getBlockState(mutation.position())
                     .equals(mutation.placed())
                     || !blockEntityDataMatches(level,
                     mutation.position(),
@@ -376,20 +514,42 @@ public final class MiniPentacleDeployment {
             // BreakEvent above exactly once and no synthetic PlaceEvent.
             level.captureBlockSnapshots = false;
             for (Mutation mutation : ownedMutations) {
+                if (!heldUnchanged(player, miniature, expectedItem)
+                        || !level.getBlockState(mutation.position()).equals(mutation.placed())
+                        || !blockEntityDataMatches(level, mutation.position(),
+                        mutation.placedBlockEntity())) {
+                    rollbackRecovery(level, restored);
+                    return new Result(Status.CHANGED, 0);
+                }
                 // Register before the world call for exception-safe rollback.
                 restored.add(mutation);
                 if (!level.setBlock(mutation.position(),
-                        mutation.previous(), Block.UPDATE_ALL)) {
+                        mutation.previous(), REMOVE_FLAGS)) {
                     rollbackRecovery(level, restored);
                     return new Result(Status.FAILED, 0);
                 }
+            }
+            for (Mutation mutation : ownedMutations) {
+                level.updateNeighborsAt(mutation.position(), mutation.placed().getBlock());
+                mutation.placed().updateIndirectNeighbourShapes(level, mutation.position(), REMOVE_FLAGS);
+                mutation.previous().updateNeighbourShapes(level, mutation.position(), REMOVE_FLAGS);
+            }
+            if (!heldUnchanged(player, miniature, expectedItem)
+                    || mutations.stream().anyMatch(mutation ->
+                    !level.getBlockState(mutation.position()).equals(mutation.previous())
+                            || !blockEntityDataMatches(level, mutation.position(),
+                            mutation.ownedByMiniature() ? null : mutation.placedBlockEntity()))) {
+                rollbackRecovery(level, restored);
+                return new Result(Status.CHANGED, 0);
             }
             CustomData.update(DataComponents.CUSTOM_DATA, miniature, tag -> {
                 tag.remove(DEPLOYED_DIMENSION);
                 tag.remove(DEPLOYED_ANCHOR);
                 tag.remove(DEPLOYED_ROTATION);
                 tag.remove(DEPLOYED_BLOCKS);
+                tag.remove(DEPLOYED_LEASE);
             });
+            claims.retire(lease, ownedMutations.stream().map(Mutation::position).toList());
             return new Result(Status.RECOVERED,
                     ownedMutations.size());
         } catch (RuntimeException failure) {
@@ -448,7 +608,7 @@ public final class MiniPentacleDeployment {
     private static void saveDeployment(
             ItemStack miniature, ServerLevel level,
             BlockPos anchor, Rotation rotation,
-            List<Mutation> mutations) {
+            List<Mutation> mutations, UUID lease) {
         ListTag blocks = new ListTag();
         for (Mutation mutation : mutations) {
             CompoundTag entry = new CompoundTag();
@@ -471,6 +631,7 @@ public final class MiniPentacleDeployment {
             tag.putLong(DEPLOYED_ANCHOR, anchor.asLong());
             tag.putString(DEPLOYED_ROTATION, rotation.name());
             tag.put(DEPLOYED_BLOCKS, blocks);
+            tag.putUUID(DEPLOYED_LEASE, lease);
         });
     }
 
@@ -516,7 +677,7 @@ public final class MiniPentacleDeployment {
         }
     }
 
-    private static boolean safeGuardBlockEntity(
+    static boolean safeGuardBlockEntity(
             BlockEntity blockEntity, CompoundTag data) {
         if (data == null || !isOccultismSacrificialBowl(blockEntity)) {
             return true;
@@ -528,7 +689,7 @@ public final class MiniPentacleDeployment {
                 && !data.contains("consumedIngredients");
     }
 
-    private static CompoundTag blockEntityData(
+    static CompoundTag blockEntityData(
             ServerLevel level, BlockPos position) {
         BlockEntity blockEntity = level.getBlockEntity(position);
         return blockEntity == null ? null
@@ -536,7 +697,7 @@ public final class MiniPentacleDeployment {
                 level.registryAccess());
     }
 
-    private static boolean blockEntityDataMatches(
+    static boolean blockEntityDataMatches(
             ServerLevel level, BlockPos position,
             CompoundTag expected) {
         BlockEntity blockEntity = level.getBlockEntity(position);
@@ -556,10 +717,16 @@ public final class MiniPentacleDeployment {
             normalizedExpected.remove("lastChangeTime");
             normalizedCurrent.remove("lastChangeTime");
         }
+        if (blockEntity instanceof net.minecraft.world.level.block.entity.BeaconBlockEntity) {
+            // The beacon recomputes this from the preserved ground every tick.
+            // Selected effects, names, locks and components remain exact-match.
+            normalizedExpected.remove("Levels");
+            normalizedCurrent.remove("Levels");
+        }
         return normalizedExpected.equals(normalizedCurrent);
     }
 
-    private static boolean isOccultismSacrificialBowl(
+    static boolean isOccultismSacrificialBowl(
             BlockEntity blockEntity) {
         for (Class<?> type = blockEntity == null ? null
                 : blockEntity.getClass(); type != null;
@@ -572,7 +739,7 @@ public final class MiniPentacleDeployment {
         return false;
     }
 
-    private static Object invoke(
+    static Object invoke(
             Object target, String method, Object... arguments)
             throws ReflectiveOperationException {
         if (target == null) {
@@ -631,7 +798,7 @@ public final class MiniPentacleDeployment {
         return primitive;
     }
 
-    private static boolean booleanValue(
+    static boolean booleanValue(
             Object target, String method, Object... arguments)
             throws ReflectiveOperationException {
         return invoke(target, method, arguments) instanceof Boolean value
@@ -645,5 +812,25 @@ public final class MiniPentacleDeployment {
                             BlockSnapshot snapshot,
                             CompoundTag placedBlockEntity,
                             boolean ownedByMiniature) {
+    }
+
+    static boolean heldUnchanged(ServerPlayer player, ItemStack miniature, ItemStack expected) {
+        return !player.isSpectator() && miniature.getCount() == 1
+                && (player.getMainHandItem() == miniature || player.getOffhandItem() == miniature)
+                && ItemStack.isSameItemSameComponents(miniature, expected);
+    }
+
+    private static boolean loadedWithNeighbors(ServerLevel level, BlockPos position) {
+        if (!level.isInWorldBounds(position)) {
+            return false;
+        }
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (!level.hasChunkAt(position.offset(x, 0, z))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
