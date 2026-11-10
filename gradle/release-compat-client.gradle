@@ -1,0 +1,107 @@
+// Opt-in real-client proof for the original release's three Forbidden machines.
+// Neither this fixture nor its extra mod classpath enters the distributed JAR or ordinary Client run.
+import java.time.Duration
+import java.util.zip.ZipFile
+
+def releaseSmokeDirectory = file('build/release-compat-client-2.6.2')
+def releaseForbiddenJar = project.findProperty('mekanism_magic.release_forbidden_jar')
+def releaseExpectedForbidden = (project.findProperty('mekanism_magic.release_expected_forbidden') ?: '2.6.2').toString()
+def selectedReleaseMods = files(fileTree('run/mods') {
+    include '*.jar'
+    if (releaseForbiddenJar != null) exclude 'forbidden_arcanus-*.jar'
+}, releaseForbiddenJar == null ? [] : [file(releaseForbiddenJar)])
+
+// Identify top-level mod IDs, not dependency declarations. A selected runtime JAR replaces any
+// main-runtime copy of that same mod, so command-line runtime flags cannot introduce duplicates.
+def releaseModIdCache = [:]
+def releaseModIds = { File jar ->
+    releaseModIdCache.computeIfAbsent(jar.absolutePath) {
+        def ids = [] as Set
+        if (jar.isFile() && jar.name.endsWith('.jar')) new ZipFile(jar).withCloseable { zip ->
+            def entry = zip.getEntry('META-INF/neoforge.mods.toml') ?: zip.getEntry('META-INF/mods.toml')
+            if (entry != null) {
+                String text = zip.getInputStream(entry).getText('UTF-8')
+                def blocks = text =~ /(?ms)^[ \t]*\[\[mods\]\][ \t]*(?:#[^\r\n]*)?\r?$(.*?)(?=^\s*\[|\z)/
+                blocks.each { block ->
+                    def id = block[1] =~ /(?m)^\s*modId\s*=\s*["']([^"']+)["']/
+                    if (id.find()) ids.add(id.group(1))
+                }
+            }
+        }
+        ids
+    }
+}
+def selectedReleasePaths = selectedReleaseMods.files.collect { it.canonicalFile }.toSet()
+def selectedReleaseIds = selectedReleaseMods.files.collectMany { releaseModIds(it).toList() }.toSet()
+
+sourceSets {
+    releaseCompatClientSmoke {
+        java.srcDir('src/releaseCompatClientSmoke/java')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath = output + sourceSets.main.runtimeClasspath.filter { entry ->
+            selectedReleasePaths.contains(entry.canonicalFile)
+                    || releaseModIds(entry).intersect(selectedReleaseIds).empty
+        } + configurations.releaseCompatClientSmokeRuntimeClasspath
+    }
+}
+dependencies { releaseCompatClientSmokeRuntimeOnly selectedReleaseMods }
+
+neoForge {
+    mods {
+        "${mod_id}_release_compat_client_smoke" {
+            sourceSet(sourceSets.main)
+            sourceSet(sourceSets.releaseCompatClientSmoke)
+        }
+    }
+    runs {
+        releaseCompatClient {
+            client()
+            logLevel = org.slf4j.event.Level.INFO
+            sourceSet = sourceSets.releaseCompatClientSmoke
+            loadedMods = [mods."${mod_id}_release_compat_client_smoke"]
+            gameDirectory = releaseSmokeDirectory
+            systemProperty 'mekanism_magic.release_compat_client', 'true'
+            systemProperty 'mekanism_magic.release_compat_isolated_root', file('build').absolutePath
+            systemProperty 'mekanism_magic.release_expected_forbidden', releaseExpectedForbidden
+            systemProperty 'mekanism_magic.release_expected_addon', mod_version.toString()
+            systemProperty 'mekanism_magic.release_expected_mod_ids', (selectedReleaseIds + ['mekanism']).sort().join(',')
+            jvmArgument '-Xmx4G'
+            programArguments.addAll '--width', '1280', '--height', '900'
+        }
+    }
+}
+
+tasks.named('runReleaseCompatClient').configure {
+    timeout = Duration.ofMinutes(8)
+    long startedAt
+    doFirst {
+        if (releaseForbiddenJar == null || !file(releaseForbiddenJar).isFile()) {
+            throw new GradleException('Supply -Pmekanism_magic.release_forbidden_jar=<verification.jar>; normal run/mods is never replaced')
+        }
+        if (!selectedReleaseIds.containsAll(['forbidden_arcanus', 'valhelsia_core'])) {
+            throw new GradleException('Release client verification requires the supplied Forbidden JAR and existing Valhelsia Core')
+        }
+        startedAt = System.currentTimeMillis()
+    }
+    doLast {
+        File result = new File(releaseSmokeDirectory, 'release-compat-client.json')
+        if (!result.isFile() || result.lastModified() < startedAt) {
+            throw new GradleException('No fresh release compatibility client receipt')
+        }
+        def report = new groovy.json.JsonSlurper().parse(result)
+        if (report.status != 'PASS' || !report.worldOpened || !report.realLocalPlayer
+                || !report.allSelectedModsLoaded || !report.autoStop || report.usesFakePlayer
+                || report.actualForbiddenVersion != releaseExpectedForbidden
+                || report.actualAddonVersion != mod_version.toString()
+                || report.actualCoreVersion == null || report.guiCases?.size() != 3
+                || report.guiCases.collect { it.id } != ['clibano_processor', 'hephaestus_forge_processor', 'essence_condenser']) {
+            throw new GradleException("Release compatibility client failed: ${report.failure}")
+        }
+        report.guiCases.each { entry ->
+            File screenshot = new File(releaseSmokeDirectory, entry.screenshot)
+            if (!entry.titleMatchesBlock || !screenshot.isFile() || screenshot.lastModified() < startedAt || screenshot.length() < 32) {
+                throw new GradleException("Missing fresh actual native GUI proof: ${entry.id}")
+            }
+        }
+    }
+}

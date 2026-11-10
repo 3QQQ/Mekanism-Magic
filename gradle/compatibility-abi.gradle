@@ -1,0 +1,50 @@
+// Build-time symbol extraction is separate from the distributed mod classes.
+sourceSets {
+    compatibilityAbiGenerator {
+        java.srcDir('src/compatibilityAbiGenerator/java')
+        compileClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath = output + compileClasspath
+    }
+}
+
+def compatibilityAbiDirectory = layout.buildDirectory.dir('generated/compatibility-abi')
+def compatibilityAbiFile = compatibilityAbiDirectory.map { it.file('META-INF/mekanism_magic/compatibility-abi.json') }
+def compileBaselines = [forbidden_arcanus: forbidden_arcanus_version.toString(),
+                        valhelsia_core: valhelsia_core_version.toString()]
+
+def generateCompatibilityAbi = tasks.register('generateCompatibilityAbi', JavaExec) {
+    group = 'build'
+    description = 'Extract actual optional integration class/member requirements without shipping dependency bytecode.'
+    dependsOn tasks.named('compileJava'), tasks.named('compatibilityAbiGeneratorClasses')
+    classpath = sourceSets.compatibilityAbiGenerator.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.build.CompatibilityAbiManifestGenerator'
+    inputs.files(sourceSets.main.output.classesDirs).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property('compileBaselines', compileBaselines)
+    outputs.file(compatibilityAbiFile)
+    doFirst {
+        setArgs(['--output', compatibilityAbiFile.get().asFile.absolutePath]
+                + sourceSets.main.output.classesDirs.files.sort { it.absolutePath }.collectMany { ['--classes', it.absolutePath] }
+                + compileBaselines.sort().collectMany { id, version -> ['--baseline', "${id}=${version}".toString()] })
+    }
+}
+
+sourceSets.main.resources.srcDir(compatibilityAbiDirectory)
+tasks.named('processResources') { dependsOn generateCompatibilityAbi }
+
+tasks.register('testCompatibilityAbiGenerator', JavaExec) {
+    group = 'verification'
+    description = 'Verify symbol extraction, provider isolation, method handles, constants and deterministic output.'
+    dependsOn tasks.named('compatibilityAbiGeneratorClasses')
+    classpath = sourceSets.compatibilityAbiGenerator.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.build.CompatibilityAbiManifestGeneratorSelfTest'
+}
+tasks.named('check') { dependsOn tasks.named('testCompatibilityAbiGenerator') }
+
+// Runtime verifier fixtures do not load the optional dependency implementation.
+tasks.register('testIntegrationAbiVerifier', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.example.mekanismmagic.integration.IntegrationAbiVerifierSelfTest'
+}
+tasks.named('check') { dependsOn tasks.named('testIntegrationAbiVerifier') }

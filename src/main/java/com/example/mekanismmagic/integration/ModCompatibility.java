@@ -53,23 +53,30 @@ public final class ModCompatibility {
 
     /** Must run before loading any F&A implementation class or registering a hook. */
     public static boolean forbiddenArcanusIntegrationEnabled() {
-        return forbiddenArcanusVersionsSupported(
-                installedVersion(FORBIDDEN_ARCANUS).orElse(null),
-                installedVersion(VALHELSIA_CORE).orElse(null));
+        String forbidden = installedVersion(FORBIDDEN_ARCANUS).orElse(null);
+        String core = installedVersion(VALHELSIA_CORE).orElse(null);
+        requireForbiddenContentVersions(forbidden, core);
+        if (forbidden == null) return false;
+        try {
+            IntegrationAbiVerifier.requireCompatible(FORBIDDEN_ARCANUS);
+        } catch (IllegalStateException incompatible) {
+            throw new IllegalStateException("Mekanism Magic could not link Forbidden & Arcanus " + forbidden
+                    + " + Valhelsia Core " + core + ": " + incompatible.getMessage(), incompatible);
+        }
+        return true;
     }
 
-    /** No open ABI range: 2.6.1 uses internal record and registry implementation types. */
+    /** Dependency metadata only; actual class/member compatibility is verified separately. */
     public static boolean forbiddenArcanusVersionsSupported(String forbidden, String core) {
-        return FORBIDDEN_ARCANUS_BRIDGE_VERSION.equals(forbidden)
-                && VALHELSIA_CORE_BRIDGE_VERSION.equals(core);
+        return forbidden != null && !forbidden.isBlank() && core != null && !core.isBlank();
     }
 
     /** Once block IDs exist, silently omitting them on an ABI mismatch can erase saved inventories. */
     public static void requireForbiddenContentVersions(String forbidden, String core) {
         if (forbidden == null || forbiddenArcanusVersionsSupported(forbidden, core)) return;
-        throw new IllegalStateException("Forbidden & Arcanus machine content requires "
-                + FORBIDDEN_ARCANUS_BRIDGE_VERSION + " + Valhelsia Core " + VALHELSIA_CORE_BRIDGE_VERSION
-                + "; found " + forbidden + " + " + (core == null ? "absent" : core)
+        throw new IllegalStateException("Forbidden & Arcanus machine content requires installed Forbidden & Arcanus"
+                + " and Valhelsia Core with valid version metadata; found " + forbidden + " + "
+                + (core == null ? "absent" : core)
                 + ". Startup was stopped rather than dropping saved Clibano machine registrations.");
     }
 

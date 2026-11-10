@@ -302,8 +302,15 @@ sourceSets {
         }
     }
 }
+// Isolated upgrade verification; the compiler and normal client dependencies stay pinned.
+def forbiddenTestJar = project.findProperty('mekanism_magic.forbidden_test_jar')
+if (forbiddenTestJar != null && !file(forbiddenTestJar).isFile()) {
+    throw new GradleException("Missing Forbidden runtime verification JAR: ${forbiddenTestJar}")
+}
+def forbiddenTestDirectory = file(project.findProperty('mekanism_magic.forbidden_test_directory') ?: 'run-forbidden-gametest')
 dependencies {
-    forbiddenGameTestRuntimeOnly(forbiddenCoordinate) { transitive = false }
+    if (forbiddenTestJar != null) forbiddenGameTestRuntimeOnly files(forbiddenTestJar)
+    else forbiddenGameTestRuntimeOnly(forbiddenCoordinate) { transitive = false }
     forbiddenGameTestRuntimeOnly(valhelsiaCoordinate) { transitive = false }
 }
 neoForge {
@@ -322,7 +329,7 @@ neoForge {
             type = 'gameTestServer'
             sourceSet = sourceSets.forbiddenGameTest
             loadedMods = [mods."${mod_id}_forbidden_gametest"]
-            gameDirectory = file('run-forbidden-gametest')
+            gameDirectory = forbiddenTestDirectory
             systemProperty 'neoforge.enabledGameTestNamespaces', 'minecraft'
         }
         forbiddenAbsentGameTestServer {
@@ -338,7 +345,7 @@ neoForge {
 // Opt-in runtime GameTests for the real AE2 + Mek Energistics boundary.
 // A mod-loader startup exception can exit the launcher with code zero.
 // These isolated matrices require an actual, fresh positive test report.
-['runForbiddenGameTestServer': 'run-forbidden-gametest',
+['runForbiddenGameTestServer': forbiddenTestDirectory,
  'runForbiddenAbsentGameTestServer': 'run-forbidden-absent-gametest'].each { taskName, directory ->
     tasks.named(taskName).configure {
         long startedAt
@@ -1058,6 +1065,8 @@ idea {
 // until its block entity, renderer, resources, loot and one-block geometry
 // satisfy the shared machine contract.
 apply from: 'gradle/machine-contracts.gradle'
+apply from: 'gradle/compatibility-abi.gradle'
+apply from: 'gradle/release-compat-client.gradle'
 
 tasks.named('check') {
     dependsOn tasks.named('validateMachineContracts'),
